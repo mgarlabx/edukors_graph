@@ -1,0 +1,440 @@
+{
+  "$schema": "https://edukors.org/graph/schema/v1/",
+  "info": {
+    "course-id": "5a959482-32c3-4d75-b0c9-3d0025951f67",
+    "source-language": "en",
+    "other-languages": [],
+    "title": [
+      {
+        "lang": "en",
+        "text": "Cats of the World (short version)"
+      }
+    ],
+    "description": [
+      {
+        "lang": "en",
+        "text": "A compact, almost linear version: big cats, domestic cats, a quiz with adaptive reinforcement and an assessed essay."
+      }
+    ],
+    "author": "Mauricio Garcia",
+    "version": "1.1.0",
+    "date": "2026-09-17",
+    "start": "sm1",
+    "sections": [
+      {
+        "number": 1,
+        "title": [
+          {
+            "lang": "en",
+            "text": "The cats"
+          }
+        ]
+      },
+      {
+        "number": 2,
+        "title": [
+          {
+            "lang": "en",
+            "text": "Check and delivery"
+          }
+        ]
+      }
+    ],
+    "system-prompt": "You are a friendly natural-history guide in a short course about the cats of the world (family Felidae) for a general, international audience with no biology background. Be warm, concrete and accurate; prefer well-established facts about species, habitats and behaviour, and say 'roughly' when numbers vary between sources. Never invent image URLs. Use metric units. Answer in the student's language."
+  },
+  "nodes": [
+    {
+      "id": "sm1",
+      "type": "static-md",
+      "section": 1,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Welcome to the world of cats"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "## Welcome to the world of cats\n\n![Lion resting in Namibia](https://commons.wikimedia.org/wiki/Special:FilePath/Lion%20waiting%20in%20Namibia.jpg?width=800)\n\nThere are about 40 species of cats on the planet, and they live on every continent except Antarctica and Oceania (where they arrived only in human hands). All of them descend from a common ancestor that lived some 10 million years ago, so they share one \"blueprint\": retractable claws, teeth built for slicing meat, excellent night vision and a body designed for the ambush. A 190 kg lion and a 4 kg sofa cat are, at heart, variations on the same theme.\n\nThis course is a short journey through that group, in two chapters:\n\n- **The big cats**: lion, tiger, jaguar, leopard, snow leopard, puma and cheetah.\n- **Domestic cats**: how the cat moved into our homes some 10,000 years ago and spread around the world on ships.\n\n### How the course works\n\nYou read the two chapters and take a quick check. If you do well, you go straight to the final activity; if not, you first receive a reinforcement written specifically for what you got wrong. At the end, you write a short text defending the cat you would \"adopt\" and receive an assessment.\n\nBy the end, you will be able to:\n\n1. Recognise the seven big cats and say where each one lives.\n2. Explain what makes cats such efficient hunters.\n3. Tell the story of the cat's domestication.\n4. Argue, in writing, which cat you would \"adopt\" and why.\n\nLet's begin."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sh1",
+      "type": "static-html",
+      "section": 1,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Big cats: who is who"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "<h2>Big cats: who is who</h2>\n<p>\"Big cat\" is not a strict scientific term. It usually covers the five members of the genus <em>Panthera</em> (lion, tiger, jaguar, leopard and snow leopard), which have a flexible throat bone and can therefore <strong>roar</strong>, plus the puma and the cheetah, which are big in size but belong to \"small cat\" lineages: they do not roar, but they <strong>purr</strong> like a house cat.</p>\n<table style=\"width:100%;border-collapse:collapse;font-size:0.95em\">\n<thead><tr style=\"background:#f0e6d8\"><th style=\"padding:6px;text-align:left\">Species</th><th style=\"padding:6px;text-align:left\">Where it lives</th><th style=\"padding:6px;text-align:left\">Typical weight</th><th style=\"padding:6px;text-align:left\">Trademark</th></tr></thead>\n<tbody>\n<tr><td style=\"padding:6px\"><strong>Lion</strong><br><em>Panthera leo</em></td><td style=\"padding:6px\">African savannas; one small population in the Gir Forest, India</td><td style=\"padding:6px\">120 to 190 kg</td><td style=\"padding:6px\">The only social cat: lives in prides, and the females hunt as a group</td></tr>\n<tr><td style=\"padding:6px\"><strong>Tiger</strong><br><em>Panthera tigris</em></td><td style=\"padding:6px\">Forests and swamps of Asia, from India to the Russian Far East</td><td style=\"padding:6px\">100 to 260 kg</td><td style=\"padding:6px\">The largest living cat; each tiger has a unique stripe pattern, like a fingerprint</td></tr>\n<tr><td style=\"padding:6px\"><strong>Jaguar</strong><br><em>Panthera onca</em></td><td style=\"padding:6px\">From Mexico to Argentina, mainly the Amazon and the Pantanal</td><td style=\"padding:6px\">55 to 100 kg</td><td style=\"padding:6px\">Strongest bite for its size; an excellent swimmer that hunts caimans</td></tr>\n<tr><td style=\"padding:6px\"><strong>Leopard</strong><br><em>Panthera pardus</em></td><td style=\"padding:6px\">Africa and much of Asia</td><td style=\"padding:6px\">30 to 70 kg</td><td style=\"padding:6px\">The most adaptable: lives from deserts to cities; stores its prey up in trees</td></tr>\n<tr><td style=\"padding:6px\"><strong>Snow leopard</strong><br><em>Panthera uncia</em></td><td style=\"padding:6px\">Mountains of Central Asia, above 3,000 m</td><td style=\"padding:6px\">25 to 55 kg</td><td style=\"padding:6px\">A tail almost as long as its body, used as a blanket; cannot roar</td></tr>\n<tr><td style=\"padding:6px\"><strong>Puma</strong><br><em>Puma concolor</em></td><td style=\"padding:6px\">From Canada to Patagonia: the widest range of any land mammal in the Americas</td><td style=\"padding:6px\">35 to 80 kg</td><td style=\"padding:6px\">Jumps more than 5 m high; purrs</td></tr>\n<tr><td style=\"padding:6px\"><strong>Cheetah</strong><br><em>Acinonyx jubatus</em></td><td style=\"padding:6px\">Open savannas of Africa; a few dozen in Iran</td><td style=\"padding:6px\">35 to 65 kg</td><td style=\"padding:6px\">Fastest land animal, close to 100 km/h in short sprints; semi-retractable claws, like running spikes</td></tr>\n</tbody></table>\n\n<h3>Three portraits</h3>\n<div style=\"display:flex;flex-wrap:wrap;gap:12px\">\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Walking%20tiger%20female.jpg?width=600\" alt=\"Tigress walking through tall grass\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Tigress. The stripes break up her outline in tall vegetation.</figcaption></figure>\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Standing%20jaguar.jpg?width=600\" alt=\"Standing jaguar\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Jaguar. Note the rosettes with a dot in the middle, which the leopard lacks.</figcaption></figure>\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Uncia%20uncia.jpg?width=600\" alt=\"Snow leopard\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Snow leopard. Thick fur and a long tail for the mountain cold.</figcaption></figure>\n</div>\n\n<h3>Why they matter</h3>\n<p>Big cats sit at the top of the food chain. Where they disappear, herbivores multiply, vegetation changes and rivers can even shift course. That is why they are called <strong>umbrella species</strong>: protecting a tiger means protecting the whole forest it hunts in. Today all seven are in decline; the tiger, for example, occupies less than 7% of the range it had a century ago.</p>\n<p><small>Images: Wikimedia Commons.</small></p>"
+          }
+        ]
+      }
+    },
+    {
+      "id": "sm3",
+      "type": "static-md",
+      "section": 1,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Domestic cats around the world"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "## Domestic cats around the world\n\n![Domestic cat](https://commons.wikimedia.org/wiki/Special:FilePath/Cat%20November%202010-1a.jpg?width=800)\n\nThe house cat (*Felis catus*) is the most numerous cat on the planet: estimates run between 400 and 600 million, on every inhabited continent. And it is the only one that, to a large extent, chose to live with us.\n\n### How the cat moved in\n\nAll domestic cats descend from the **African wildcat** (*Felis lybica*), a small cat of the Middle East and North Africa. The story begins some 10,000 years ago, when the first farmers of the Fertile Crescent started storing grain. Grain attracted mice; mice attracted wildcats. The less fearful cats stayed near the villages, ate well and left more kittens. It was a two-way domestication: nobody \"captured\" the cat, it came closer on its own.\n\nThe oldest evidence of this relationship is a grave in Cyprus, about 9,500 years old, where a human was buried next to a cat. Since there were no wildcats on Cyprus, someone brought it by boat.\n\n### Egypt and the ships\n\nIn Egypt, from around 4,000 years ago, the cat became a pet and an object of worship: the goddess Bastet had a cat's head, and killing a cat could be punished by death. From there cats boarded Phoenician, Roman and, centuries later, Viking ships, always with the same job: controlling rats on board. That is why cats reached practically every port in the world before any other route. DNA studies show that the Egyptian lineage conquered the world precisely because of maritime trade.\n\n### Breeds: four examples from four continents\n\n| Breed | Origin | What sets it apart |\n|---|---|---|\n| **Siamese** | Thailand (formerly Siam), described since the 14th century | Pale body and dark points: the pigment only forms on the cooler parts of the body |\n| **Maine Coon** | Northeastern United States | One of the largest breeds, up to 8 kg, with a dense coat for winter |\n| **Sphynx** | Canada, from 1966 | A natural mutation that suppresses the coat; needs baths and warm clothing |\n| **Egyptian Mau** | Egypt | One of the few naturally spotted breeds, very like the cats in ancient paintings |\n\n![Siamese](https://commons.wikimedia.org/wiki/Special:FilePath/Siam%20lilacpoint.jpg?width=500)\n\n### The cat is still wild\n\nUnlike the dog, the cat has changed little from its ancestor: the genomes of the domestic cat and the African wildcat are almost identical. It still hunts alone, still sleeps 12 to 16 hours a day and still marks territory. Purring, which the big cats lack, serves both to soothe and to ask for food, and there is evidence that its frequency helps bones heal. When a cat \"brings a gift\" to the door, it is doing what the wildcat does with its kittens: teaching them to hunt.\n\n*Images: Wikimedia Commons.*"
+          }
+        ]
+      }
+    },
+    {
+      "id": "q1",
+      "type": "quiz",
+      "section": 2,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Check"
+        }
+      ],
+      "content": {
+        "items": [
+          {
+            "key": "habitat",
+            "question": [
+              {
+                "lang": "en",
+                "text": "Which of these cats lives in the mountains of Central Asia, above 3,000 metres, and cannot roar?"
+              }
+            ],
+            "options": [
+              {
+                "value": "jaguar",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Jaguar"
+                  }
+                ],
+                "correct": false
+              },
+              {
+                "value": "snow-leopard",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Snow leopard"
+                  }
+                ],
+                "correct": true
+              },
+              {
+                "value": "lion",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Lion"
+                  }
+                ],
+                "correct": false
+              },
+              {
+                "value": "serval",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Serval"
+                  }
+                ],
+                "correct": false
+              }
+            ],
+            "feedback": [
+              {
+                "lang": "en",
+                "text": "The snow leopard lives in the Himalayas and neighbouring ranges. Although it is a Panthera, its throat does not allow a full roar."
+              }
+            ]
+          },
+          {
+            "key": "ancestor",
+            "question": [
+              {
+                "lang": "en",
+                "text": "Which species do all domestic cats descend from?"
+              }
+            ],
+            "options": [
+              {
+                "value": "lynx",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Eurasian lynx"
+                  }
+                ],
+                "correct": false
+              },
+              {
+                "value": "european-wildcat",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "European wildcat"
+                  }
+                ],
+                "correct": false
+              },
+              {
+                "value": "african-wildcat",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "African wildcat"
+                  }
+                ],
+                "correct": true
+              },
+              {
+                "value": "manul",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Pallas's cat"
+                  }
+                ],
+                "correct": false
+              }
+            ],
+            "feedback": [
+              {
+                "lang": "en",
+                "text": "The ancestor is the African wildcat (Felis lybica), from the Middle East and North Africa, which approached the first farming villages."
+              }
+            ]
+          },
+          {
+            "key": "social",
+            "question": [
+              {
+                "lang": "en",
+                "text": "Which is the only cat that lives in stable social groups and hunts together?"
+              }
+            ],
+            "options": [
+              {
+                "value": "lion",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Lion"
+                  }
+                ],
+                "correct": true
+              },
+              {
+                "value": "tiger",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Tiger"
+                  }
+                ],
+                "correct": false
+              },
+              {
+                "value": "cheetah",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Cheetah"
+                  }
+                ],
+                "correct": false
+              },
+              {
+                "value": "leopard",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Leopard"
+                  }
+                ],
+                "correct": false
+              }
+            ],
+            "feedback": [
+              {
+                "lang": "en",
+                "text": "Only the lion forms prides. The other cats are solitary, meeting only to mate or raise kittens."
+              }
+            ]
+          },
+          {
+            "key": "speed",
+            "question": [
+              {
+                "lang": "en",
+                "text": "Which is the fastest land animal in the world, reaching close to 100 km/h in short sprints?"
+              }
+            ],
+            "options": [
+              {
+                "value": "puma",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Puma"
+                  }
+                ],
+                "correct": false
+              },
+              {
+                "value": "tiger",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Tiger"
+                  }
+                ],
+                "correct": false
+              },
+              {
+                "value": "leopard",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Leopard"
+                  }
+                ],
+                "correct": false
+              },
+              {
+                "value": "cheetah",
+                "label": [
+                  {
+                    "lang": "en",
+                    "text": "Cheetah"
+                  }
+                ],
+                "correct": true
+              }
+            ],
+            "feedback": [
+              {
+                "lang": "en",
+                "text": "The cheetah is the fastest, but light and fragile: it often loses its prey to hyenas and lions."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "dm1",
+      "type": "dynamic-md",
+      "section": 2,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Personalised reinforcement"
+        }
+      ],
+      "content": {
+        "prompt": [
+          {
+            "lang": "en",
+            "text": "The student just took a 4-question quiz about cats of the world and scored below 70%. Write a short, encouraging remediation in markdown (250-350 words).\n\nInputs:\n- Quiz score: {{STORAGE: q1.percent}}%\n- Their answer to \"which cat lives in Central Asian mountains and cannot roar\": {{STORAGE: q1.habitat}} (correct: snow-leopard)\n- Their answer to \"ancestor of the domestic cat\": {{STORAGE: q1.ancestor}} (correct: african-wildcat)\n- Their answer to \"only social cat\": {{STORAGE: q1.social}} (correct: lion)\n- Their answer to \"fastest land animal\": {{STORAGE: q1.speed}} (correct: cheetah)\n\nStructure: one sentence acknowledging what they got right; then, for each question they missed, a short paragraph that explains the correct answer and why their choice was a tempting mistake (do not lecture on questions they answered correctly); close with a memorable one-line mnemonic for each missed fact. Do not include images. Answer in the student's language."
+          }
+        ]
+      }
+    },
+    {
+      "id": "e1",
+      "type": "essay",
+      "section": 2,
+      "title": [
+        {
+          "lang": "en",
+          "text": "The cat you would adopt"
+        }
+      ],
+      "content": {
+        "instructions": [
+          {
+            "lang": "en",
+            "text": "## The cat you would adopt\n\nImagine you could \"adopt\" a cat, in a symbolic sense: supporting the conservation of a wild species, or actually taking a domestic cat home. Choose **one** species or breed seen in this course (or another you know well) and write a text of **150 to 250 words** defending your choice.\n\nYour text must answer four questions:\n\n1. **Where it lives** and in what kind of environment (habitat).\n2. **What it eats** and how it hunts.\n3. **Which behaviour** makes it special to you.\n4. **What it would need** to live well, whether in the wild or in your home.\n\nWrite in the first person, as if you were convincing a friend. You will receive a score and a comment with suggestions."
+          }
+        ],
+        "prompt": "Grade this short persuasive text (target 150-250 words) in which a student of a general-audience course on cats of the world argues for one cat species or breed they would 'adopt' (symbolically, for a wild species, or literally, for a domestic cat). Criteria: habitat correctly described (25); diet and hunting behaviour correctly described (25); one specific, accurate behaviour or trait that justifies the choice (25); realistic statement of what the animal needs to thrive (15); clarity and persuasive tone (10). Do not penalise length slightly outside the range, typos, or the choice of a species not covered in the course as long as the facts are right. Penalise factual errors about the species (e.g. a cheetah that roars, a jaguar in Africa). Return JSON: {\"score\": <0-100>, \"feedback\": \"<3-5 sentences addressed to the student: one thing that works, up to two concrete improvements, and a correction of any factual error, in the student's language>\"}."
+      }
+    },
+    {
+      "id": "sm5",
+      "type": "static-md",
+      "section": 2,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Closing"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "## Closing\n\n![Puma](https://commons.wikimedia.org/wiki/Special:FilePath/Puma%20face.jpg?width=800)\n\nYou have reached the end of the journey. It is worth looking back at what stays with you.\n\n### What cats have in common\n\nA single body plan, tuned to each environment: retractable claws to keep the tips sharp, teeth that slice rather than chew, eyes with a reflective layer that multiplies the light of the night, whiskers that feel the air, and a body built for the ambush rather than the long chase. The cheetah is the exception that proves the rule: to run, it gave up strength and fully retractable claws.\n\n### What sets them apart\n\n- **The big cats** roar, rule large territories and sustain whole ecosystems. All seven are in decline, and protecting one of them protects the landscape around it.\n- **The domestic cat** is the cat that came to us 10,000 years ago and conquered the world on ships, without ceasing to be a solitary hunter.\n\n### To go further\n\n- Look up the **IUCN Red List** (iucnredlist.org) to see the status of any species mentioned here.\n- If you have a cat at home, watch a week of its behaviour with this course's eyes: where it sleeps, what it \"hunts\", how it marks territory.\n- If you want to meet a real wild cat, visit a reserve or a conservation centre rather than a place offering direct contact: cats used for photos with tourists are rarely well treated.\n\nThank you for exploring the cats of the world. If you are curious, there are still 33 species of small wild cats, from the lynx to the sand cat, that this course did not cover: they are the least known and the ones that most need attention.\n\n*Image: Wikimedia Commons.*"
+          }
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "sm1",
+      "to": "sh1"
+    },
+    {
+      "from": "sh1",
+      "to": "sm3"
+    },
+    {
+      "from": "sm3",
+      "to": "q1"
+    },
+    {
+      "from": "q1",
+      "to": "e1",
+      "when": {
+        "key": "q1.percent",
+        "operator": "gte",
+        "value": 70
+      }
+    },
+    {
+      "from": "q1",
+      "to": "dm1"
+    },
+    {
+      "from": "dm1",
+      "to": "e1"
+    },
+    {
+      "from": "e1",
+      "to": "sm5"
+    }
+  ]
+}

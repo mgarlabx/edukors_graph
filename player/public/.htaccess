@@ -1,0 +1,25 @@
+# The document root of the site must be this folder, and only this folder.
+# Everything the server needs that is not a page -- the configuration, the
+# course template, the code -- lives above it and is never reachable over HTTP.
+
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Only the kinds of file this server actually serves.
+<FilesMatch "\.(json|md|sql|log|ini|bak|sample)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# An LTI launch is framed by the LMS, so the pages under this root must not be
+# blocked from framing. Content-Security-Policy: frame-ancestors is set per page
+# in PHP instead, which is the header that can name who may frame what.

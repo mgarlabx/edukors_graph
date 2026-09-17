@@ -1,0 +1,10 @@
+# Nothing under private/ may be served. This is a second line of defence: the
+# document root should be player/public, which already leaves this folder
+# unreachable.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cats of the World</title>
+<style>
+  :root{
+    --paper:#E9EDF0;
+    --grid:#CBD5DD;
+    --ink:#16212B;
+    --muted:#5C6E7E;
+    --hair:#D3DBE2;
+    --surface:#FFFFFF;
+    --select:#1F5FA8;
+    --edge:#8FA3B3;
+    --edge-cond:#3F7F76;
+    --edge-back:#B03A48;
+    --warn:#B4641E;
+
+    --t-static-md:#4A6E8A;
+    --t-static-html:#3F7F76;
+    --t-dynamic-md:#7A4FB0;
+    --t-dynamic-html:#A24897;
+    --t-essay:#B4641E;
+    --t-quiz:#2E7D5B;
+    --t-form:#1F6FA8;
+    --t-bool:#B03A48;
+
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --serif:Charter,"Bitstream Charter","Iowan Old Style",Georgia,"Times New Roman",serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);
+    overflow:hidden;-webkit-font-smoothing:antialiased;
+  }
+  button{font:inherit;color:inherit}
+
+  /* ---------- chrome ---------- */
+  header{
+    position:fixed;inset:0 0 auto 0;height:54px;z-index:30;
+    display:flex;align-items:center;gap:14px;padding:0 16px;
+    background:rgba(233,237,240,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--hair);
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .brand h1{font-size:15px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand .meta{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+  .spacer{flex:1}
+  .bar{display:flex;align-items:center;gap:8px}
+  .btn{
+    border:1px solid var(--hair);background:var(--surface);border-radius:7px;
+    padding:7px 11px;font-size:13px;cursor:pointer;line-height:1;
+  }
+  .btn:hover{border-color:#B4C2CD}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent}
+  select.btn{padding:6px 8px}
+  .count{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+  /* ---------- canvas ---------- */
+  #stage{position:fixed;inset:54px 0 0 0;overflow:hidden;cursor:grab;
+    background-image:radial-gradient(var(--grid) 1px, transparent 1px);
+    background-size:22px 22px;background-position:-1px -1px;}
+  #stage.dragging{cursor:grabbing}
+  svg{width:100%;height:100%;display:block;user-select:none}
+  .node-hit{cursor:pointer}
+  .node-box{fill:var(--surface);stroke:#C3CEd8;stroke-width:1.25}
+  .node-hit:hover .node-box{stroke:#93A5B3}
+  .node-hit.sel .node-box{stroke:var(--select);stroke-width:2.25}
+  .node-hit.dim{opacity:.26}
+  .node-id{font-family:var(--mono);font-size:10.5px;fill:#fff;font-weight:600}
+  .node-title{font-size:12.5px;fill:var(--ink)}
+  .node-sub{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+  .flag{font-family:var(--mono);font-size:9.5px;fill:var(--muted)}
+  .edge{fill:none;stroke:var(--edge);stroke-width:1.6}
+  .edge.cond{stroke:var(--edge-cond)}
+  .edge.back{stroke:var(--edge-back);stroke-dasharray:5 4}
+  .edge.hot{stroke:var(--select);stroke-width:2.6}
+  .edge.dim{opacity:.16}
+  .elabel{font-family:var(--mono);font-size:10px;fill:#33505f}
+  .elabel-bg{fill:var(--paper);opacity:.94}
+  .elabel.dim,.elabel-bg.dim{opacity:.12}
+  .ord{font-family:var(--mono);font-size:9.5px;fill:#fff;font-weight:700}
+  .band{font-size:11px;fill:var(--muted);font-family:var(--mono)}
+  .band-rule{stroke:var(--hair);stroke-width:1;stroke-dasharray:2 5}
+
+  /* ---------- legend ---------- */
+  #legend{
+    position:fixed;left:14px;bottom:14px;z-index:20;
+    background:rgba(255,255,255,.9);border:1px solid var(--hair);border-radius:9px;
+    padding:10px 12px;font-size:11.5px;max-width:220px;backdrop-filter:blur(6px);
+  }
+  #legend h2{margin:0 0 7px;font-size:11px;font-weight:600;color:var(--muted)}
+  #legend ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+  #legend li{display:flex;align-items:center;gap:7px}
+  .swatch{width:9px;height:9px;border-radius:2px;flex:none}
+  #legend .rule{margin-top:8px;padding-top:8px;border-top:1px solid var(--hair);color:var(--muted);line-height:1.45}
+
+  /* ---------- inspector ---------- */
+  #panel{
+    position:fixed;top:54px;right:0;bottom:0;width:430px;max-width:92vw;z-index:25;
+    background:var(--surface);border-left:1px solid var(--hair);
+    transform:translateX(100%);transition:transform .22s cubic-bezier(.32,.72,0,1);
+    display:flex;flex-direction:column;box-shadow:-18px 0 40px -34px rgba(12,26,38,.5);
+  }
+  #panel.open{transform:none}
+  @media (prefers-reduced-motion:reduce){#panel{transition:none}}
+  .p-head{padding:16px 18px 13px;border-bottom:1px solid var(--hair);position:relative}
+  .p-type{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:#fff;
+    padding:3px 8px;border-radius:5px}
+  .p-head h2{margin:10px 34px 4px 0;font-size:19px;font-weight:600;line-height:1.25}
+  .p-head .where{font-size:12px;color:var(--muted)}
+  .close{position:absolute;top:13px;right:13px;border:none;background:transparent;cursor:pointer;
+    font-size:20px;line-height:1;color:var(--muted);padding:4px 7px;border-radius:6px}
+  .close:hover{background:#F0F3F6;color:var(--ink)}
+  .p-body{overflow:auto;padding:4px 18px 40px;flex:1}
+  .sec{padding:15px 0;border-bottom:1px solid #EDF1F4}
+  .sec:last-child{border-bottom:none}
+  .sec > h3{margin:0 0 9px;font-size:11.5px;font-weight:600;color:var(--muted)}
+  .prose{font-family:var(--serif);font-size:15px;line-height:1.62;color:#1B2932}
+  .prose h1,.prose h2,.prose h3{font-family:var(--sans);line-height:1.3;margin:1.1em 0 .4em}
+  .prose h1{font-size:19px}.prose h2{font-size:17px}.prose h3{font-size:15px}
+  .prose p{margin:0 0 .75em}
+  .prose ul,.prose ol{margin:0 0 .8em;padding-left:1.25em}
+  .prose li{margin:.2em 0}
+  .prose code{font-family:var(--mono);font-size:.85em;background:#F1F4F7;padding:1px 4px;border-radius:4px}
+  .prose pre{background:#F1F4F7;padding:10px 12px;border-radius:7px;overflow:auto}
+  .prose pre code{background:none;padding:0}
+  .math-display{display:block;margin:.6em 0;overflow-x:auto;overflow-y:hidden;text-align:center}
+  .math-display .katex-display{margin:0}
+  .prose blockquote{margin:0 0 .8em;padding-left:12px;border-left:2px solid var(--hair);color:var(--muted)}
+  .prose img{max-width:100%}
+  .prose hr{border:none;border-top:1px solid var(--hair);margin:1em 0}
+  .prose table{border-collapse:collapse;font-size:13px}
+  .prose th,.prose td{border:1px solid var(--hair);padding:5px 8px;text-align:left}
+  .code{font-family:var(--mono);font-size:12px;line-height:1.55;background:#F4F7F9;border:1px solid #E4EAEF;
+    border-radius:8px;padding:11px 12px;white-space:pre-wrap;word-break:break-word;color:#25323D}
+  .math{font-family:var(--serif);font-style:italic}
+  .tok{background:#E7DEF6;color:#5B3D8C;border-radius:4px;padding:1px 3px}
+  .keys{display:flex;flex-wrap:wrap;gap:6px}
+  .key{font-family:var(--mono);font-size:11.5px;background:#F1F4F7;border:1px solid #E1E8ED;border-radius:5px;padding:3px 7px}
+  .q{border:1px solid var(--hair);border-radius:9px;padding:12px 13px;margin-bottom:10px}
+  .q > .stem{font-family:var(--serif);font-size:14.5px;line-height:1.5;margin-bottom:9px}
+  .opts{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+  .opts li{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.45}
+  .mark{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none;width:58px}
+  .mark.ok{color:#2E7D5B;font-weight:600}
+  .qmeta{margin-top:9px;font-size:12.5px;color:var(--muted);line-height:1.5}
+  .field-head{display:flex;gap:8px;align-items:baseline;margin-bottom:6px;flex-wrap:wrap}
+  .tag{font-family:var(--mono);font-size:10.5px;background:#EEF2F5;border-radius:5px;padding:2px 6px;color:#42576a}
+  .tag.req{background:#FBEDE2;color:#8A4A15}
+  iframe{width:100%;border:1px solid var(--hair);border-radius:8px;background:#fff;min-height:200px}
+  .links{display:grid;gap:7px}
+  .lnk{display:flex;gap:9px;align-items:baseline;text-align:left;width:100%;
+    border:1px solid var(--hair);background:var(--surface);border-radius:8px;padding:8px 10px;cursor:pointer}
+  .lnk:hover{border-color:#B4C2CD;background:#FAFCFD}
+  .lnk .nid{font-family:var(--mono);font-size:11.5px;color:#fff;padding:2px 6px;border-radius:4px;flex:none}
+  .lnk .txt{font-size:13px;line-height:1.4;flex:1;min-width:0}
+  .lnk .cond{display:block;font-family:var(--mono);font-size:11px;color:var(--edge-cond);margin-top:3px;word-break:break-word}
+  .lnk .cond.fallback{color:var(--muted)}
+  .toggle{border:none;background:none;padding:0;margin-top:9px;font-size:12px;color:var(--select);cursor:pointer;text-decoration:underline}
+  .empty{font-size:13px;color:var(--muted)}
+
+  /* ---------- issues ---------- */
+  #issues{
+    position:fixed;right:14px;bottom:14px;z-index:26;max-width:330px;
+    background:var(--surface);border:1px solid #E7D6C3;border-left:3px solid var(--warn);
+    border-radius:9px;padding:11px 13px;font-size:12.5px;line-height:1.5;display:none
+  }
+  #issues.show{display:block}
+  #issues h2{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--warn)}
+  #issues ul{margin:0;padding-left:16px;display:grid;gap:3px;color:#42576a}
+  #issues .x{position:absolute;top:6px;right:8px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:15px}
+  #panel.open ~ #issues{right:446px}
+  @media (max-width:760px){#panel.open ~ #issues{display:none}}
+
+  @media (max-width:760px){
+    #panel{top:auto;left:0;width:100%;max-width:100%;height:68vh;border-left:none;border-top:1px solid var(--hair);
+      border-radius:14px 14px 0 0;transform:translateY(100%)}
+    #legend{display:none}
+    .brand .meta{display:none}
+  }
+  :focus-visible{outline:2px solid var(--select);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1 id="courseTitle">Course map</h1>
+    <span class="meta" id="courseMeta"></span>
+  </div>
+  <div class="spacer"></div>
+  <div class="bar">
+    <span class="count" id="stats"></span>
+    <select class="btn" id="lang" title="Content language"></select>
+    <button class="btn ghost" id="fit" title="Fit to screen (F)">Fit</button>
+  </div>
+</header>
+
+<div id="stage">
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--edge)"></path>
+      </marker>
+      <marker id="ar-cond" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--edge-cond)"></path>
+      </marker>
+      <marker id="ar-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--edge-back)"></path>
+      </marker>
+      <marker id="ar-hot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--select)"></path>
+      </marker>
+    </defs>
+    <g id="viewport">
+      <g id="gBands"></g>
+      <g id="gEdges"></g>
+      <g id="gLabels"></g>
+      <g id="gNodes"></g>
+    </g>
+  </svg>
+</div>
+
+<aside id="panel" aria-label="Node details">
+  <div class="p-head">
+    <span class="p-type" id="pType"></span>
+    <button class="close" id="pClose" title="Close (Esc)">&times;</button>
+    <h2 id="pTitle"></h2>
+    <div class="where" id="pWhere"></div>
+  </div>
+  <div class="p-body" id="pBody"></div>
+</aside>
+
+<div id="legend">
+  <h2>Node types</h2>
+  <ul id="legendList"></ul>
+  <div class="rule" id="legendRule"></div>
+</div>
+
+<div id="issues">
+  <button class="x" id="issuesClose" title="Close">&times;</button>
+  <h2>File check</h2>
+  <ul id="issuesList"></ul>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. Model
+   ============================================================ */
+
+const TYPES = {
+  "static-md":   {label:"Static markdown", color:"var(--t-static-md)",   short:"md"},
+  "static-html": {label:"Static HTML",     color:"var(--t-static-html)", short:"html"},
+  "dynamic-md":  {label:"AI markdown",     color:"var(--t-dynamic-md)",  short:"AI md"},
+  "dynamic-html":{label:"AI HTML",         color:"var(--t-dynamic-html)",short:"AI html"},
+  "essay":       {label:"Essay",           color:"var(--t-essay)",       short:"essay"},
+  "quiz":        {label:"Quiz",            color:"var(--t-quiz)",        short:"quiz"},
+  "form":        {label:"Form",            color:"var(--t-form)",        short:"form"},
+  "bool":        {label:"Yes/no question", color:"var(--t-bool)",        short:"yes/no"}
+};
+const PREFIX = {"static-md":"sm","static-html":"sh","dynamic-md":"dm","dynamic-html":"dh",
+                "essay":"e","quiz":"q","form":"f","bool":"b"};
+const OPS = {eq:"=", ne:"≠", gt:">", gte:"≥", lt:"<", lte:"≤",
+             contains:"contains", "not-contains":"does not contain"};
+
+let course = null;     // JSON carregado
+let lang = null;       // idioma escolhido
+let model = null;      // { nodes, edges, byId, layout, issues }
+let selected = null;
+
+/* ---- localized text ---- */
+function t(list){
+  if(!Array.isArray(list) || !list.length) return "";
+  const want = list.find(x => x && x.lang === lang);
+  if(want) return want.text || "";
+  const src = course && course.info && course.info["source-language"];
+  const fall = list.find(x => x && x.lang === src);
+  return (fall || list[0]).text || "";
+}
+
+/* ---- conditions in readable form ---- */
+function condText(c){
+  if(!c) return "";
+  if(c.and) return c.and.map(x => wrap(x, "and")).join("  and  ");
+  if(c.or)  return c.or.map(x => wrap(x, "or")).join("  or  ");
+  const v = typeof c.value === "string" ? '"' + c.value + '"'
+          : (c.value === true ? "yes" : c.value === false ? "no" : String(c.value));
+  return c.key + " " + (OPS[c.operator] || c.operator) + " " + v;
+}
+function wrap(c, parent){
+  const s = condText(c);
+  return (c.and || c.or) ? "(" + s + ")" : s;
+}
+
+/* ---- keys the node stores ---- */
+function storageKeys(n){
+  const id = n.id, out = [];
+  if(n.type === "essay") out.push(id+".text", id+".score", id+".feedback");
+  if(n.type === "quiz"){
+    out.push(id+".score", id+".total", id+".percent");
+    (n.content && n.content.items || []).forEach(q => { if(q.key) out.push(id+"."+q.key); });
+  }
+  if(n.type === "form") (n.content && n.content.items || []).forEach(f => out.push(id+"."+f.key));
+  if(n.type === "bool") out.push(id+".answer");
+  return out;
+}
+
+/* ============================================================
+   2. Layered layout
+   ============================================================ */
+
+const NW = 194, NH = 64, VGAP = 116, HGAP = 40;
+
+function buildModel(data){
+  const nodes = (data.nodes || []).map(n => Object.assign({}, n));
+  const edges = (data.edges || []).map((e, i) => Object.assign({}, e, {_i:i}));
+  const byId = new Map();
+  const issues = [];
+
+  nodes.forEach(n => {
+    if(byId.has(n.id)) issues.push("Two nodes use the id " + n.id + ".");
+    byId.set(n.id, n);
+    const p = PREFIX[n.type];
+    if(p && !new RegExp("^"+p+"\\d+$").test(n.id))
+      issues.push("The id " + n.id + " does not match the type " + n.type + " (expected the prefix “" + p + "”).");
+  });
+
+  const out = new Map(), inc = new Map();
+  nodes.forEach(n => { out.set(n.id, []); inc.set(n.id, []); });
+  edges.forEach(e => {
+    if(!byId.has(e.from)) { issues.push("An edge starts at " + e.from + ", which does not exist."); return; }
+    if(!byId.has(e.to))   { issues.push("An edge points to " + e.to + ", which does not exist."); return; }
+    out.get(e.from).push(e);
+    inc.get(e.to).push(e);
+    e._valid = true;
+  });
+
+  // evaluation order + warning when the fallback is not last
+  out.forEach((list, id) => {
+    list.forEach((e, i) => { e._ord = i + 1; e._of = list.length; });
+    const fb = list.findIndex(e => !e.when);
+    if(fb > -1 && fb < list.length - 1)
+      issues.push("In " + id + ", the unconditional edge is not the last one: the edges after it are never used.");
+  });
+
+  const start = data.info && data.info.start;
+  if(start && !byId.has(start)) issues.push("The start node " + start + " does not exist.");
+
+  // depth by BFS from the start node
+  const depth = new Map(), order = [];
+  if(byId.has(start)){
+    const q = [start]; depth.set(start, 0);
+    while(q.length){
+      const id = q.shift(); order.push(id);
+      out.get(id).forEach(e => {
+        if(!depth.has(e.to)){ depth.set(e.to, depth.get(id) + 1); q.push(e.to); }
+      });
+    }
+  }
+  const orphans = nodes.filter(n => !depth.has(n.id)).map(n => n.id);
+  if(orphans.length) issues.push("No path from the start node reaches: " + orphans.join(", ") + ".");
+
+  // layers by longest path, ignoring edges that go back
+  // (an edge goes back when its target is closer to the start than its source)
+  if(depth.size){
+    const fwd = e => e._valid && depth.has(e.from) && depth.has(e.to) && depth.get(e.to) >= depth.get(e.from);
+    const indeg = new Map(), rank = new Map();
+    depth.forEach((_, id) => { indeg.set(id, 0); rank.set(id, 0); });
+    edges.forEach(e => { if(fwd(e)) indeg.set(e.to, indeg.get(e.to) + 1); });
+    const q2 = [...indeg.keys()].filter(id => indeg.get(id) === 0);
+    let done = 0;
+    while(q2.length){
+      const id = q2.shift(); done++;
+      out.get(id).forEach(e => {
+        if(!fwd(e)) return;
+        rank.set(e.to, Math.max(rank.get(e.to), rank.get(id) + 1));
+        indeg.set(e.to, indeg.get(e.to) - 1);
+        if(indeg.get(e.to) === 0) q2.push(e.to);
+      });
+    }
+    // leftover cycles (rare): they keep the depth found by the breadth-first search
+    depth.forEach((d, id) => { depth.set(id, done === indeg.size ? rank.get(id) : (indeg.get(id) > 0 ? d : rank.get(id))); });
+  }
+
+  const maxDepth = depth.size ? Math.max.apply(null, [...depth.values()]) : -1;
+  orphans.forEach((id, i) => { depth.set(id, maxDepth + 2); order.push(id); });
+
+  // group by layer, keeping the order in which nodes were found
+  const rows = new Map();
+  order.forEach(id => {
+    const d = depth.get(id);
+    if(!rows.has(d)) rows.set(d, []);
+    rows.get(d).push(id);
+  });
+
+  // two barycentre passes to reduce crossings
+  const pos = new Map();
+  const levels = [...rows.keys()].sort((a,b)=>a-b);
+  levels.forEach(d => rows.get(d).forEach((id,i) => pos.set(id, i)));
+  for(let pass=0; pass<3; pass++){
+    levels.forEach(d => {
+      if(d === 0) return;
+      const list = rows.get(d);
+      const bc = new Map();
+      list.forEach((id,i) => {
+        const parents = inc.get(id).filter(e => depth.get(e.from) < d);
+        const vals = parents.map(e => pos.get(e.from)).filter(v => v !== undefined);
+        bc.set(id, vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : i);
+      });
+      list.sort((a,b) => bc.get(a) - bc.get(b));
+      list.forEach((id,i) => pos.set(id, i));
+    });
+  }
+
+  // coordinates
+  const widest = Math.max.apply(null, levels.map(d => rows.get(d).length).concat([1]));
+  const totalW = widest * (NW + HGAP);
+  levels.forEach(d => {
+    const list = rows.get(d);
+    const rowW = list.length * NW + (list.length - 1) * HGAP;
+    const x0 = (totalW - rowW) / 2;
+    list.forEach((id, i) => {
+      const n = byId.get(id);
+      n._x = x0 + i * (NW + HGAP);
+      n._y = d * (NH + VGAP);
+      n._depth = d;
+      n._orphan = orphans.indexOf(id) > -1;
+      n._out = out.get(id);
+      n._in  = inc.get(id);
+    });
+  });
+
+  const bands = [];
+  if(orphans.length) bands.push({y: (maxDepth + 2) * (NH + VGAP) - VGAP/2, label:"not reachable from the start node"});
+
+  return {nodes, edges, byId, issues, bands,
+          width: totalW, height: (Math.max.apply(null,[...depth.values()]) + 1) * (NH + VGAP),
+          start};
+}
+
+/* ============================================================
+   3. Drawing
+   ============================================================ */
+
+const SVGNS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs) => {
+  const n = document.createElementNS(SVGNS, tag);
+  for(const k in attrs) if(attrs[k] !== undefined && attrs[k] !== null) n.setAttribute(k, attrs[k]);
+  return n;
+};
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+function wrapText(s, max, lines){
+  const words = String(s || "").split(/\s+/).filter(Boolean);
+  const out = []; let cur = "";
+  for(const w of words){
+    const test = cur ? cur + " " + w : w;
+    if(test.length > max && cur){ out.push(cur); cur = w; if(out.length === lines) break; }
+    else cur = test;
+  }
+  if(out.length < lines && cur) out.push(cur);
+  if(out.length === lines){
+    const rest = words.join(" ");
+    if(out.join(" ").length < rest.length) out[lines-1] = out[lines-1].replace(/.{1}$/, "…");
+  }
+  return out.length ? out : [""];
+}
+
+function draw(){
+  const gN = document.getElementById("gNodes");
+  const gE = document.getElementById("gEdges");
+  const gL = document.getElementById("gLabels");
+  const gB = document.getElementById("gBands");
+  [gN,gE,gL,gB].forEach(g => { while(g.firstChild) g.removeChild(g.firstChild); });
+
+  model.bands.forEach(b => {
+    gB.appendChild(el("line",{x1:-60,x2:model.width+60,y1:b.y,y2:b.y,class:"band-rule"}));
+    const tx = el("text",{x:-56,y:b.y-8,class:"band"}); tx.textContent = b.label;
+    gB.appendChild(tx);
+  });
+
+  // edges
+  model.edges.forEach(e => {
+    if(!e._valid) return;
+    const a = model.byId.get(e.from), b = model.byId.get(e.to);
+    const back = b._depth <= a._depth;
+    const ax = a._x + NW/2, ay = a._y + NH;
+    const bx = b._x + NW/2, by = b._y;
+    let d, lx, ly;
+
+    if(!back){
+      const dy = Math.max(30, (by - ay) * .5);
+      const span = b._depth - a._depth;
+      if(span > 1){
+        // skips layers: bows sideways so it does not cross the nodes in between
+        const side = bx >= ax ? 1 : -1;
+        const bow = side * (NW/2 + 38);
+        d = `M${ax},${ay} C${ax+bow},${ay+dy*.7} ${bx+bow},${by-dy*.7} ${bx},${by-5}`;
+        lx = (ax+bx)/2 + bow*.82; ly = (ay+by)/2;
+      } else {
+        d = `M${ax},${ay} C${ax},${ay+dy} ${bx},${by-dy} ${bx},${by-5}`;
+        lx = (ax+bx)/2; ly = (ay+by)/2 + 4;
+      }
+    } else {
+      // goes back: leaves sideways and climbs
+      const side = bx <= ax ? -1 : 1;
+      const offX = side * (NW/2 + 46);
+      const sy = a._y + NH/2, ty = b._y + NH/2;
+      const sx = a._x + (side<0 ? 0 : NW), ex = b._x + (side<0 ? 0 : NW);
+      d = `M${sx},${sy} C${sx+offX},${sy} ${ex+offX},${ty} ${ex+(side<0?-5:5)},${ty}`;
+      lx = (sx+ex)/2 + offX*0.78; ly = (sy+ty)/2;
+    }
+
+    const cls = "edge " + (back ? "back" : (e.when ? "cond" : ""));
+    const p = el("path",{d, class:cls.trim(),
+      "marker-end":`url(#ar${back?"-back":(e.when?"-cond":"")})`});
+    p.dataset.from = e.from; p.dataset.to = e.to; p.dataset.i = e._i;
+    gE.appendChild(p);
+
+    // condition label / evaluation order
+    const txt = e.when ? condText(e.when) : (e._of > 1 ? "else" : "");
+    if(txt){
+      const short = txt.length > 30 ? txt.slice(0,29) + "…" : txt;
+      const w = short.length * 5.9 + 12;
+      const bg = el("rect",{x:lx-w/2, y:ly-9, width:w, height:16, rx:5, class:"elabel-bg"});
+      const tx = el("text",{x:lx, y:ly+3, class:"elabel", "text-anchor":"middle"});
+      tx.textContent = short;
+      const ti = el("title"); ti.textContent = txt; tx.appendChild(ti);
+      bg.dataset.i = e._i; tx.dataset.i = e._i;
+      gL.appendChild(bg); gL.appendChild(tx);
+    }
+    if(e._of > 1){
+      const px = ax + (e._ord - (e._of + 1) / 2) * 20, py = ay + 14;
+      const c = el("circle",{cx:px, cy:py, r:7.5, fill:back?"var(--edge-back)":(e.when?"var(--edge-cond)":"var(--edge)")});
+      const o = el("text",{x:px, y:py+3.2, class:"ord","text-anchor":"middle"});
+      o.textContent = e._ord;
+      c.dataset.i = e._i; o.dataset.i = e._i;
+      gL.appendChild(c); gL.appendChild(o);
+    }
+  });
+
+  // nodes
+  model.nodes.forEach(n => {
+    if(n._x === undefined) return;
+    const meta = TYPES[n.type] || {label:n.type, color:"#7A8B98", short:n.type};
+    const g = el("g",{class:"node-hit", transform:`translate(${n._x},${n._y})`, tabindex:"0", role:"button"});
+    g.dataset.id = n.id;
+
+    g.appendChild(el("rect",{x:0,y:0,width:NW,height:NH,rx:11,class:"node-box"}));
+    g.appendChild(el("path",{d:`M0,11 a11,11 0 0 1 11,-11 h${NW-22} a11,11 0 0 1 11,11 v3 h-${NW} z`, fill:meta.color}));
+
+    const idw = n.id.length * 6.6 + 14;
+    g.appendChild(el("rect",{x:11,y:11,width:idw,height:16,rx:4.5,fill:meta.color}));
+    const idt = el("text",{x:11+idw/2,y:22.5,class:"node-id","text-anchor":"middle"});
+    idt.textContent = n.id; g.appendChild(idt);
+
+    const sub = el("text",{x:11+idw+9,y:22.5,class:"node-sub"});
+    sub.textContent = meta.short; g.appendChild(sub);
+
+    const flags = [];
+    if(n.id === model.start) flags.push("start");
+    else if(!n._out || !n._out.length) flags.push("end");
+    if(storageKeys(n).length) flags.push("stores");
+    if(flags.length){
+      const f = el("text",{x:NW-11,y:22.5,class:"flag","text-anchor":"end"});
+      f.textContent = flags.join(" · "); g.appendChild(f);
+    }
+
+    wrapText(t(n.title), 27, 2).forEach((line, i) => {
+      const tx = el("text",{x:11,y:44+i*15,class:"node-title"});
+      tx.textContent = line; g.appendChild(tx);
+    });
+
+    const ti = el("title");
+    ti.textContent = n.id + " — " + meta.label + "\n" + t(n.title);
+    g.appendChild(ti);
+
+    g.addEventListener("click", ev => { ev.stopPropagation(); select(n.id); });
+    g.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); select(n.id); } });
+    gN.appendChild(g);
+  });
+}
+
+/* ---- highlight ---- */
+function highlight(){
+  const nodes = document.querySelectorAll(".node-hit");
+  const paths = document.querySelectorAll(".edge");
+  const labels = document.querySelectorAll(".elabel,.elabel-bg,.ord,circle[data-i]");
+  if(!selected){
+    nodes.forEach(n => n.classList.remove("dim","sel"));
+    paths.forEach(p => p.classList.remove("dim","hot"));
+    labels.forEach(l => l.classList.remove("dim"));
+    paths.forEach(p => resetMarker(p));
+    return;
+  }
+  const near = new Set([selected]);
+  const hotEdges = new Set();
+  model.edges.forEach(e => {
+    if(!e._valid) return;
+    if(e.from === selected){ near.add(e.to); hotEdges.add(e._i); }
+    if(e.to === selected){ near.add(e.from); hotEdges.add(e._i); }
+  });
+  nodes.forEach(n => {
+    const id = n.dataset.id;
+    n.classList.toggle("sel", id === selected);
+    n.classList.toggle("dim", !near.has(id));
+  });
+  paths.forEach(p => {
+    const hot = hotEdges.has(Number(p.dataset.i));
+    p.classList.toggle("hot", hot);
+    p.classList.toggle("dim", !hot);
+    hot ? p.setAttribute("marker-end","url(#ar-hot)") : resetMarker(p);
+  });
+  labels.forEach(l => l.classList.toggle("dim", !hotEdges.has(Number(l.dataset.i))));
+}
+function resetMarker(p){
+  const back = p.classList.contains("back"), cond = p.classList.contains("cond");
+  p.setAttribute("marker-end", `url(#ar${back?"-back":(cond?"-cond":"")})`);
+}
+
+/* ============================================================
+   4. Pan and zoom
+   ============================================================ */
+
+const view = {x:0, y:0, k:1};
+const vp = document.getElementById("viewport");
+const stage = document.getElementById("stage");
+function applyView(){ vp.setAttribute("transform", `translate(${view.x},${view.y}) scale(${view.k})`); }
+
+function fit(animate){
+  const r = stage.getBoundingClientRect();
+  const pad = 70;
+  const w = model.width + pad*2, h = model.height + pad*2;
+  const k = Math.min(r.width / w, r.height / h, 1.25);
+  view.k = Math.max(k, .12);
+  view.x = (r.width - model.width * view.k) / 2;
+  view.y = (r.height - model.height * view.k) / 2 + 20 * view.k;
+  applyView();
+}
+
+let drag = null;
+stage.addEventListener("pointerdown", e => {
+  if(e.target.closest(".node-hit")) return;
+  drag = {x:e.clientX, y:e.clientY, vx:view.x, vy:view.y};
+  stage.classList.add("dragging");
+  stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener("pointermove", e => {
+  if(!drag) return;
+  view.x = drag.vx + (e.clientX - drag.x);
+  view.y = drag.vy + (e.clientY - drag.y);
+  applyView();
+});
+["pointerup","pointercancel"].forEach(ev => stage.addEventListener(ev, e => {
+  if(drag && Math.abs(e.clientX-drag.x) < 3 && Math.abs(e.clientY-drag.y) < 3) select(null);
+  drag = null; stage.classList.remove("dragging");
+}));
+stage.addEventListener("wheel", e => {
+  e.preventDefault();
+  const r = stage.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const f = Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0016));
+  const k = Math.min(3, Math.max(.1, view.k * f));
+  view.x = mx - (mx - view.x) * (k / view.k);
+  view.y = my - (my - view.y) * (k / view.k);
+  view.k = k; applyView();
+}, {passive:false});
+
+// pinch on touch screens
+let pinch = null;
+stage.addEventListener("touchstart", e => {
+  if(e.touches.length === 2){
+    const [a,b] = e.touches;
+    pinch = {d: Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY), k: view.k};
+  }
+}, {passive:true});
+stage.addEventListener("touchmove", e => {
+  if(pinch && e.touches.length === 2){
+    e.preventDefault();
+    const [a,b] = e.touches;
+    const d = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+    view.k = Math.min(3, Math.max(.1, pinch.k * d / pinch.d));
+    applyView();
+  }
+}, {passive:false});
+stage.addEventListener("touchend", () => { pinch = null; }, {passive:true});
+
+function centerOn(id){
+  const n = model.byId.get(id);
+  if(!n || n._x === undefined) return;
+  const r = stage.getBoundingClientRect();
+  const panelW = document.getElementById("panel").classList.contains("open") && r.width > 760 ? 430 : 0;
+  view.x = (r.width - panelW)/2 - (n._x + NW/2) * view.k;
+  view.y = r.height/2 - (n._y + NH/2) * view.k;
+  applyView();
+}
+
+/* ============================================================
+   5. Minimal markdown
+   ============================================================ */
+
+function md(src){
+  const formulas = [];
+  // Markdown may carry simple HTML (e.g. <img>), so the text is not escaped; code is.
+  let s = protectMath(src == null ? "" : String(src), formulas).replace(/\r\n?/g,"\n");
+  const blocks = [];
+  s = s.replace(/```([\w-]*)\n([\s\S]*?)```/g, (m, lg, code) => {
+    blocks.push('<pre><code>' + esc(code.replace(/\n$/,"")) + '</code></pre>');
+    return "\u0000B" + (blocks.length-1) + "\u0000";
+  });
+
+  const lines = s.split("\n");
+  const out = [];
+  let list = null, para = [], quote = [];
+
+  const flushPara = () => { if(para.length){ out.push("<p>" + inline(para.join(" ")) + "</p>"); para = []; } };
+  const flushList = () => { if(list){ out.push("<"+list.tag+">" + list.items.map(i=>"<li>"+inline(i)+"</li>").join("") + "</"+list.tag+">"); list = null; } };
+  const flushQuote = () => { if(quote.length){ out.push("<blockquote>" + inline(quote.join(" ")) + "</blockquote>"); quote = []; } };
+  const flushAll = () => { flushPara(); flushList(); flushQuote(); };
+
+  for(let raw of lines){
+    const line = raw.replace(/\s+$/,"");
+    if(/^\u0000B\d+\u0000$/.test(line.trim())){ flushAll(); out.push(line.trim()); continue; }
+    if(!line.trim()){ flushAll(); continue; }
+    let m;
+    if((m = line.match(/^(#{1,6})\s+(.*)$/))){ flushAll(); const lv = Math.min(m[1].length,3); out.push("<h"+lv+">"+inline(m[2])+"</h"+lv+">"); continue; }
+    if(/^\s*([-*_])\s*\1\s*\1[\s\S]*$/.test(line) && line.replace(/[\s\-*_]/g,"") === ""){ flushAll(); out.push("<hr>"); continue; }
+    if((m = line.match(/^\s*>\s?(.*)$/))){ flushPara(); flushList(); quote.push(m[1]); continue; }
+    if((m = line.match(/^\s*[-*+]\s+(.*)$/))){ flushPara(); flushQuote();
+      if(!list || list.tag !== "ul"){ flushList(); list = {tag:"ul", items:[]}; }
+      list.items.push(m[1]); continue; }
+    if((m = line.match(/^\s*\d+[.)]\s+(.*)$/))){ flushPara(); flushQuote();
+      if(!list || list.tag !== "ol"){ flushList(); list = {tag:"ol", items:[]}; }
+      list.items.push(m[1]); continue; }
+    if(/^\s*\|.*\|\s*$/.test(line)){ flushPara(); flushQuote(); flushList();
+      const r = row(line);
+      if(r) out.push(r);
+      else if(out.length) out[out.length-1] = out[out.length-1].replace(/<td>/g,"<th>").replace(/<\/td>/g,"</th>");
+      continue; }
+    flushList(); flushQuote(); para.push(line.trim());
+  }
+  flushAll();
+  let html = out.join("\n");
+  html = html.replace(/(<tr>[\s\S]*?<\/tr>\n?)+/g, m => "<table>" + m.replace(/\n/g,"") + "</table>");
+  html = html.replace(/\u0000B(\d+)\u0000/g, (m,i) => blocks[Number(i)]);
+  html = html.replace(/\u0000M(\d+)\u0000/g, (m,i) => mathSpan(formulas[Number(i)]));
+  return html;
+
+  function row(line){
+    const cells = line.trim().replace(/^\||\|$/g,"").split("|").map(c => c.trim());
+    if(cells.every(c => /^:?-{2,}:?$/.test(c))) return "";
+    return "<tr>" + cells.map(c => "<td>" + inline(c) + "</td>").join("") + "</tr>";
+  }
+  function inline(x){
+    const codes = [];
+    return x
+      .replace(/`([^`]+)`/g, (m, code) => { codes.push("<code>" + esc(code) + "</code>"); return "\u0000C" + (codes.length-1) + "\u0000"; })
+      .replace(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g, (m,a,u) => /^(https?:|data:image\/)/i.test(u) ? '<img src="'+a2(u)+'" alt="'+esc(a)+'">' : a)
+      .replace(/\[([^\]]+)\]\(([^)\s]+)[^)]*\)/g, (m,txt,u) => /^(https?:|mailto:)/i.test(u) ? '<a href="'+a2(u)+'" target="_blank" rel="noopener noreferrer">'+txt+'</a>' : txt)
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+      .replace(/(^|\W)_([^_\n]+)_(?=\W|$)/g, "$1<em>$2</em>")
+      .replace(/\u0000C(\d+)\u0000/g, (m, i) => codes[Number(i)]);
+  }
+  function a2(u){ return u.replace(/"/g,"%22"); }
+}
+
+/* ---- LaTeX, delimited as the schema describes and typeset with KaTeX ---- */
+const KATEX = {
+  base: "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.18.6/",
+  js:  "sha384-7jGyG5zFwmEamqNWdCbpsPn+GTWEis3lnV7X/jXHyhFpJG7ExABLyMapabg8F4+p",
+  css: "sha384-M59ezskvvpvT+a+C1x088YJ3DVmK+wZdX0UkVKalOI4Qi5Nwv0WrvpqHcfa2HQqB"
+};
+// $$…$$ and \[…\] are blocks; \(…\) and $…$ are inline. A single $ does not open after a
+// letter or digit, nor before a space, and does not close before a digit: "R$ 10" stays text.
+const MATH = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|(?<![\\$\p{L}\p{N}])\$(?![\s$])((?:\\.|[^$\\\n])+?)(?<![\s\\])\$(?!\p{N})/gu;
+let katexLoading = null;
+
+// Swaps each formula for a placeholder, leaving fenced and inline code untouched.
+function protectMath(src, formulas){
+  return src.split(/(```[\w-]*\n[\s\S]*?```)/).map((part, i) => i % 2 ? part :
+    part.split(/(`[^`]+`)/).map((piece, j) => j % 2 ? piece :
+      piece.replace(MATH, (source, block, bracket, paren, dollar) => {
+        formulas.push({source, tex: block ?? bracket ?? paren ?? dollar, isDisplay: block !== undefined || bracket !== undefined});
+        return "\u0000M" + (formulas.length-1) + "\u0000";
+      })).join("")).join("");
+}
+
+// Until KaTeX arrives, or when it cannot be fetched, the formula shows as its source.
+function mathSpan(f){
+  if(!f) return "";
+  return '<span class="math' + (f.isDisplay ? " math-display" : "") + '" data-tex="' + esc(f.tex) + '"' +
+    (f.isDisplay ? " data-display" : "") + ">" + esc(f.source) + "</span>";
+}
+
+function loadKatex(){
+  return katexLoading ??= new Promise((resolve, reject) => {
+    if(window.katex) return resolve(window.katex);
+    const css = Object.assign(document.createElement("link"),
+      {rel:"stylesheet", href:KATEX.base + "katex.min.css", integrity:KATEX.css, crossOrigin:"anonymous", referrerPolicy:"no-referrer"});
+    const js = Object.assign(document.createElement("script"),
+      {src:KATEX.base + "katex.min.js", integrity:KATEX.js, crossOrigin:"anonymous", referrerPolicy:"no-referrer",
+       onload: () => window.katex ? resolve(window.katex) : reject(new Error("KaTeX did not load")),
+       onerror: () => reject(new Error("KaTeX did not load"))});
+    document.head.append(css, js);
+  });
+}
+
+function typesetMath(root){
+  const spans = root.querySelectorAll(".math:not([data-typeset])");
+  if(!spans.length) return;
+  loadKatex().then(katex => spans.forEach(span => {
+    if(!span.isConnected || span.hasAttribute("data-typeset")) return;
+    span.setAttribute("data-typeset", "");
+    try{ katex.render(span.dataset.tex, span, {displayMode: span.hasAttribute("data-display"), throwOnError: false}); }catch(err){}
+  }), () => {});
+}
+
+function promptHtml(text){
+  return esc(text).replace(/\{\{\s*STORAGE\s*:\s*([^}]+?)\s*\}\}/g,
+    (m,k) => '<span class="tok">{{ ' + k + ' }}</span>');
+}
+
+/* ============================================================
+   6. Inspector
+   ============================================================ */
+
+const panel = document.getElementById("panel");
+const pBody = document.getElementById("pBody");
+
+function select(id){
+  selected = id;
+  highlight();
+  if(!id){ panel.classList.remove("open"); return; }
+  const n = model.byId.get(id);
+  if(!n) return;
+  const meta = TYPES[n.type] || {label:n.type, color:"#7A8B98"};
+
+  const pt = document.getElementById("pType");
+  pt.textContent = n.id + " · " + meta.label;
+  pt.style.background = meta.color;
+  document.getElementById("pTitle").textContent = t(n.title) || "(untitled)";
+
+  const sec = (course.info.sections || []).find(s => s.number === (n.section || 1));
+  const bits = [];
+  bits.push(sec ? "Section " + sec.number + ": " + t(sec.title) : "Section " + (n.section || 1));
+  if(n.id === model.start) bits.push("start node");
+  if(n._orphan) bits.push("unreachable");
+  document.getElementById("pWhere").textContent = bits.join(" · ");
+
+  pBody.innerHTML = contentHtml(n) + keysHtml(n) + linksHtml(n);
+  typesetMath(pBody);
+  pBody.scrollTop = 0;
+  panel.classList.add("open");
+
+  pBody.querySelectorAll(".toggle").forEach(b => b.addEventListener("click", () => {
+    const box = document.getElementById(b.dataset.target);
+    const on = box.hidden;
+    box.hidden = !on;
+    b.textContent = on ? b.dataset.off : b.dataset.on;
+  }));
+  pBody.querySelectorAll(".lnk").forEach(b => b.addEventListener("click", () => {
+    select(b.dataset.go); centerOn(b.dataset.go);
+  }));
+  pBody.querySelectorAll("iframe[data-src]").forEach(f => { f.srcdoc = f.dataset.src; });
+}
+
+function section(title, inner){
+  return '<section class="sec"><h3>' + title + '</h3>' + inner + '</section>';
+}
+
+function contentHtml(n){
+  const c = n.content || {};
+  switch(n.type){
+    case "static-md": {
+      const raw = t(c.item);
+      return section("Markdown content",
+        '<div class="prose">' + md(raw) + '</div>' +
+        srcToggle("src-"+n.id, raw));
+    }
+    case "static-html": {
+      const raw = t(c.item);
+      return section("Prebuilt HTML (sandboxed)",
+        '<iframe sandbox data-src="' + esc(raw) + '" title="HTML preview"></iframe>' +
+        srcToggle("src-"+n.id, raw));
+    }
+    case "dynamic-md":
+    case "dynamic-html": {
+      const p = t(c.prompt);
+      const what = n.type === "dynamic-md" ? "markdown" : "HTML";
+      return section("Prompt the AI runs to generate the " + what,
+        '<div class="code">' + promptHtml(p) + '</div>');
+    }
+    case "essay": {
+      return section("Instructions for the student", '<div class="prose">' + md(t(c.instructions)) + '</div>') +
+             section("Grading prompt (hidden from the student)",
+               '<div class="code">' + promptHtml(c.prompt || "") + '</div>');
+    }
+    case "quiz": {
+      const items = c.items || [];
+      const qs = items.map((q, i) => {
+        const opts = (q.options || []).map(o =>
+          '<li><span class="mark' + (o.correct ? " ok" : "") + '">' +
+          (o.correct ? "correct" : esc(o.value)) + '</span><span>' + md(t(o.label)).replace(/^<p>|<\/p>$/g,"") + '</span></li>').join("");
+        const fb = t(q.feedback);
+        return '<div class="q">' +
+          '<div class="stem">' + (i+1) + '. ' + md(t(q.question)).replace(/^<p>|<\/p>$/g,"") + '</div>' +
+          '<ul class="opts">' + opts + '</ul>' +
+          (q.key ? '<div class="qmeta">Stores the chosen option in <span class="key">' + n.id + "." + esc(q.key) + '</span></div>' : "") +
+          (fb ? '<div class="qmeta">Feedback: ' + md(fb).replace(/^<p>|<\/p>$/g,"") + '</div>' : "") +
+        '</div>';
+      }).join("");
+      return section(items.length + (items.length === 1 ? " question" : " questions"), qs);
+    }
+    case "form": {
+      const fs = (c.items || []).map(f => {
+        const opts = (f.options || []).map(o =>
+          '<li><span class="mark">' + esc(o.value) + '</span><span>' + md(t(o.label)).replace(/^<p>|<\/p>$/g,"") + '</span></li>').join("");
+        return '<div class="q">' +
+          '<div class="field-head"><span class="tag">' + esc(f.type) + '</span>' +
+          (f.required ? '<span class="tag req">required</span>' : "") +
+          '<span class="key">' + n.id + "." + esc(f.key) + '</span></div>' +
+          '<div class="stem">' + md(t(f.label)).replace(/^<p>|<\/p>$/g,"") + '</div>' +
+          (opts ? '<ul class="opts">' + opts + '</ul>' : "") +
+        '</div>';
+      }).join("");
+      return section("Form fields", fs);
+    }
+    case "bool": {
+      const yes = t(c["yes-label"]) || "Yes";
+      const no  = t(c["no-label"]) || "No";
+      const def = c.default;
+      return section("Question",
+        '<div class="prose">' + md(t(c.question)) + '</div>' +
+        '<ul class="opts" style="margin-top:10px">' +
+          '<li><span class="mark' + (def === true ? " ok" : "") + '">yes</span><span>' + esc(yes) + (def===true?" (preselected)":"") + '</span></li>' +
+          '<li><span class="mark' + (def === false ? " ok" : "") + '">no</span><span>' + esc(no) + (def===false?" (preselected)":"") + '</span></li>' +
+        '</ul>' +
+        (def === undefined ? '<div class="qmeta">No answer is preselected: the student has to choose.</div>' : ""));
+    }
+    default:
+      return section("Content", '<div class="code">' + esc(JSON.stringify(n.content, null, 2)) + '</div>');
+  }
+}
+
+function srcToggle(id, raw){
+  return '<button class="toggle" data-target="' + id + '" data-on="Show source" data-off="Hide source">Show source</button>' +
+         '<div class="code" id="' + id + '" hidden style="margin-top:8px">' + esc(raw) + '</div>';
+}
+
+function keysHtml(n){
+  const keys = storageKeys(n);
+  if(!keys.length) return "";
+  return section("Data this node stores",
+    '<div class="keys">' + keys.map(k => '<span class="key">' + esc(k) + '</span>').join("") + '</div>');
+}
+
+function linkRow(otherId, edge, dir){
+  const o = model.byId.get(otherId);
+  const meta = TYPES[o.type] || {color:"#7A8B98"};
+  const cond = edge.when
+    ? '<span class="cond">' + esc(condText(edge.when)) + '</span>'
+    : '<span class="cond fallback">' + (edge._of > 1 ? "else (default path)" : "no condition") + '</span>';
+  const ord = dir === "out" && edge._of > 1 ? "#" + edge._ord + " · " : "";
+  return '<button class="lnk" data-go="' + esc(otherId) + '">' +
+    '<span class="nid" style="background:' + meta.color + '">' + esc(otherId) + '</span>' +
+    '<span class="txt">' + ord + esc(t(o.title)) + cond + '</span></button>';
+}
+
+function linksHtml(n){
+  const outs = (n._out || []);
+  const ins  = (n._in || []);
+  let html = "";
+  html += section("Goes to" + (outs.length > 1 ? " — evaluated top to bottom, the first that holds" : ""),
+    outs.length ? '<div class="links">' + outs.map(e => linkRow(e.to, e, "out")).join("") + '</div>'
+                : '<p class="empty">No edge leaves this node: it is an end of the course.</p>');
+  html += section("Comes from",
+    ins.length ? '<div class="links">' + ins.map(e => linkRow(e.from, e, "in")).join("") + '</div>'
+               : '<p class="empty">' + (n.id === model.start ? "This is the start node of the course." : "No edge reaches this node.") + '</p>');
+  return html;
+}
+
+document.getElementById("pClose").addEventListener("click", () => select(null));
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape") select(null);
+  if(e.key === "f" && !e.target.closest("input,select,textarea")) fit();
+});
+
+/* ============================================================
+   7. Rendering the course
+   ============================================================ */
+
+function render(data){
+  course = data;
+  const info = data.info || {};
+  const langs = [info["source-language"]].concat(info["other-languages"] || []).filter(Boolean);
+  if(!langs.length) langs.push("--");
+  if(!langs.includes(lang)) lang = langs[0];
+
+  const sel = document.getElementById("lang");
+  sel.innerHTML = langs.map(l => '<option value="' + esc(l) + '"' + (l===lang?" selected":"") + ">" + esc(l) + "</option>").join("");
+  sel.hidden = langs.length < 2;
+
+  document.getElementById("courseTitle").textContent = t(info.title) || "Untitled course";
+  document.getElementById("courseMeta").textContent =
+    [info.author, info.version ? "v"+info.version : "", info.date].filter(Boolean).join("  ·  ");
+
+  model = buildModel(data);
+  document.getElementById("stats").textContent =
+    model.nodes.length + " nodes · " + model.edges.filter(e=>e._valid).length + " edges";
+
+  draw();
+  selected = null;
+  panel.classList.remove("open");
+  highlight();
+  fit();
+  showIssues(model.issues);
+  buildLegend();
+}
+
+function buildLegend(){
+  const used = new Set(model.nodes.map(n => n.type));
+  document.getElementById("legendList").innerHTML =
+    Object.keys(TYPES).filter(k => used.has(k)).map(k =>
+      '<li><span class="swatch" style="background:' + TYPES[k].color + '"></span>' + TYPES[k].label + '</li>').join("");
+  document.getElementById("legendRule").innerHTML =
+    'Green line: conditional edge. Dashed red line: goes back to an earlier node. ' +
+    'The number on an outgoing edge is the order in which its condition is tested.';
+}
+
+function showIssues(list){
+  const box = document.getElementById("issues");
+  if(!list.length){ box.classList.remove("show"); return; }
+  document.getElementById("issuesList").innerHTML = list.map(i => "<li>" + esc(i) + "</li>").join("");
+  box.classList.add("show");
+}
+document.getElementById("issuesClose").addEventListener("click", () =>
+  document.getElementById("issues").classList.remove("show"));
+
+document.getElementById("lang").addEventListener("change", e => {
+  lang = e.target.value;
+  const keep = selected;
+  draw(); highlight();
+  if(keep) select(keep);
+});
+document.getElementById("fit").addEventListener("click", () => fit());
+window.addEventListener("resize", () => { if(model) fit(); });
+
+/* ============================================================
+   8. The course (replaced when the map is built)
+   ============================================================ */
+
+const COURSE = {"$schema": "https://edukors.org/graph/schema/v1/", "info": {"course-id": "a92bcbb0-0c27-49c6-8b84-0c7d24da6634", "source-language": "en", "other-languages": ["pt", "zh"], "title": [{"lang": "en", "text": "Cats of the World"}, {"lang": "pt", "text": "Gatos do Mundo"}, {"lang": "zh", "text": "世界猫科动物"}], "description": [{"lang": "en", "text": "A journey through the planet's cats, from savanna lions to the cat on your sofa. A short adaptive course: the path changes with your choices and answers."}, {"lang": "pt", "text": "Uma viagem pelos felinos do planeta, dos leões da savana ao gato do sofá. Curso curto e adaptativo: o caminho muda conforme suas escolhas e respostas."}, {"lang": "zh", "text": "一段穿越地球猫科动物的旅程，从草原上的狮子到你沙发上的猫。一门简短的自适应课程：路径会随你的选择和答案而改变。"}], "author": "Mauricio Garcia", "version": "1.2.0", "date": "2026-09-17", "start": "sm1", "sections": [{"number": 1, "title": [{"lang": "en", "text": "Arrival and choice"}, {"lang": "pt", "text": "Chegada e escolha"}, {"lang": "zh", "text": "到达与选择"}]}, {"number": 2, "title": [{"lang": "en", "text": "Check and personalisation"}, {"lang": "pt", "text": "Verificação e personalização"}, {"lang": "zh", "text": "检验与个性化"}]}, {"number": 3, "title": [{"lang": "en", "text": "Delivery and closing"}, {"lang": "pt", "text": "Entrega e encerramento"}, {"lang": "zh", "text": "提交与结课"}]}], "system-prompt": "You are a friendly natural-history guide in a short course about the cats of the world (family Felidae) for a general, international audience with no biology background. Be warm, concrete and accurate; prefer well-established facts about species, habitats and behaviour, and say 'roughly' when numbers vary between sources. Never invent image URLs. Use metric units. Answer in the student's language."}, "nodes": [{"id": "sm1", "type": "static-md", "section": 1, "title": [{"lang": "en", "text": "Welcome to the world of cats"}, {"lang": "pt", "text": "Bem-vindo ao mundo dos felinos"}, {"lang": "zh", "text": "欢迎来到猫科动物的世界"}], "content": {"item": [{"lang": "en", "text": "## Welcome to the world of cats\n\n![Lion resting in Namibia](https://commons.wikimedia.org/wiki/Special:FilePath/Lion%20waiting%20in%20Namibia.jpg?width=800)\n\nThere are about 40 species of cats on the planet, and they live on every continent except Antarctica and Oceania (where they arrived only in human hands). All of them descend from a common ancestor that lived some 10 million years ago, so they share one \"blueprint\": retractable claws, teeth built for slicing meat, excellent night vision and a body designed for the ambush. A 190 kg lion and a 4 kg sofa cat are, at heart, variations on the same theme.\n\nThis course is a journey through that group. You will meet three families of cats:\n\n- **The big cats**: lion, tiger, jaguar, leopard, snow leopard, puma and cheetah.\n- **The small wild cats**: lynx, serval, Pallas's cat, sand cat and European wildcat, among others that rarely make it into documentaries.\n- **Domestic cats**: how the cat moved into our homes some 10,000 years ago and spread around the world on ships.\n\n### How the course works\n\nThe path is not the same for everyone. In the next step you say which group you want to explore first, and the course opens that chapter. Then comes a quick check: if you do well, you move straight on; if not, you get a reinforcement written specifically for what you got wrong. Later, you can ask for a visual card with the cat that best fits your profile, you write a short text and receive an assessment. At the end, you can come back and explore another group, as many times as you like.\n\nBy the end, you will be able to:\n\n1. Tell big cats from small cats and say where each one lives.\n2. Explain what makes cats such efficient hunters.\n3. Tell the story of the cat's domestication.\n4. Argue, in writing, which cat you would \"adopt\" and why.\n\nLet's begin."}, {"lang": "pt", "text": "## Bem-vindo ao mundo dos felinos\n\n![Leão descansando na Namíbia](https://commons.wikimedia.org/wiki/Special:FilePath/Lion%20waiting%20in%20Namibia.jpg?width=800)\n\nExistem cerca de 40 espécies de felinos no planeta, e elas vivem em todos os continentes, exceto a Antártida e a Oceania (onde só chegaram pelas mãos dos humanos). Todas descendem de um ancestral comum que viveu há uns 10 milhões de anos, e por isso compartilham um mesmo \"projeto\": garras retráteis, dentes feitos para cortar carne, visão noturna excelente e um corpo desenhado para a emboscada. Um leão de 190 kg e um gato de sofá de 4 kg são, no fundo, variações do mesmo tema.\n\nEste curso é uma viagem por esse grupo. Você vai conhecer três famílias de felinos:\n\n- **Os grandes felinos**: leão, tigre, onça-pintada, leopardo, leopardo-das-neves, puma e guepardo.\n- **Os pequenos felinos selvagens**: lince, serval, gato-de-pallas, gato-do-deserto e gato-selvagem-europeu, entre outros que raramente aparecem em documentários.\n- **Os gatos domésticos**: como o gato entrou nas casas há uns 10 mil anos e como se espalhou pelo mundo em navios.\n\n### Como o curso funciona\n\nO caminho não é o mesmo para todo mundo. No próximo passo você diz qual grupo quer explorar primeiro, e o curso abre esse capítulo. Depois vem uma verificação rápida: se você acertar bem, segue direto; se não, recebe um reforço escrito sob medida para o que você errou. Mais adiante, você pode pedir um cartão visual com o felino que mais combina com seu perfil, escreve um texto curto e recebe uma avaliação. No fim, pode voltar e explorar outro grupo, quantas vezes quiser.\n\nAo terminar, você vai conseguir:\n\n1. Distinguir os grandes felinos dos pequenos e dizer onde cada um vive.\n2. Explicar o que torna os felinos caçadores tão eficientes.\n3. Contar a história da domesticação do gato.\n4. Argumentar, por escrito, que felino você \"adotaria\" e por quê.\n\nVamos começar."}, {"lang": "zh", "text": "## 欢迎来到猫科动物的世界\n\n![在纳米比亚休息的狮子](https://commons.wikimedia.org/wiki/Special:FilePath/Lion%20waiting%20in%20Namibia.jpg?width=800)\n\n地球上大约有 40 种猫科动物，除南极洲和大洋洲（它们只是随人类到达那里）之外，每个大陆都有它们的身影。所有猫科动物都源自大约 1000 万年前的一个共同祖先，因此共享同一套\"设计图\"：可伸缩的爪子、专为切割肉类而生的牙齿、出色的夜视能力，以及为伏击而设计的身体。一头 190 公斤的狮子和一只 4 公斤的沙发猫，本质上是同一主题的不同变奏。\n\n本课程是一段穿越这个类群的旅程。你将认识三类猫科动物：\n\n- **大型猫科动物**：狮子、老虎、美洲豹、花豹、雪豹、美洲狮和猎豹。\n- **小型野生猫科动物**：猞猁、薮猫、兔狲、沙猫和欧洲野猫等，它们很少出现在纪录片里。\n- **家猫**：大约一万年前猫如何走进人类家庭，又如何随船只传遍世界。\n\n### 课程如何进行\n\n每个人的路径并不相同。下一步你将选择先探索哪个类群，课程会打开相应的章节。接着是一次快速检验：答得好就直接前进；否则你会收到一段专门针对错题写的强化内容。之后，你可以请求一张与你的个人档案最匹配的猫科动物的可视化卡片，再写一篇短文并获得评估。最后，你可以回到起点探索另一个类群，次数不限。\n\n完成课程后，你将能够：\n\n1. 区分大型与小型猫科动物，并说出它们各自的栖息地。\n2. 解释猫科动物为何是如此高效的猎手。\n3. 讲述猫被驯化的历史。\n4. 以书面形式论证你会\"领养\"哪种猫科动物以及原因。\n\n让我们开始吧。"}]}}, {"id": "f1", "type": "form", "section": 1, "title": [{"lang": "en", "text": "Explorer profile"}, {"lang": "pt", "text": "Perfil do explorador"}, {"lang": "zh", "text": "探索者档案"}], "content": {"items": [{"key": "interest", "type": "radio", "required": true, "label": [{"lang": "en", "text": "Which group of cats do you want to explore now?"}, {"lang": "pt", "text": "Qual grupo de felinos você quer explorar agora?"}, {"lang": "zh", "text": "你现在想探索哪一类猫科动物？"}], "options": [{"value": "big", "label": [{"lang": "en", "text": "Big cats"}, {"lang": "pt", "text": "Grandes felinos"}, {"lang": "zh", "text": "大型猫科动物"}]}, {"value": "small", "label": [{"lang": "en", "text": "Small wild cats"}, {"lang": "pt", "text": "Pequenos felinos selvagens"}, {"lang": "zh", "text": "小型野生猫科动物"}]}, {"value": "domestic", "label": [{"lang": "en", "text": "Domestic cats"}, {"lang": "pt", "text": "Gatos domésticos"}, {"lang": "zh", "text": "家猫"}]}]}, {"key": "country", "type": "text-line", "required": false, "label": [{"lang": "en", "text": "Which country are you from? (we use this to pick examples close to you)"}, {"lang": "pt", "text": "De que país você é? (usamos isso para escolher exemplos próximos de você)"}, {"lang": "zh", "text": "你来自哪个国家？（我们会据此选择贴近你的例子）"}]}]}}, {"id": "sh1", "type": "static-html", "section": 1, "title": [{"lang": "en", "text": "Big cats: who is who"}, {"lang": "pt", "text": "Grandes felinos: quem é quem"}, {"lang": "zh", "text": "大型猫科动物：谁是谁"}], "content": {"item": [{"lang": "en", "text": "<h2>Big cats: who is who<\/h2>\n<p>\"Big cat\" is not a strict scientific term. It usually covers the five members of the genus <em>Panthera<\/em> (lion, tiger, jaguar, leopard and snow leopard), which have a flexible throat bone and can therefore <strong>roar<\/strong>, plus the puma and the cheetah, which are big in size but belong to \"small cat\" lineages: they do not roar, but they <strong>purr<\/strong> like a house cat.<\/p>\n<table style=\"width:100%;border-collapse:collapse;font-size:0.95em\">\n<thead><tr style=\"background:#f0e6d8\"><th style=\"padding:6px;text-align:left\">Species<\/th><th style=\"padding:6px;text-align:left\">Where it lives<\/th><th style=\"padding:6px;text-align:left\">Typical weight<\/th><th style=\"padding:6px;text-align:left\">Trademark<\/th><\/tr><\/thead>\n<tbody>\n<tr><td style=\"padding:6px\"><strong>Lion<\/strong><br><em>Panthera leo<\/em><\/td><td style=\"padding:6px\">African savannas; one small population in the Gir Forest, India<\/td><td style=\"padding:6px\">120 to 190 kg<\/td><td style=\"padding:6px\">The only social cat: lives in prides, and the females hunt as a group<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Tiger<\/strong><br><em>Panthera tigris<\/em><\/td><td style=\"padding:6px\">Forests and swamps of Asia, from India to the Russian Far East<\/td><td style=\"padding:6px\">100 to 260 kg<\/td><td style=\"padding:6px\">The largest living cat; each tiger has a unique stripe pattern, like a fingerprint<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Jaguar<\/strong><br><em>Panthera onca<\/em><\/td><td style=\"padding:6px\">From Mexico to Argentina, mainly the Amazon and the Pantanal<\/td><td style=\"padding:6px\">55 to 100 kg<\/td><td style=\"padding:6px\">Strongest bite for its size; an excellent swimmer that hunts caimans<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Leopard<\/strong><br><em>Panthera pardus<\/em><\/td><td style=\"padding:6px\">Africa and much of Asia<\/td><td style=\"padding:6px\">30 to 70 kg<\/td><td style=\"padding:6px\">The most adaptable: lives from deserts to cities; stores its prey up in trees<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Snow leopard<\/strong><br><em>Panthera uncia<\/em><\/td><td style=\"padding:6px\">Mountains of Central Asia, above 3,000 m<\/td><td style=\"padding:6px\">25 to 55 kg<\/td><td style=\"padding:6px\">A tail almost as long as its body, used as a blanket; cannot roar<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Puma<\/strong><br><em>Puma concolor<\/em><\/td><td style=\"padding:6px\">From Canada to Patagonia: the widest range of any land mammal in the Americas<\/td><td style=\"padding:6px\">35 to 80 kg<\/td><td style=\"padding:6px\">Jumps more than 5 m high; purrs<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Cheetah<\/strong><br><em>Acinonyx jubatus<\/em><\/td><td style=\"padding:6px\">Open savannas of Africa; a few dozen in Iran<\/td><td style=\"padding:6px\">35 to 65 kg<\/td><td style=\"padding:6px\">Fastest land animal, close to 100 km/h in short sprints; semi-retractable claws, like running spikes<\/td><\/tr>\n<\/tbody><\/table>\n\n<h3>Three portraits<\/h3>\n<div style=\"display:flex;flex-wrap:wrap;gap:12px\">\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Walking%20tiger%20female.jpg?width=600\" alt=\"Tigress walking through tall grass\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Tigress. The stripes break up her outline in tall vegetation.<\/figcaption><\/figure>\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Standing%20jaguar.jpg?width=600\" alt=\"Standing jaguar\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Jaguar. Note the rosettes with a dot in the middle, which the leopard lacks.<\/figcaption><\/figure>\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Uncia%20uncia.jpg?width=600\" alt=\"Snow leopard\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Snow leopard. Thick fur and a long tail for the mountain cold.<\/figcaption><\/figure>\n<\/div>\n\n<h3>Why they matter<\/h3>\n<p>Big cats sit at the top of the food chain. Where they disappear, herbivores multiply, vegetation changes and rivers can even shift course. That is why they are called <strong>umbrella species<\/strong>: protecting a tiger means protecting the whole forest it hunts in. Today all seven are in decline; the tiger, for example, occupies less than 7% of the range it had a century ago.<\/p>\n<p><small>Images: Wikimedia Commons.<\/small><\/p>"}, {"lang": "pt", "text": "<h2>Grandes felinos: quem é quem<\/h2>\n<p>\"Grande felino\" não é um termo científico rigoroso. Costuma incluir os cinco membros do gênero <em>Panthera<\/em> (leão, tigre, onça-pintada, leopardo e leopardo-das-neves), que têm um osso da garganta flexível e por isso conseguem <strong>rugir<\/strong>, e também o puma e o guepardo, que são grandes no tamanho mas pertencem a linhagens de \"pequenos felinos\": eles não rugem, mas <strong>ronronam<\/strong> como um gato doméstico.<\/p>\n<table style=\"width:100%;border-collapse:collapse;font-size:0.95em\">\n<thead><tr style=\"background:#f0e6d8\"><th style=\"padding:6px;text-align:left\">Espécie<\/th><th style=\"padding:6px;text-align:left\">Onde vive<\/th><th style=\"padding:6px;text-align:left\">Peso típico<\/th><th style=\"padding:6px;text-align:left\">Marca registrada<\/th><\/tr><\/thead>\n<tbody>\n<tr><td style=\"padding:6px\"><strong>Leão<\/strong><br><em>Panthera leo<\/em><\/td><td style=\"padding:6px\">Savanas da África; uma pequena população na floresta de Gir, Índia<\/td><td style=\"padding:6px\">120 a 190 kg<\/td><td style=\"padding:6px\">O único felino social: vive em bandos, e as fêmeas caçam em grupo<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Tigre<\/strong><br><em>Panthera tigris<\/em><\/td><td style=\"padding:6px\">Florestas e pântanos da Ásia, da Índia ao extremo leste da Rússia<\/td><td style=\"padding:6px\">100 a 260 kg<\/td><td style=\"padding:6px\">O maior felino vivo; cada tigre tem um padrão de listras único, como uma impressão digital<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Onça-pintada<\/strong><br><em>Panthera onca<\/em><\/td><td style=\"padding:6px\">Do México à Argentina, sobretudo Amazônia e Pantanal<\/td><td style=\"padding:6px\">55 a 100 kg<\/td><td style=\"padding:6px\">Mordida mais forte em relação ao tamanho; nada muito bem e caça jacarés<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Leopardo<\/strong><br><em>Panthera pardus<\/em><\/td><td style=\"padding:6px\">África e grande parte da Ásia<\/td><td style=\"padding:6px\">30 a 70 kg<\/td><td style=\"padding:6px\">O mais adaptável: vive de desertos a cidades; guarda a presa em cima de árvores<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Leopardo-das-neves<\/strong><br><em>Panthera uncia<\/em><\/td><td style=\"padding:6px\">Montanhas da Ásia Central, acima de 3.000 m<\/td><td style=\"padding:6px\">25 a 55 kg<\/td><td style=\"padding:6px\">Cauda quase do tamanho do corpo, usada como cobertor; não consegue rugir<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Puma<\/strong><br><em>Puma concolor<\/em><\/td><td style=\"padding:6px\">Do Canadá à Patagônia: a maior distribuição de um mamífero terrestre nas Américas<\/td><td style=\"padding:6px\">35 a 80 kg<\/td><td style=\"padding:6px\">Salta mais de 5 m de altura; ronrona<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Guepardo<\/strong><br><em>Acinonyx jubatus<\/em><\/td><td style=\"padding:6px\">Savanas abertas da África; poucas dezenas no Irã<\/td><td style=\"padding:6px\">35 a 65 kg<\/td><td style=\"padding:6px\">Animal terrestre mais rápido, perto de 100 km/h em arrancadas curtas; garras semirretráteis, como travas de corrida<\/td><\/tr>\n<\/tbody><\/table>\n\n<h3>Três retratos<\/h3>\n<div style=\"display:flex;flex-wrap:wrap;gap:12px\">\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Walking%20tiger%20female.jpg?width=600\" alt=\"Tigresa caminhando na grama alta\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Tigresa. As listras quebram a silhueta na vegetação alta.<\/figcaption><\/figure>\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Standing%20jaguar.jpg?width=600\" alt=\"Onça-pintada em pé\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Onça-pintada. Repare nas rosetas com um ponto no meio, que o leopardo não tem.<\/figcaption><\/figure>\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Uncia%20uncia.jpg?width=600\" alt=\"Leopardo-das-neves\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Leopardo-das-neves. Pelagem espessa e cauda longa para o frio das montanhas.<\/figcaption><\/figure>\n<\/div>\n\n<h3>Por que eles importam<\/h3>\n<p>Grandes felinos ficam no topo da cadeia alimentar. Onde eles desaparecem, herbívoros se multiplicam, a vegetação muda e rios chegam a mudar de curso. Por isso são chamados de <strong>espécies guarda-chuva<\/strong>: proteger um tigre significa proteger a floresta inteira em que ele caça. Hoje todos os sete estão em declínio; o tigre, por exemplo, ocupa menos de 7% da área que ocupava há um século.<\/p>\n<p><small>Imagens: Wikimedia Commons.<\/small><\/p>"}, {"lang": "zh", "text": "<h2>大型猫科动物：谁是谁<\/h2>\n<p>\"大型猫科动物\"并不是一个严格的科学术语。它通常包括豹属（<em>Panthera<\/em>）的五个成员——狮子、老虎、美洲豹、花豹和雪豹，它们喉部的骨头较为柔韧，因此能够<strong>吼叫<\/strong>；此外还有美洲狮和猎豹，它们体型很大，但属于\"小型猫科\"谱系：它们不会吼叫，而是像家猫一样<strong>呼噜<\/strong>。<\/p>\n<table style=\"width:100%;border-collapse:collapse;font-size:0.95em\">\n<thead><tr style=\"background:#f0e6d8\"><th style=\"padding:6px;text-align:left\">物种<\/th><th style=\"padding:6px;text-align:left\">栖息地<\/th><th style=\"padding:6px;text-align:left\">典型体重<\/th><th style=\"padding:6px;text-align:left\">标志性特征<\/th><\/tr><\/thead>\n<tbody>\n<tr><td style=\"padding:6px\"><strong>狮子<\/strong><br><em>Panthera leo<\/em><\/td><td style=\"padding:6px\">非洲草原；印度吉尔森林有一个小种群<\/td><td style=\"padding:6px\">120 至 190 公斤<\/td><td style=\"padding:6px\">唯一的群居猫科动物：以狮群生活，雌狮集体狩猎<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>老虎<\/strong><br><em>Panthera tigris<\/em><\/td><td style=\"padding:6px\">亚洲的森林与沼泽，从印度到俄罗斯远东<\/td><td style=\"padding:6px\">100 至 260 公斤<\/td><td style=\"padding:6px\">现存最大的猫科动物；每只老虎的条纹都独一无二，如同指纹<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>美洲豹<\/strong><br><em>Panthera onca<\/em><\/td><td style=\"padding:6px\">从墨西哥到阿根廷，主要在亚马逊和潘塔纳尔<\/td><td style=\"padding:6px\">55 至 100 公斤<\/td><td style=\"padding:6px\">相对体型咬合力最强；游泳好手，会捕食凯门鳄<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>花豹<\/strong><br><em>Panthera pardus<\/em><\/td><td style=\"padding:6px\">非洲和亚洲大部分地区<\/td><td style=\"padding:6px\">30 至 70 公斤<\/td><td style=\"padding:6px\">适应力最强：从沙漠到城市都能生存；会把猎物藏到树上<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>雪豹<\/strong><br><em>Panthera uncia<\/em><\/td><td style=\"padding:6px\">中亚山地，海拔 3000 米以上<\/td><td style=\"padding:6px\">25 至 55 公斤<\/td><td style=\"padding:6px\">尾巴几乎与身体等长，可当作毯子；不会吼叫<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>美洲狮<\/strong><br><em>Puma concolor<\/em><\/td><td style=\"padding:6px\">从加拿大到巴塔哥尼亚：美洲陆生哺乳动物中分布最广<\/td><td style=\"padding:6px\">35 至 80 公斤<\/td><td style=\"padding:6px\">能跳 5 米以上高；会呼噜<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>猎豹<\/strong><br><em>Acinonyx jubatus<\/em><\/td><td style=\"padding:6px\">非洲开阔草原；伊朗尚存几十只<\/td><td style=\"padding:6px\">35 至 65 公斤<\/td><td style=\"padding:6px\">陆地上最快的动物，短距离冲刺接近 100 公里/小时；爪子半伸缩，如同跑鞋钉<\/td><\/tr>\n<\/tbody><\/table>\n\n<h3>三幅肖像<\/h3>\n<div style=\"display:flex;flex-wrap:wrap;gap:12px\">\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Walking%20tiger%20female.jpg?width=600\" alt=\"穿过高草的雌虎\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">雌虎。条纹在高大的植被中打破了它的轮廓。<\/figcaption><\/figure>\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Standing%20jaguar.jpg?width=600\" alt=\"站立的美洲豹\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">美洲豹。注意中间带点的玫瑰斑，花豹没有这一特征。<\/figcaption><\/figure>\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Uncia%20uncia.jpg?width=600\" alt=\"雪豹\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">雪豹。厚实的毛皮和长尾巴用来抵御高山严寒。<\/figcaption><\/figure>\n<\/div>\n\n<h3>它们为何重要<\/h3>\n<p>大型猫科动物位于食物链顶端。它们一旦消失，食草动物就会激增，植被随之改变，甚至河流也可能改道。因此它们被称为<strong>伞护种<\/strong>：保护一只老虎，就意味着保护它狩猎的整片森林。如今这七种都在减少；例如老虎的分布范围已不到一个世纪前的 7%。<\/p>\n<p><small>图片：维基共享资源。<\/small><\/p>"}]}}, {"id": "sm2", "type": "static-md", "section": 1, "title": [{"lang": "en", "text": "Small wild cats"}, {"lang": "pt", "text": "Pequenos felinos selvagens"}, {"lang": "zh", "text": "小型野生猫科动物"}], "content": {"item": [{"lang": "en", "text": "## Small wild cats: the ones nobody sees\n\nOf the planet's roughly 40 cats, only 7 are \"big\". The other 33 are small wild cats, and hardly anyone knows their names. Some fit in the palm of a hand as kittens; the largest, the Eurasian lynx, reaches 30 kg. This chapter introduces five of them, chosen for being very different from one another.\n\n### Eurasian lynx (*Lynx lynx*)\n\n![Eurasian lynx](https://commons.wikimedia.org/wiki/Special:FilePath/Lynx%20lynx%20poing.jpg?width=800)\n\nLives in the cold forests of Europe and Asia, from Scandinavia to Tibet. It has huge furry paws that work like snowshoes, and tufts of hair on its ears that help capture sound. It hunts mainly roe deer and hares. It was wiped out across much of Western Europe and is being reintroduced in Switzerland, Germany and France.\n\n### Serval (*Leptailurus serval*)\n\n![Serval in the Serengeti savanna](https://commons.wikimedia.org/wiki/Special:FilePath/Leptailurus%20serval%20-Serengeti%20National%20Park%2C%20Tanzania-8.jpg?width=800)\n\nThe cat with the longest legs relative to its body. It lives in the wet savannas of Africa and hunts rodents hidden in the grass: it listens with its enormous ears, leaps 2 metres into the air and lands with its front paws on the prey. It has one of the highest hunting success rates among cats, close to 50% of attempts.\n\n### Pallas's cat or manul (*Otocolobus manul*)\n\n![Manul](https://commons.wikimedia.org/wiki/Special:FilePath/Manul1.jpg?width=800)\n\nAn inhabitant of the cold steppes of Mongolia and Central Asia. Its fur is so dense that it looks twice its real size; its ears sit low so it does not show above the rocks, and its pupils are round, unlike the vertical slit of most small cats. It lives at close to 4,000 metres of altitude.\n\n### Sand cat (*Felis margarita*)\n\n![Sand cat](https://commons.wikimedia.org/wiki/Special:FilePath/Persian%20sand%20CAT.jpg?width=800)\n\nThe only cat that lives exclusively in deserts, from the Sahara to Iran. It has fur on the soles of its paws for walking on hot sand and can go months without drinking: it gets all the liquid it needs from its prey. It tolerates from -5 °C at night to over 50 °C by day.\n\n### European wildcat (*Felis silvestris*)\n\n![European wildcat](https://commons.wikimedia.org/wiki/Special:FilePath/Felis%20silvestris%20silvestris.jpg?width=800)\n\nIt looks like a sturdy tabby house cat, with a thick, black-tipped tail. It lives in the forests of Europe and is a close relative of the African wildcat, the direct ancestor of the house cat. Its greatest risk today is interbreeding with domestic cats and disappearing as a pure species.\n\n### What the small ones teach\n\nThe small cats show how a single body plan adapts to extreme environments: snow, desert, steppe, savanna. They are also the least studied and least protected, because they draw less attention than a tiger. Several, like the manul and the sand cat, were photographed in the wild for the first time only this century.\n\n*Images: Wikimedia Commons.*"}, {"lang": "pt", "text": "## Pequenos felinos selvagens: os que ninguém vê\n\nDos cerca de 40 felinos do planeta, só 7 são \"grandes\". Os outros 33 são pequenos felinos selvagens, e quase ninguém conhece o nome deles. Alguns cabem na palma da mão quando filhotes; o maior, o lince-eurasiático, chega a 30 kg. Este capítulo apresenta cinco deles, escolhidos por serem muito diferentes uns dos outros.\n\n### Lince-eurasiático (*Lynx lynx*)\n\n![Lince-eurasiático](https://commons.wikimedia.org/wiki/Special:FilePath/Lynx%20lynx%20poing.jpg?width=800)\n\nVive nas florestas frias da Europa e da Ásia, da Escandinávia ao Tibete. Tem patas enormes e peludas que funcionam como raquetes de neve, e tufos de pelo nas orelhas que ajudam a captar sons. Caça sobretudo corços e lebres. Foi extinto em boa parte da Europa Ocidental e vem sendo reintroduzido na Suíça, na Alemanha e na França.\n\n### Serval (*Leptailurus serval*)\n\n![Serval na savana do Serengeti](https://commons.wikimedia.org/wiki/Special:FilePath/Leptailurus%20serval%20-Serengeti%20National%20Park%2C%20Tanzania-8.jpg?width=800)\n\nO felino das pernas mais longas em relação ao corpo. Vive nas savanas úmidas da África e caça roedores escondidos no capim: escuta com as orelhas enormes, dá um salto de 2 metros de altura e cai com as patas dianteiras em cima da presa. Tem uma das maiores taxas de sucesso de caça entre os felinos, perto de 50% das tentativas.\n\n### Gato-de-pallas ou manul (*Otocolobus manul*)\n\n![Manul](https://commons.wikimedia.org/wiki/Special:FilePath/Manul1.jpg?width=800)\n\nHabitante das estepes frias da Mongólia e da Ásia Central. Pelagem tão densa que ele parece o dobro do tamanho real, orelhas baixas para não aparecer acima das pedras e pupilas redondas, diferentes da fenda vertical da maioria dos gatos pequenos. Vive perto de 4.000 metros de altitude.\n\n### Gato-do-deserto (*Felis margarita*)\n\n![Gato-do-deserto](https://commons.wikimedia.org/wiki/Special:FilePath/Persian%20sand%20CAT.jpg?width=800)\n\nO único felino que vive exclusivamente em desertos, do Saara ao Irã. Tem pelo na sola das patas para andar na areia quente e consegue passar meses sem beber água: tira todo o líquido de que precisa das presas. Suporta de -5 °C à noite a mais de 50 °C de dia.\n\n### Gato-selvagem-europeu (*Felis silvestris*)\n\n![Gato-selvagem-europeu](https://commons.wikimedia.org/wiki/Special:FilePath/Felis%20silvestris%20silvestris.jpg?width=800)\n\nParece um gato doméstico malhado e robusto, com cauda grossa terminada em preto. Vive em florestas da Europa e é parente próximo do gato-selvagem-africano, o ancestral direto do gato de casa. O maior risco para ele hoje é cruzar com gatos domésticos e desaparecer como espécie pura.\n\n### O que os pequenos ensinam\n\nOs pequenos felinos mostram como um mesmo projeto de corpo se adapta a ambientes extremos: neve, deserto, estepe, savana. Eles também são os menos estudados e os menos protegidos, porque atraem menos atenção que um tigre. Vários, como o manul e o gato-do-deserto, só foram fotografados na natureza pela primeira vez neste século.\n\n*Imagens: Wikimedia Commons.*"}, {"lang": "zh", "text": "## 小型野生猫科动物：无人注意的它们\n\n地球上大约 40 种猫科动物中，只有 7 种是\"大型\"的。其余 33 种是小型野生猫科动物，几乎没人知道它们的名字。有些幼崽时能放在手掌上；最大的欧亚猞猁可达 30 公斤。本章介绍其中五种，它们彼此差异极大。\n\n### 欧亚猞猁（*Lynx lynx*）\n\n![欧亚猞猁](https://commons.wikimedia.org/wiki/Special:FilePath/Lynx%20lynx%20poing.jpg?width=800)\n\n生活在欧洲和亚洲的寒冷森林，从斯堪的纳维亚到西藏。它有着巨大而多毛的脚掌，如同雪鞋；耳尖的簇毛有助于捕捉声音。主要捕食狍子和野兔。它曾在西欧大部分地区灭绝，目前正在瑞士、德国和法国重新引入。\n\n### 薮猫（*Leptailurus serval*）\n\n![塞伦盖蒂草原上的薮猫](https://commons.wikimedia.org/wiki/Special:FilePath/Leptailurus%20serval%20-Serengeti%20National%20Park%2C%20Tanzania-8.jpg?width=800)\n\n相对身体而言腿最长的猫科动物。它生活在非洲湿润的草原上，捕食藏在草丛中的啮齿动物：用巨大的耳朵倾听，跃起 2 米高，然后用前爪扑向猎物。它的狩猎成功率在猫科动物中名列前茅，接近 50%。\n\n### 兔狲（*Otocolobus manul*）\n\n![兔狲](https://commons.wikimedia.org/wiki/Special:FilePath/Manul1.jpg?width=800)\n\n蒙古和中亚寒冷草原的居民。毛皮极为浓密，看起来是实际体型的两倍；耳朵位置很低，不会露出岩石之上；瞳孔是圆形的，不同于大多数小型猫科动物的竖缝瞳孔。它生活在接近 4000 米的海拔。\n\n### 沙猫（*Felis margarita*）\n\n![沙猫](https://commons.wikimedia.org/wiki/Special:FilePath/Persian%20sand%20CAT.jpg?width=800)\n\n唯一只生活在沙漠中的猫科动物，从撒哈拉到伊朗。脚掌底部长有毛，便于在滚烫的沙子上行走；可以数月不喝水，所需的全部水分都来自猎物。它能承受夜间 -5 °C 到白天 50 °C 以上的温度。\n\n### 欧洲野猫（*Felis silvestris*）\n\n![欧洲野猫](https://commons.wikimedia.org/wiki/Special:FilePath/Felis%20silvestris%20silvestris.jpg?width=800)\n\n外形像一只健壮的虎斑家猫，尾巴粗大、尾尖为黑色。它生活在欧洲的森林中，是非洲野猫的近亲，而非洲野猫正是家猫的直系祖先。如今它面临的最大风险是与家猫杂交，从而作为纯种消失。\n\n### 小型猫科动物教给我们的\n\n小型猫科动物展示了同一套身体结构如何适应极端环境：雪地、沙漠、草原、稀树草原。它们也是研究最少、保护最少的，因为它们不像老虎那样引人注目。其中一些，如兔狲和沙猫，直到本世纪才首次在野外被拍到。\n\n*图片：维基共享资源。*"}]}}, {"id": "sm3", "type": "static-md", "section": 1, "title": [{"lang": "en", "text": "Domestic cats around the world"}, {"lang": "pt", "text": "Gatos domésticos pelo mundo"}, {"lang": "zh", "text": "世界各地的家猫"}], "content": {"item": [{"lang": "en", "text": "## Domestic cats around the world\n\n![Domestic cat](https://commons.wikimedia.org/wiki/Special:FilePath/Cat%20November%202010-1a.jpg?width=800)\n\nThe house cat (*Felis catus*) is the most numerous cat on the planet: estimates run between 400 and 600 million, on every inhabited continent. And it is the only one that, to a large extent, chose to live with us.\n\n### How the cat moved in\n\nAll domestic cats descend from the **African wildcat** (*Felis lybica*), a small cat of the Middle East and North Africa. The story begins some 10,000 years ago, when the first farmers of the Fertile Crescent started storing grain. Grain attracted mice; mice attracted wildcats. The less fearful cats stayed near the villages, ate well and left more kittens. It was a two-way domestication: nobody \"captured\" the cat, it came closer on its own.\n\nThe oldest evidence of this relationship is a grave in Cyprus, about 9,500 years old, where a human was buried next to a cat. Since there were no wildcats on Cyprus, someone brought it by boat.\n\n### Egypt and the ships\n\nIn Egypt, from around 4,000 years ago, the cat became a pet and an object of worship: the goddess Bastet had a cat's head, and killing a cat could be punished by death. From there cats boarded Phoenician, Roman and, centuries later, Viking ships, always with the same job: controlling rats on board. That is why cats reached practically every port in the world before any other route. DNA studies show that the Egyptian lineage conquered the world precisely because of maritime trade.\n\n### Breeds: four examples from four continents\n\n| Breed | Origin | What sets it apart |\n|---|---|---|\n| **Siamese** | Thailand (formerly Siam), described since the 14th century | Pale body and dark points: the pigment only forms on the cooler parts of the body |\n| **Maine Coon** | Northeastern United States | One of the largest breeds, up to 8 kg, with a dense coat for winter |\n| **Sphynx** | Canada, from 1966 | A natural mutation that suppresses the coat; needs baths and warm clothing |\n| **Egyptian Mau** | Egypt | One of the few naturally spotted breeds, very like the cats in ancient paintings |\n\n![Siamese](https://commons.wikimedia.org/wiki/Special:FilePath/Siam%20lilacpoint.jpg?width=500)\n\n### The cat is still wild\n\nUnlike the dog, the cat has changed little from its ancestor: the genomes of the domestic cat and the African wildcat are almost identical. It still hunts alone, still sleeps 12 to 16 hours a day and still marks territory. Purring, which the big cats lack, serves both to soothe and to ask for food, and there is evidence that its frequency helps bones heal. When a cat \"brings a gift\" to the door, it is doing what the wildcat does with its kittens: teaching them to hunt.\n\n*Images: Wikimedia Commons.*"}, {"lang": "pt", "text": "## Gatos domésticos pelo mundo\n\n![Gato doméstico](https://commons.wikimedia.org/wiki/Special:FilePath/Cat%20November%202010-1a.jpg?width=800)\n\nO gato de casa (*Felis catus*) é o felino mais numeroso do planeta: estima-se algo entre 400 e 600 milhões, em todos os continentes habitados. E é o único que escolheu, em boa parte, viver conosco.\n\n### Como o gato entrou em casa\n\nTodos os gatos domésticos descendem do **gato-selvagem-africano** (*Felis lybica*), um pequeno felino do Oriente Médio e do norte da África. A história começa há uns 10 mil anos, quando os primeiros agricultores do Crescente Fértil passaram a guardar grãos. Os grãos atraíam ratos; os ratos atraíam gatos selvagens. Os gatos menos medrosos ficavam perto das aldeias, comiam bem e deixavam mais filhotes. Foi uma domesticação de mão dupla: ninguém \"capturou\" o gato, ele se aproximou.\n\nA prova mais antiga dessa relação é um túmulo no Chipre, de cerca de 9.500 anos atrás, onde um humano foi enterrado ao lado de um gato. Como não existiam gatos selvagens no Chipre, alguém o levou de barco.\n\n### O Egito e os navios\n\nNo Egito, a partir de uns 4 mil anos atrás, o gato virou animal de estimação e de culto: a deusa Bastet tinha cabeça de gata, e matar um gato podia ser punido com a morte. Dali os gatos embarcaram em navios fenícios, romanos e, séculos depois, vikings, sempre com a mesma função: controlar ratos a bordo. É por isso que os gatos chegaram a praticamente todos os portos do mundo antes de qualquer outra rota. Estudos de DNA mostram que a linhagem egípcia dominou o mundo justamente por causa do comércio marítimo.\n\n### Raças: quatro exemplos de quatro continentes\n\n| Raça | Origem | O que a distingue |\n|---|---|---|\n| **Siamês** | Tailândia (antigo Sião), descrito desde o século XIV | Corpo claro e pontas escuras: o pigmento só se forma nas partes mais frias do corpo |\n| **Maine Coon** | Nordeste dos Estados Unidos | Uma das maiores raças, até 8 kg, pelagem densa para o inverno |\n| **Sphynx** | Canadá, a partir de 1966 | Mutação natural que suprime o pelo; precisa de banho e agasalho |\n| **Mau Egípcio** | Egito | Uma das poucas raças naturalmente pintadas, muito parecida com os gatos das pinturas antigas |\n\n![Siamês](https://commons.wikimedia.org/wiki/Special:FilePath/Siam%20lilacpoint.jpg?width=500)\n\n### O gato continua selvagem\n\nDiferente do cão, o gato mudou pouco em relação ao ancestral: o genoma do gato doméstico e o do gato-selvagem-africano são quase idênticos. Ele ainda caça sozinho, ainda dorme 12 a 16 horas por dia e ainda marca território. O ronronar, que os grandes felinos não têm, serve tanto para acalmar quanto para pedir comida, e há indícios de que a frequência do ronrom ajuda na cicatrização de ossos. Quando um gato \"traz um presente\" para a porta, ele está fazendo o que o gato-selvagem faz com os filhotes: ensinar a caçar.\n\n*Imagens: Wikimedia Commons.*"}, {"lang": "zh", "text": "## 世界各地的家猫\n\n![家猫](https://commons.wikimedia.org/wiki/Special:FilePath/Cat%20November%202010-1a.jpg?width=800)\n\n家猫（*Felis catus*）是地球上数量最多的猫科动物：估计在 4 亿到 6 亿之间，遍布每一个有人居住的大陆。它也是唯一在很大程度上主动选择与我们同住的猫科动物。\n\n### 猫是如何走进家门的\n\n所有家猫都源自**非洲野猫**（*Felis lybica*），一种生活在中东和北非的小型猫科动物。故事始于大约一万年前，新月沃地的第一批农民开始储存谷物。谷物引来老鼠，老鼠引来野猫。不那么胆怯的猫留在村庄附近，吃得好，留下更多后代。这是一场双向的驯化：没有人\"捕获\"猫，是猫自己靠近了人类。\n\n这段关系最古老的证据是塞浦路斯的一座约 9500 年前的墓葬，一个人与一只猫合葬。由于塞浦路斯没有野猫，一定是有人乘船把它带去的。\n\n### 埃及与船只\n\n在埃及，从大约 4000 年前起，猫成为宠物和崇拜对象：女神巴斯特长着猫头，杀猫可能被处死。从那里，猫登上了腓尼基人、罗马人以及几个世纪后维京人的船只，始终担任同一职务：控制船上的老鼠。正因如此，猫比任何其他路线都更早到达了世界上几乎每一个港口。DNA 研究表明，埃及谱系正是凭借海上贸易征服了世界。\n\n### 品种：来自四大洲的四个例子\n\n| 品种 | 起源 | 独特之处 |\n|---|---|---|\n| **暹罗猫** | 泰国（旧称暹罗），自 14 世纪起有记载 | 身体浅色、四肢末端深色：色素只在身体较凉的部位形成 |\n| **缅因猫** | 美国东北部 | 最大的品种之一，可达 8 公斤，毛皮浓密以抵御冬季 |\n| **斯芬克斯猫** | 加拿大，始于 1966 年 | 一种抑制毛发的自然突变；需要洗澡和保暖衣物 |\n| **埃及猫** | 埃及 | 少数天然带斑点的品种之一，与古代绘画中的猫极为相似 |\n\n![暹罗猫](https://commons.wikimedia.org/wiki/Special:FilePath/Siam%20lilacpoint.jpg?width=500)\n\n### 猫依然野性未改\n\n与狗不同，猫相对于祖先的变化很小：家猫与非洲野猫的基因组几乎完全相同。它依然独自狩猎，依然每天睡 12 到 16 小时，依然标记领地。大型猫科动物所没有的呼噜声，既用来安抚，也用来讨食，而且有证据表明其频率有助于骨骼愈合。当一只猫把\"礼物\"带到门口时，它做的正是野猫对幼崽做的事：教它们狩猎。\n\n*图片：维基共享资源。*"}]}}, {"id": "q1", "type": "quiz", "section": 2, "title": [{"lang": "en", "text": "Check"}, {"lang": "pt", "text": "Verificação"}, {"lang": "zh", "text": "检验"}], "content": {"items": [{"key": "habitat", "question": [{"lang": "en", "text": "Which of these cats lives in the mountains of Central Asia, above 3,000 metres, and cannot roar?"}, {"lang": "pt", "text": "Qual destes felinos vive nas montanhas da Ásia Central, acima de 3.000 metros, e não consegue rugir?"}, {"lang": "zh", "text": "以下哪种猫科动物生活在中亚海拔 3000 米以上的山地，并且不会吼叫？"}], "options": [{"value": "jaguar", "label": [{"lang": "en", "text": "Jaguar"}, {"lang": "pt", "text": "Onça-pintada"}, {"lang": "zh", "text": "美洲豹"}], "correct": false}, {"value": "snow-leopard", "label": [{"lang": "en", "text": "Snow leopard"}, {"lang": "pt", "text": "Leopardo-das-neves"}, {"lang": "zh", "text": "雪豹"}], "correct": true}, {"value": "lion", "label": [{"lang": "en", "text": "Lion"}, {"lang": "pt", "text": "Leão"}, {"lang": "zh", "text": "狮子"}], "correct": false}, {"value": "serval", "label": [{"lang": "en", "text": "Serval"}, {"lang": "pt", "text": "Serval"}, {"lang": "zh", "text": "薮猫"}], "correct": false}], "feedback": [{"lang": "en", "text": "The snow leopard lives in the Himalayas and neighbouring ranges. Although it is a Panthera, its throat does not allow a full roar."}, {"lang": "pt", "text": "O leopardo-das-neves vive no Himalaia e nas cadeias vizinhas. Apesar de ser um Panthera, sua garganta não permite o rugido completo."}, {"lang": "zh", "text": "雪豹生活在喜马拉雅山及邻近山脉。虽然属于豹属，但它的喉部结构无法发出完整的吼叫。"}]}, {"key": "ancestor", "question": [{"lang": "en", "text": "Which species do all domestic cats descend from?"}, {"lang": "pt", "text": "De que espécie descendem todos os gatos domésticos?"}, {"lang": "zh", "text": "所有家猫都源自哪个物种？"}], "options": [{"value": "lynx", "label": [{"lang": "en", "text": "Eurasian lynx"}, {"lang": "pt", "text": "Lince-eurasiático"}, {"lang": "zh", "text": "欧亚猞猁"}], "correct": false}, {"value": "european-wildcat", "label": [{"lang": "en", "text": "European wildcat"}, {"lang": "pt", "text": "Gato-selvagem-europeu"}, {"lang": "zh", "text": "欧洲野猫"}], "correct": false}, {"value": "african-wildcat", "label": [{"lang": "en", "text": "African wildcat"}, {"lang": "pt", "text": "Gato-selvagem-africano"}, {"lang": "zh", "text": "非洲野猫"}], "correct": true}, {"value": "manul", "label": [{"lang": "en", "text": "Pallas's cat"}, {"lang": "pt", "text": "Gato-de-pallas"}, {"lang": "zh", "text": "兔狲"}], "correct": false}], "feedback": [{"lang": "en", "text": "The ancestor is the African wildcat (Felis lybica), from the Middle East and North Africa, which approached the first farming villages."}, {"lang": "pt", "text": "O ancestral é o gato-selvagem-africano (Felis lybica), do Oriente Médio e norte da África, que se aproximou das primeiras aldeias agrícolas."}, {"lang": "zh", "text": "祖先是非洲野猫（Felis lybica），来自中东和北非，它主动靠近了最早的农业村落。"}]}, {"key": "social", "question": [{"lang": "en", "text": "Which is the only cat that lives in stable social groups and hunts together?"}, {"lang": "pt", "text": "Qual é o único felino que vive em grupos sociais estáveis e caça em conjunto?"}, {"lang": "zh", "text": "哪种猫科动物是唯一以稳定群体生活并集体狩猎的？"}], "options": [{"value": "lion", "label": [{"lang": "en", "text": "Lion"}, {"lang": "pt", "text": "Leão"}, {"lang": "zh", "text": "狮子"}], "correct": true}, {"value": "tiger", "label": [{"lang": "en", "text": "Tiger"}, {"lang": "pt", "text": "Tigre"}, {"lang": "zh", "text": "老虎"}], "correct": false}, {"value": "cheetah", "label": [{"lang": "en", "text": "Cheetah"}, {"lang": "pt", "text": "Guepardo"}, {"lang": "zh", "text": "猎豹"}], "correct": false}, {"value": "leopard", "label": [{"lang": "en", "text": "Leopard"}, {"lang": "pt", "text": "Leopardo"}, {"lang": "zh", "text": "花豹"}], "correct": false}], "feedback": [{"lang": "en", "text": "Only the lion forms prides. The other cats are solitary, meeting only to mate or raise kittens."}, {"lang": "pt", "text": "Só o leão forma bandos. Os outros felinos são solitários, com encontros apenas para acasalar ou criar filhotes."}, {"lang": "zh", "text": "只有狮子会组成狮群。其他猫科动物都是独居的，只在交配或抚养幼崽时相聚。"}]}, {"key": "water", "question": [{"lang": "en", "text": "Which cat can go months without drinking water, taking its liquid only from its prey?"}, {"lang": "pt", "text": "Qual felino consegue passar meses sem beber água, tirando o líquido apenas das presas?"}, {"lang": "zh", "text": "哪种猫科动物可以数月不喝水，仅从猎物中获取水分？"}], "options": [{"value": "puma", "label": [{"lang": "en", "text": "Puma"}, {"lang": "pt", "text": "Puma"}, {"lang": "zh", "text": "美洲狮"}], "correct": false}, {"value": "maine-coon", "label": [{"lang": "en", "text": "Maine Coon"}, {"lang": "pt", "text": "Maine Coon"}, {"lang": "zh", "text": "缅因猫"}], "correct": false}, {"value": "jaguar", "label": [{"lang": "en", "text": "Jaguar"}, {"lang": "pt", "text": "Onça-pintada"}, {"lang": "zh", "text": "美洲豹"}], "correct": false}, {"value": "sand-cat", "label": [{"lang": "en", "text": "Sand cat"}, {"lang": "pt", "text": "Gato-do-deserto"}, {"lang": "zh", "text": "沙猫"}], "correct": true}], "feedback": [{"lang": "en", "text": "The sand cat lives in the Sahara and the deserts of Asia and gets the water it needs from the prey it hunts."}, {"lang": "pt", "text": "O gato-do-deserto vive no Saara e em desertos da Ásia e obtém a água de que precisa das presas que caça."}, {"lang": "zh", "text": "沙猫生活在撒哈拉和亚洲的沙漠中，所需水分全部来自捕获的猎物。"}]}]}}, {"id": "dm1", "type": "dynamic-md", "section": 2, "title": [{"lang": "en", "text": "Personalised reinforcement"}, {"lang": "pt", "text": "Reforço personalizado"}, {"lang": "zh", "text": "个性化强化"}], "content": {"prompt": [{"lang": "en", "text": "The student just took a 4-question quiz about cats of the world and scored below 70%. Write a short, encouraging remediation in markdown (250-350 words).\n\nInputs:\n- Group the student chose to explore: {{STORAGE: f1.interest}} (big = big cats, small = small wild cats, domestic = domestic cats)\n- Student's country: {{STORAGE: f1.country}}\n- Quiz score: {{STORAGE: q1.percent}}%\n- Their answer to \"which cat lives in Central Asian mountains and cannot roar\": {{STORAGE: q1.habitat}} (correct: snow-leopard)\n- Their answer to \"ancestor of the domestic cat\": {{STORAGE: q1.ancestor}} (correct: african-wildcat)\n- Their answer to \"only social cat\": {{STORAGE: q1.social}} (correct: lion)\n- Their answer to \"cat that can live without drinking water\": {{STORAGE: q1.water}} (correct: sand-cat)\n\nStructure: one sentence acknowledging what they got right; then, for each question they missed, a short paragraph that explains the correct answer and why their choice was a tempting mistake (do not lecture on questions they answered correctly); close with a memorable one-line mnemonic for each missed fact. If a country is given, add one sentence connecting a felid to that country or region (a native species, or a well-known zoo or conservation project) only if you are confident it is accurate. Do not include images. Answer in the student's language."}]}}, {"id": "b1", "type": "bool", "section": 2, "title": [{"lang": "en", "text": "Want a visual portrait?"}, {"lang": "pt", "text": "Quer um retrato visual?"}, {"lang": "zh", "text": "想要一张可视化肖像吗？"}], "content": {"question": [{"lang": "en", "text": "Would you like to see a visual card, generated right now, with the cat that best matches your profile and your answers?"}, {"lang": "pt", "text": "Quer ver um cartão visual, gerado agora, com o felino que mais combina com o seu perfil e as suas respostas?"}, {"lang": "zh", "text": "你想看一张现在生成的可视化卡片，展示与你的档案和答案最匹配的猫科动物吗？"}], "yes-label": [{"lang": "en", "text": "Yes"}, {"lang": "pt", "text": "Sim"}, {"lang": "zh", "text": "是"}], "no-label": [{"lang": "en", "text": "No"}, {"lang": "pt", "text": "Não"}, {"lang": "zh", "text": "否"}]}}, {"id": "dh1", "type": "dynamic-html", "section": 2, "title": [{"lang": "en", "text": "Your ideal cat"}, {"lang": "pt", "text": "Seu felino ideal"}, {"lang": "zh", "text": "你的理想猫科动物"}], "content": {"prompt": [{"lang": "en", "text": "Create a self-contained HTML fragment (no <html>, <head> or <script> tags; inline CSS only) that presents a \"profile card\" of the ONE wild or domestic cat species that best matches this student. Pick the species yourself, with a short justification.\n\nInputs:\n- Group the student chose: {{STORAGE: f1.interest}} (big, small or domestic)\n- Student's country: {{STORAGE: f1.country}}\n- Quiz score: {{STORAGE: q1.percent}}%\n\nRules for choosing: prefer a species from the chosen group; if a country is given and a felid of that group is native to that country or region, prefer it. Do NOT use <img> tags or any image URLs; instead draw a simple decorative header with inline SVG (an abstract cat silhouette or a paw print made from basic shapes).\n\nThe card must contain: species common name and scientific name; a 2-column table with habitat, size, diet, conservation status (IUCN category, if you are confident), and one signature behaviour; a 3-sentence paragraph \"why this cat matches you\"; and a one-line fun fact. Keep it under 300 words, use a warm colour palette (sand, ochre, dark brown), and make it readable on a phone (max-width 100%, no fixed widths). All visible text in the student's language."}]}}, {"id": "e1", "type": "essay", "section": 3, "title": [{"lang": "en", "text": "The cat you would adopt"}, {"lang": "pt", "text": "O felino que você adotaria"}, {"lang": "zh", "text": "你会领养的猫科动物"}], "content": {"instructions": [{"lang": "en", "text": "## The cat you would adopt\n\nImagine you could \"adopt\" a cat, in a symbolic sense: supporting the conservation of a wild species, or actually taking a domestic cat home. Choose **one** species or breed seen in this course (or another you know well) and write a text of **150 to 250 words** defending your choice.\n\nYour text must answer four questions:\n\n1. **Where it lives** and in what kind of environment (habitat).\n2. **What it eats** and how it hunts.\n3. **Which behaviour** makes it special to you.\n4. **What it would need** to live well, whether in the wild or in your home.\n\nWrite in the first person, as if you were convincing a friend. You will receive a score and a comment; if the score is below 60, you will get some tips and can rewrite."}, {"lang": "pt", "text": "## O felino que você adotaria\n\nImagine que você pudesse \"adotar\" um felino, no sentido simbólico: apoiar a conservação de uma espécie selvagem, ou de fato levar um gato doméstico para casa. Escolha **uma** espécie ou raça vista neste curso (ou outra que você conheça bem) e escreva um texto de **150 a 250 palavras** defendendo a escolha.\n\nO texto precisa responder a quatro perguntas:\n\n1. **Onde ele vive** e em que tipo de ambiente (habitat).\n2. **Do que ele se alimenta** e como caça.\n3. **Que comportamento** o torna especial para você.\n4. **Do que ele precisaria** para viver bem, seja na natureza, seja na sua casa.\n\nEscreva em primeira pessoa, como se estivesse convencendo um amigo. Você receberá uma nota e um comentário; se a nota ficar abaixo de 60, vai ganhar algumas dicas e poderá reescrever."}, {"lang": "zh", "text": "## 你会领养的猫科动物\n\n想象你可以在象征意义上\"领养\"一种猫科动物：支持某个野生物种的保护，或者真正把一只家猫带回家。从本课程中出现的物种或品种（或你熟悉的其他物种）中选择**一种**，写一篇 **150 到 250 字**的短文为你的选择辩护。\n\n短文需要回答四个问题：\n\n1. **它生活在哪里**，在什么样的环境中（栖息地）。\n2. **它吃什么**，如何狩猎。\n3. **哪种行为**让它对你来说与众不同。\n4. **它需要什么**才能生活得好，无论是在野外还是在你家里。\n\n用第一人称写作，就像在说服一位朋友。你将收到分数和评语；如果分数低于 60，你会得到一些建议并可以重写。"}], "prompt": "Grade this short persuasive text (target 150-250 words) in which a student of a general-audience course on cats of the world argues for one cat species or breed they would 'adopt' (symbolically, for a wild species, or literally, for a domestic cat). Criteria: habitat correctly described (25); diet and hunting behaviour correctly described (25); one specific, accurate behaviour or trait that justifies the choice (25); realistic statement of what the animal needs to thrive (15); clarity and persuasive tone (10). Do not penalise length slightly outside the range, typos, or the choice of a species not covered in the course as long as the facts are right. Penalise factual errors about the species (e.g. a cheetah that roars, a jaguar in Africa). Return JSON: {\"score\": <0-100>, \"feedback\": \"<3-5 sentences addressed to the student: one thing that works, up to two concrete improvements, and a correction of any factual error, in the student's language>\"}."}}, {"id": "sm4", "type": "static-md", "section": 3, "title": [{"lang": "en", "text": "Tips to improve your text"}, {"lang": "pt", "text": "Dicas para melhorar seu texto"}, {"lang": "zh", "text": "改进短文的建议"}], "content": {"item": [{"lang": "en", "text": "## Tips to improve your text\n\nYour score came in below 60, and that usually happens for one of three reasons. Read the comment you received, see which one applies to you and go back to rewrite.\n\n### 1. One of the four questions went unanswered\n\nThe text needs to say **where** the cat lives, **what** it eats and how it hunts, **which** behaviour makes it special and **what** it needs. A simple trick: write one short paragraph for each question, in that order. Four paragraphs of 40 to 60 words already add up to the requested length.\n\n### 2. A fact is wrong\n\nThe most common mistakes:\n\n- Placing a cat on the wrong continent. The jaguar exists only in the Americas; the leopard only in Africa and Asia; the tiger only in Asia.\n- Mixing up who roars and who purrs. Lion, tiger, jaguar and leopard roar. Puma, cheetah and all the small cats purr.\n- Calling the cheetah \"the strongest cat\". It is the fastest, but light and fragile: it often loses its prey to hyenas and lions.\n- Describing the domestic cat as an animal that \"needs a pack\". It is solitary by nature; what it needs is territory, hiding places and play that mimics hunting.\n\nIf in doubt, reread the chapter of the group you chose.\n\n### 3. The text does not convince\n\nSwapping \"it is really cool\" for a concrete fact changes everything. Compare:\n\n> *Weak:* \"The serval is amazing and I would love to have one.\"\n>\n> *Strong:* \"The serval lands half of its hunts, leaping two metres to come down on a mouse it never saw, only heard. An animal like that needs open space and tall grass, which is why I would support a savanna reserve, not a cage.\"\n\nThe second example shows habitat, behaviour and need in two sentences.\n\n### Before resubmitting\n\n- Count the words: between 150 and 250.\n- Check the scientific name or the correct common name.\n- Read it aloud: if a sentence does not convince you, it will not convince the reader.\n\nWhen you are ready, move on to rewrite."}, {"lang": "pt", "text": "## Dicas para melhorar seu texto\n\nSua nota ficou abaixo de 60, e isso normalmente acontece por um de três motivos. Leia o comentário que você recebeu, veja qual é o seu caso e volte para reescrever.\n\n### 1. Faltou responder a uma das quatro perguntas\n\nO texto precisa dizer **onde** o felino vive, **o que** ele come e como caça, **qual** comportamento o torna especial e **do que** ele precisa. Um truque simples: escreva um parágrafo curto para cada pergunta, nessa ordem. Quatro parágrafos de 40 a 60 palavras já somam o tamanho pedido.\n\n### 2. Um fato está errado\n\nOs erros mais comuns:\n\n- Colocar um felino no continente errado. A onça-pintada só existe nas Américas; o leopardo só na África e na Ásia; o tigre só na Ásia.\n- Confundir quem ruge e quem ronrona. Leão, tigre, onça e leopardo rugem. Puma, guepardo e todos os pequenos felinos ronronam.\n- Chamar o guepardo de \"o felino mais forte\". Ele é o mais rápido, mas leve e frágil: muitas vezes perde a presa para hienas e leões.\n- Descrever o gato doméstico como um animal que \"precisa de um bando\". Ele é solitário por natureza; o que precisa é de território, esconderijos e brincadeira que imite a caça.\n\nSe tiver dúvida, releia o capítulo do grupo que você escolheu.\n\n### 3. O texto não convence\n\nTrocar \"ele é muito legal\" por um fato concreto muda tudo. Compare:\n\n> *Fraco:* \"O serval é incrível e eu adoraria ter um.\"\n>\n> *Forte:* \"O serval acerta metade das caçadas, saltando dois metros para cair em cima de um rato que ele nem viu, só ouviu. Um animal assim precisa de espaço aberto e capim alto, e por isso eu apoiaria uma reserva na savana, não uma gaiola.\"\n\nO segundo exemplo mostra habitat, comportamento e necessidade em duas frases.\n\n### Antes de reenviar\n\n- Conte as palavras: entre 150 e 250.\n- Confira o nome científico ou o nome comum correto.\n- Leia em voz alta: se uma frase não convence você, não vai convencer o leitor.\n\nQuando estiver pronto, avance para reescrever."}, {"lang": "zh", "text": "## 改进短文的建议\n\n你的分数低于 60，这通常出于以下三个原因之一。阅读你收到的评语，看看哪一条适用于你，然后返回重写。\n\n### 1. 四个问题中有一个没有回答\n\n短文需要说明猫科动物**生活在哪里**、**吃什么**以及如何狩猎、**哪种行为**让它与众不同，以及**它需要什么**。一个简单的技巧：按这个顺序为每个问题写一小段。四段各 40 到 60 字，加起来就达到了要求的篇幅。\n\n### 2. 有一个事实错了\n\n最常见的错误：\n\n- 把猫科动物放错了大陆。美洲豹只存在于美洲；花豹只在非洲和亚洲；老虎只在亚洲。\n- 混淆谁会吼叫、谁会呼噜。狮子、老虎、美洲豹和花豹会吼叫。美洲狮、猎豹和所有小型猫科动物会呼噜。\n- 称猎豹为\"最强壮的猫科动物\"。它是最快的，但体轻而脆弱：经常把猎物输给鬣狗和狮子。\n- 把家猫描述为\"需要群体\"的动物。它天性独居；它需要的是领地、藏身之处，以及模拟狩猎的游戏。\n\n如有疑问，请重读你所选类群的章节。\n\n### 3. 短文缺乏说服力\n\n把\"它真的很酷\"换成一个具体的事实，一切都会改变。比较一下：\n\n> *弱：*\"薮猫太棒了，我很想养一只。\"\n>\n> *强：*\"薮猫一半的狩猎都能成功，它跃起两米，扑向一只它从未看见、只是听见的老鼠。这样的动物需要开阔的空间和高草，所以我会支持一个草原保护区，而不是一个笼子。\"\n\n第二个例子用两句话展示了栖息地、行为和需求。\n\n### 重新提交前\n\n- 数一数字数：在 150 到 250 之间。\n- 核对学名或正确的俗名。\n- 大声朗读：如果一句话不能说服你，它也不能说服读者。\n\n准备好后，前进去重写。"}]}}, {"id": "dm2", "type": "dynamic-md", "section": 3, "title": [{"lang": "en", "text": "Summary of your journey"}, {"lang": "pt", "text": "Síntese da sua jornada"}, {"lang": "zh", "text": "你的旅程小结"}], "content": {"prompt": [{"lang": "en", "text": "Write a personalised closing summary in markdown (250-350 words) for a student who has just finished one pass through a short course on the cats of the world.\n\nInputs:\n- Group the student explored in this pass: {{STORAGE: f1.interest}} (big, small or domestic)\n- Student's country: {{STORAGE: f1.country}}\n- Quiz score: {{STORAGE: q1.percent}}%\n- The student's essay about the cat they would adopt: {{STORAGE: e1.text}}\n- Essay score: {{STORAGE: e1.score}}\n- Grader's feedback on the essay: {{STORAGE: e1.feedback}}\n\nStructure:\n1. A warm two-sentence opening that names the specific cat the student chose in the essay and one detail from their own text.\n2. \"What you now know\": three bullet points tying the group they explored to the course objectives (distinguish big from small cats and where they live; what makes felids efficient hunters; the story of cat domestication), phrased as things they can now do.\n3. \"One thing to take further\": a single concrete suggestion that builds on the essay feedback, such as one accurate fact about the chosen species they did not mention, or a conservation organisation or field guide relevant to the chosen species (only if you are confident it exists).\n4. A closing line inviting them to explore another group of cats if they have not yet.\nDo not include images. Do not repeat the grader's feedback verbatim. Answer in the student's language."}]}}, {"id": "b2", "type": "bool", "section": 3, "title": [{"lang": "en", "text": "Explore another group?"}, {"lang": "pt", "text": "Explorar outro grupo?"}, {"lang": "zh", "text": "探索另一个类群？"}], "content": {"question": [{"lang": "en", "text": "You have completed one pass through the course. Would you like to go back to the start and explore another group of cats?"}, {"lang": "pt", "text": "Você terminou uma volta pelo curso. Quer voltar ao início e explorar outro grupo de felinos?"}, {"lang": "zh", "text": "你已经完成了一轮课程。想回到起点探索另一类猫科动物吗？"}], "yes-label": [{"lang": "en", "text": "Yes"}, {"lang": "pt", "text": "Sim"}, {"lang": "zh", "text": "是"}], "no-label": [{"lang": "en", "text": "No"}, {"lang": "pt", "text": "Não"}, {"lang": "zh", "text": "否"}]}}, {"id": "sm5", "type": "static-md", "section": 3, "title": [{"lang": "en", "text": "Closing"}, {"lang": "pt", "text": "Encerramento"}, {"lang": "zh", "text": "结课"}], "content": {"item": [{"lang": "en", "text": "## Closing\n\n![Puma](https://commons.wikimedia.org/wiki/Special:FilePath/Puma%20face.jpg?width=800)\n\nYou have reached the end of the journey. It is worth looking back at what stays with you.\n\n### What cats have in common\n\nA single body plan, tuned to each environment: retractable claws to keep the tips sharp, teeth that slice rather than chew, eyes with a reflective layer that multiplies the light of the night, whiskers that feel the air, and a body built for the ambush rather than the long chase. The cheetah is the exception that proves the rule: to run, it gave up strength and fully retractable claws.\n\n### What sets them apart\n\n- **The big cats** roar, rule large territories and sustain whole ecosystems. All seven are in decline, and protecting one of them protects the landscape around it.\n- **The small wild cats** are 33 almost unknown species, living from snow to desert. They are the least studied and the ones that most need attention.\n- **The domestic cat** is the cat that came to us 10,000 years ago and conquered the world on ships, without ceasing to be a solitary hunter.\n\n### To go further\n\n- Look up the **IUCN Red List** (iucnredlist.org) to see the status of any species mentioned here.\n- If you have a cat at home, watch a week of its behaviour with this course's eyes: where it sleeps, what it \"hunts\", how it marks territory.\n- If you want to meet a real wild cat, visit a reserve or a conservation centre rather than a place offering direct contact: cats used for photos with tourists are rarely well treated.\n\nThank you for exploring the cats of the world. You can go back to the start at any time and walk a different group: the path and the generated texts will be different.\n\n*Image: Wikimedia Commons.*"}, {"lang": "pt", "text": "## Encerramento\n\n![Puma](https://commons.wikimedia.org/wiki/Special:FilePath/Puma%20face.jpg?width=800)\n\nVocê chegou ao fim da viagem. Vale olhar para trás e ver o que ficou.\n\n### O que os felinos têm em comum\n\nUm só projeto de corpo, ajustado a cada ambiente: garras retráteis para manter a ponta afiada, dentes que cortam em vez de mastigar, olhos com uma camada refletora que multiplica a luz da noite, bigodes que sentem o ar e um corpo feito para a emboscada e não para a perseguição longa. O guepardo é a exceção que confirma a regra: para correr, ele abriu mão da força e das garras totalmente retráteis.\n\n### O que os separa\n\n- **Os grandes felinos** rugem, dominam grandes territórios e sustentam ecossistemas inteiros. Todos os sete estão em declínio, e proteger um deles protege a paisagem em volta.\n- **Os pequenos felinos selvagens** são 33 espécies quase desconhecidas, vivendo da neve ao deserto. São os menos estudados e os que mais precisam de atenção.\n- **O gato doméstico** é o felino que se aproximou de nós há 10 mil anos e conquistou o mundo em navios, sem deixar de ser um caçador solitário.\n\n### Para continuar\n\n- Procure a **Lista Vermelha da IUCN** (iucnredlist.org) para ver a situação de qualquer espécie citada aqui.\n- Se você tem um gato em casa, observe uma semana de comportamento com o olhar deste curso: onde ele dorme, o que ele \"caça\", como marca território.\n- Se você quiser conhecer um felino selvagem de verdade, visite uma reserva ou um centro de conservação em vez de um lugar que ofereça contato direto: felinos usados para fotos com turistas raramente são bem tratados.\n\nObrigado por explorar os gatos do mundo. Você pode voltar ao início a qualquer momento e percorrer um grupo diferente: o caminho e os textos gerados serão outros.\n\n*Imagem: Wikimedia Commons.*"}, {"lang": "zh", "text": "## 结课\n\n![美洲狮](https://commons.wikimedia.org/wiki/Special:FilePath/Puma%20face.jpg?width=800)\n\n你已到达旅程的终点。值得回头看看留下了什么。\n\n### 猫科动物的共同点\n\n同一套身体结构，针对各自的环境微调：可伸缩的爪子保持爪尖锋利，切割而非咀嚼的牙齿，带反光层、能放大夜间光线的眼睛，感知空气的胡须，以及为伏击而非长途追逐而生的身体。猎豹是证明规则的例外：为了奔跑，它放弃了力量和完全可伸缩的爪子。\n\n### 它们的不同之处\n\n- **大型猫科动物**会吼叫，统治广阔的领地，支撑整个生态系统。七种都在减少，保护其中一种就是保护它周围的整片土地。\n- **小型野生猫科动物**是 33 个几乎不为人知的物种，从雪地到沙漠都有分布。它们研究最少，也最需要关注。\n- **家猫**是一万年前来到我们身边、随船只征服世界的猫科动物，却从未停止做一名独居的猎手。\n\n### 继续探索\n\n- 查阅 **IUCN 红色名录**（iucnredlist.org），了解这里提到的任何物种的现状。\n- 如果你家里有猫，用本课程的眼光观察它一周的行为：它在哪里睡觉，它\"猎捕\"什么，它如何标记领地。\n- 如果你想见到真正的野生猫科动物，请去保护区或保育中心，而不是提供直接接触的场所：用于与游客合影的猫科动物很少得到善待。\n\n感谢你探索世界的猫科动物。你可以随时回到起点，走一遍不同的类群：路径和生成的文本都会不同。\n\n*图片：维基共享资源。*"}]}}], "edges": [{"from": "sm1", "to": "f1"}, {"from": "f1", "to": "sh1", "when": {"key": "f1.interest", "operator": "eq", "value": "big"}}, {"from": "f1", "to": "sm2", "when": {"key": "f1.interest", "operator": "eq", "value": "small"}}, {"from": "f1", "to": "sm3"}, {"from": "sh1", "to": "q1"}, {"from": "sm2", "to": "q1"}, {"from": "sm3", "to": "q1"}, {"from": "q1", "to": "b1", "when": {"key": "q1.percent", "operator": "gte", "value": 70}}, {"from": "q1", "to": "dm1"}, {"from": "dm1", "to": "b1"}, {"from": "b1", "to": "dh1", "when": {"key": "b1.answer", "operator": "eq", "value": true}}, {"from": "b1", "to": "e1"}, {"from": "dh1", "to": "e1"}, {"from": "e1", "to": "dm2", "when": {"key": "e1.score", "operator": "gte", "value": 60}}, {"from": "e1", "to": "sm4"}, {"from": "sm4", "to": "e1"}, {"from": "dm2", "to": "b2"}, {"from": "b2", "to": "f1", "when": {"key": "b2.answer", "operator": "eq", "value": true}}, {"from": "b2", "to": "sm5"}]};
+render(COURSE);
+</script>
+</body>
+</html>

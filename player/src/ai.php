@@ -1,0 +1,285 @@
+<?php
+/**
+ * Inference, kept on this side of the wire.
+ *
+ * The browser never sends a prompt, because it never has one: the course it
+ * receives carries a marker where every prompt used to be (see
+ * Course::withoutPrompts). All it can ask for is "run node dm1 of the course I
+ * am in", and everything else -- which prompt, with which values filled in,
+ * which model, how long an answer -- is decided here, from the course stored in
+ * the database and from config.php.
+ *
+ * That is the whole point: there is no request this endpoint accepts that would
+ * run text of the caller's choosing.
+ */
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/course.php';
+require_once __DIR__ . '/progress.php';
+
+class AiError extends RuntimeException
+{
+    public function __construct(string $message, private int $status = 502)
+    {
+        parent::__construct($message);
+    }
+
+    public function status(): int { return $this->status; }
+}
+
+/**
+ * Runs the prompt of a dynamic node and returns the text.
+ *
+ * The result is written to node_state before it is returned, which is what
+ * freezes it: a student who comes back to the node, on this or on any other
+ * device, is shown the same content, and a reload never pays for a second call.
+ */
+function ai_generate(array $progressRow, Course $course, string $nodeId): string
+{
+    $node = $course->node($nodeId);
+    $type = $node === null ? '' : (string) ($node['type'] ?? '');
+    if ($type !== 'dynamic-md' && $type !== 'dynamic-html') {
+        throw new AiError("node $nodeId is not a node the AI writes", 400);
+    }
+
+    $existing = node_state_read((int) $progressRow['id'], $nodeId);
+    if ($existing !== null && $existing['generated_text'] !== null && $existing['generated_text'] !== '') {
+        return (string) $existing['generated_text'];
+    }
+
+    $state = progress_state($progressRow);
+    $lang  = (string) ($state['lang'] ?? $course->sourceLanguage());
+    $vars  = progress_vars($progressRow);
+
+    $prompt = Course::localize($node['content']['prompt'] ?? [], $lang);
+    if (trim($prompt) === '') {
+        throw new AiError("node $nodeId has no prompt", 400);
+    }
+
+    $text = ai_call(
+        $course->systemPrompt(),
+        Course::resolveStorage($prompt, $vars),
+        $lang,
+        (int) $progressRow['id'],
+        $nodeId,
+        'generate'
+    );
+
+    node_state_write((int) $progressRow['id'], $nodeId, $type, ['generated_text' => $text]);
+
+    return $text;
+}
+
+/**
+ * Grades an essay and returns {score, feedback}.
+ *
+ * The student's text is appended after the separator the schema prescribes, and
+ * the node's own `<id>.text` key is made available to the prompt first, so a
+ * grading prompt can quote what the student wrote.
+ */
+function ai_grade(array $progressRow, Course $course, string $nodeId, string $studentText): array
+{
+    $node = $course->node($nodeId);
+    if ($node === null || ($node['type'] ?? '') !== 'essay') {
+        throw new AiError("node $nodeId is not an essay", 400);
+    }
+
+    $studentText = trim($studentText);
+    if ($studentText === '') {
+        throw new AiError('there is no text to grade', 400);
+    }
+    if (mb_strlen($studentText) > 20000) {
+        throw new AiError('the text is too long to grade', 413);
+    }
+
+    $state = progress_state($progressRow);
+    $lang  = (string) ($state['lang'] ?? $course->sourceLanguage());
+    $vars  = progress_vars($progressRow);
+    $vars["$nodeId.text"] = $studentText;
+
+    $prompt = (string) ($node['content']['prompt'] ?? '');
+    if (trim($prompt) === '') {
+        throw new AiError("node $nodeId has no grading prompt", 400);
+    }
+
+    $answer = ai_call(
+        $course->systemPrompt(),
+        Course::resolveStorage($prompt, $vars) . "\n\n--- STUDENT TEXT ---\n" . $studentText,
+        $lang,
+        (int) $progressRow['id'],
+        $nodeId,
+        'grade'
+    );
+
+    $grade = ai_parse_grade($answer);
+
+    node_state_write((int) $progressRow['id'], $nodeId, 'essay', [
+        'answer'   => json_encode(['text' => $studentText], JSON_UNESCAPED_UNICODE),
+        'score'    => $grade['score'],
+        'feedback' => $grade['feedback'],
+    ]);
+
+    return $grade;
+}
+
+/**
+ * Reads {"score", "feedback"} out of an answer, the way the player does.
+ *
+ * When no such object can be found there is no grade, and the whole answer
+ * becomes the feedback -- the rule the schema sets. A missing score means any
+ * edge testing `<id>.score` will not hold, so the student takes the fallback:
+ * ungraded is a path the course already knows how to handle.
+ */
+function ai_parse_grade(string $answer): array
+{
+    $text    = trim($answer);
+    $trimmed = trim(preg_replace('/^```(?:json)?\s*|\s*```$/s', '', $text) ?? $text);
+
+    $open  = strpos($trimmed, '{');
+    $close = strrpos($trimmed, '}');
+    if ($open !== false && $close !== false && $close > $open) {
+        $object = json_decode(substr($trimmed, $open, $close - $open + 1), true);
+        if (is_array($object)) {
+            $score = $object['score'] ?? null;
+            return [
+                'score'    => is_numeric($score) ? max(0, min(100, (int) round((float) $score))) : null,
+                'feedback' => (string) ($object['feedback'] ?? $trimmed),
+            ];
+        }
+    }
+
+    return ['score' => null, 'feedback' => $text];
+}
+
+/**
+ * One call to the model, through OpenRouter.
+ *
+ * Everything that shapes the request comes from the course and from config.php.
+ * Nothing here can be influenced by what the browser sent beyond the node it
+ * named and, for an essay, the text the student typed.
+ */
+function ai_call(
+    string $systemPrompt,
+    string $userPrompt,
+    string $lang,
+    int $progressId,
+    string $nodeId,
+    string $kind
+): string {
+    $ai = edukors_config()['ai'];
+    if (($ai['key'] ?? '') === '' || ($ai['model'] ?? '') === '') {
+        throw new AiError('no model is configured on this server', 503);
+    }
+
+    ai_check_rate($progressId, (int) $ai['per_hour'], (int) $ai['per_day']);
+
+    // The course-wide instructions go as written: {{STORAGE: key}} is resolved
+    // in a node's prompt, never in the system prompt.
+    $system = trim($systemPrompt . "\n\nThe student's language is \"$lang\". Answer in that language.");
+
+    $body = [
+        'model'       => $ai['model'],
+        'max_tokens'  => (int) $ai['max_tokens'],
+        'temperature' => (float) $ai['temperature'],
+        'messages'    => [
+            ['role' => 'system', 'content' => $system],
+            ['role' => 'user',   'content' => $userPrompt],
+        ],
+    ];
+
+    $headers = [
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $ai['key'],
+    ];
+    if (($ai['referer'] ?? '') !== '') {
+        $headers[] = 'HTTP-Referer: ' . $ai['referer'];
+    }
+    if (($ai['title'] ?? '') !== '') {
+        $headers[] = 'X-Title: ' . $ai['title'];
+    }
+
+    $curl = curl_init((string) $ai['url']);
+    curl_setopt_array($curl, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        CURLOPT_HTTPHEADER     => $headers,
+        CURLOPT_RETURNTRANSFER => true,
+        // The player shows a spinner with no timeout of its own, so this one
+        // has to be the thing that gives up.
+        CURLOPT_TIMEOUT        => (int) $ai['timeout'],
+        CURLOPT_CONNECTTIMEOUT => 10,
+    ]);
+    $raw    = curl_exec($curl);
+    $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($curl);
+
+    if ($raw === false) {
+        ai_log($progressId, $nodeId, $kind, $ai['model'], null, null, false, $curlError);
+        throw new AiError('could not reach the model: ' . $curlError, 504);
+    }
+
+    $answer = json_decode((string) $raw, true);
+    if (!is_array($answer)) {
+        ai_log($progressId, $nodeId, $kind, $ai['model'], null, null, false, 'unreadable answer');
+        throw new AiError('the model returned something unreadable', 502);
+    }
+    if ($status >= 400) {
+        $message = (string) ($answer['error']['message'] ?? "request failed ($status)");
+        ai_log($progressId, $nodeId, $kind, $ai['model'], null, null, false, $message);
+        throw new AiError($message, 502);
+    }
+
+    $text = trim((string) ($answer['choices'][0]['message']['content'] ?? ''));
+    $usage = $answer['usage'] ?? [];
+    ai_log(
+        $progressId, $nodeId, $kind, $ai['model'],
+        isset($usage['prompt_tokens']) ? (int) $usage['prompt_tokens'] : null,
+        isset($usage['completion_tokens']) ? (int) $usage['completion_tokens'] : null,
+        $text !== '',
+        $text === '' ? 'empty answer' : null
+    );
+
+    if ($text === '') {
+        throw new AiError('the model returned an empty answer', 502);
+    }
+
+    return $text;
+}
+
+/** Stops one student, or one bad day, from emptying the account. */
+function ai_check_rate(int $progressId, int $perHour, int $perDay): void
+{
+    if ($perHour > 0) {
+        $mine = (int) db_value(
+            'SELECT COUNT(*) FROM ai_call WHERE progress_id = ? AND created_at > ?',
+            [$progressId, gmdate('Y-m-d H:i:s', time() - 3600)]
+        );
+        if ($mine >= $perHour) {
+            throw new AiError('too many requests for now; try again in a little while', 429);
+        }
+    }
+    if ($perDay > 0) {
+        $all = (int) db_value(
+            'SELECT COUNT(*) FROM ai_call WHERE created_at > ?',
+            [gmdate('Y-m-d H:i:s', time() - 86400)]
+        );
+        if ($all >= $perDay) {
+            throw new AiError('this server has reached its daily limit', 429);
+        }
+    }
+}
+
+function ai_log(
+    ?int $progressId, string $nodeId, string $kind, string $model,
+    ?int $tokensIn, ?int $tokensOut, bool $ok, ?string $error
+): void {
+    db_run(
+        'INSERT INTO ai_call (progress_id, node_id, kind, model, tokens_in, tokens_out, ok, error, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$progressId, $nodeId, $kind, $model, $tokensIn, $tokensOut, $ok ? 1 : 0,
+         $error === null ? null : mb_substr($error, 0, 255), db_now()]
+    );
+}

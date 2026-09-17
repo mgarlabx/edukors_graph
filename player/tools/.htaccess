@@ -1,0 +1,13 @@
+# This folder holds code, not pages: nothing in it should ever be served.
+#
+# When the web root is player/public, as it should be, this folder is already
+# out of reach and these rules never come up. They are here for the installation
+# that cannot move its web root -- a subfolder of a bigger site -- where the
+# folder does sit under the document root.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

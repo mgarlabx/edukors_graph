@@ -1,0 +1,923 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://edukors.org/graph/schema/v1/",
+  "title": "Course",
+  "description": "A course: its metadata (info), its nodes (prewritten content, AI-generated content and student activities) and the edges that define the order between them.",
+  "type": "object",
+  "required": [
+    "info",
+    "nodes",
+    "edges"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "description": "Address of the version of this schema the course was written against. Optional, but writing it makes editors validate the file as it is typed, and records which version of the format the course follows.",
+      "examples": [
+        "https://edukors.org/graph/schema/v1/"
+      ]
+    },
+    "info": {
+      "$ref": "#/$defs/courseInfo",
+      "description": "All course-level information."
+    },
+    "nodes": {
+      "type": "array",
+      "description": "The nodes of the course.",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "description": "Directed links between nodes. They define the sequence of the course. The edges leaving a node are evaluated from top to bottom, and the first one whose 'when' holds is the path taken, which is what makes the graph adaptive; an edge without 'when' always holds, so it works as the fallback and should come last. A condition on a key the student has not produced yet never holds, so an edge can safely test a node that may not have been answered. An edge may lead back to a node the student has already gone through, which is how a course sends a student to study again and retake an activity. Coming back to a node is a new visit: essay, quiz, form and bool nodes are answered again, and the new answers overwrite the keys they produced before, while dynamic-md and dynamic-html nodes keep showing the content already generated for the student. Every such cycle needs an edge out of it whose condition the student can eventually meet, or the student never leaves it.",
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    }
+  },
+  "$defs": {
+    "courseInfo": {
+      "type": "object",
+      "description": "Course-level information, grouped in a single object.",
+      "required": [
+        "course-id",
+        "source-language",
+        "other-languages",
+        "title",
+        "author",
+        "version",
+        "date",
+        "start"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "course-id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier of the course (UUID)."
+        },
+        "source-language": {
+          "$ref": "#/$defs/langCode",
+          "description": "The language the course was originally written in."
+        },
+        "other-languages": {
+          "type": "array",
+          "description": "Languages the course has been translated into. Must not include the source language.",
+          "items": {
+            "$ref": "#/$defs/langCode"
+          },
+          "uniqueItems": true
+        },
+        "title": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Title of the course in each language. Plain text."
+        },
+        "description": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Short summary of the course in each language, for catalogues and listings. Plain text. Optional."
+        },
+        "author": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Author of the course: the person or institution responsible for the content.",
+          "examples": [
+            "John Doe",
+            "Acme Corp"
+          ]
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "Version of the course, as MAJOR.MINOR.PATCH.",
+          "examples": [
+            "1.0.0",
+            "2.3.1"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "Date of this version of the course, as YYYY-MM-DD.",
+          "examples": [
+            "2026-09-15"
+          ]
+        },
+        "start": {
+          "type": "string",
+          "pattern": "^(sm|sh|dm|dh|e|q|f|b)[0-9]+$",
+          "description": "id of the node the course starts at. It is the only entry point: every other node is reached by following edges from here.",
+          "examples": [
+            "sm1"
+          ]
+        },
+        "sections": {
+          "type": "array",
+          "description": "Titles of the groups the nodes are displayed in, when they should be shown with a name rather than a bare number. Optional.",
+          "items": {
+            "$ref": "#/$defs/section"
+          }
+        },
+        "system-prompt": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Course-wide instructions for the AI, sent as the system prompt of every AI call of the course: the 'prompt' of dynamic-md and dynamic-html nodes, and the grading 'prompt' of essay nodes, which are sent as the user message. Use it for tone, audience and rules that apply everywhere, so each node only carries what is specific to it. It is sent as written: {{STORAGE: key}} is not resolved here, only in the prompts of the nodes. It is recommended to write prompts in English and to instruct the AI to answer in the student's language. Optional.",
+          "examples": [
+            "You are tutoring first-year undergraduates. Be concise, use plain language, and always give a worked example."
+          ]
+        }
+      }
+    },
+    "langCode": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "description": "ISO 639-1 language code, with an optional region (e.g. pt, en, pt-BR).",
+      "examples": [
+        "pt",
+        "ar",
+        "de",
+        "en",
+        "es",
+        "fr",
+        "hi",
+        "it",
+        "ru",
+        "zh"
+      ]
+    },
+    "section": {
+      "type": "object",
+      "description": "The name of one group of nodes.",
+      "required": [
+        "number",
+        "title"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The number used in the 'section' of the nodes of this group."
+        },
+        "title": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Title of the group in each language. Plain text."
+        }
+      }
+    },
+    "localizedText": {
+      "type": "object",
+      "description": "A piece of text in one language.",
+      "required": [
+        "lang",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "lang": {
+          "$ref": "#/$defs/langCode"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "localizedTextList": {
+      "type": "array",
+      "description": "The same text in several languages. At least the source-language version must be present. Each field that uses it says how its text is formatted: plain text, markdown for a block of content, or inline markdown for a short line such as a label. Wherever markdown is accepted, simple HTML (e.g. <img>) and LaTeX are accepted too. LaTeX is written between $...$ or \\(...\\) inside a line, and between $$...$$ or \\[...\\] as a block of its own. A single $ only opens a formula when it does not follow a letter or a digit and is followed by something other than a space, and only closes it when it follows something other than a space and is not followed by a digit, so amounts such as 'R$ 10' or 'US$5' stay as written. Text inside `code` is never read as LaTeX.",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/localizedText"
+      }
+    },
+    "nodeType": {
+      "type": "string",
+      "description": "Type of the node. It determines which fields exist in 'content'.",
+      "enum": [
+        "static-md",
+        "static-html",
+        "dynamic-md",
+        "dynamic-html",
+        "essay",
+        "quiz",
+        "form",
+        "bool"
+      ],
+      "x-enumDescriptions": {
+        "static-md": "Markdown content written in advance and shown to the student as written.",
+        "static-html": "Web content built in advance and shown to the student as built.",
+        "dynamic-md": "A prompt the AI runs during the course; the markdown it returns is shown to the student.",
+        "dynamic-html": "A prompt the AI runs during the course; the web content it returns is shown to the student.",
+        "essay": "An activity where the student writes a text and the AI grades it.",
+        "quiz": "A set of objective questions the student answers.",
+        "form": "A form the student fills in.",
+        "bool": "A yes/no question the student answers; the answer is stored and is typically used to branch the course into a longer or a shorter path."
+      }
+    },
+    "node": {
+      "type": "object",
+      "description": "A single node of the course.",
+      "required": [
+        "id",
+        "type",
+        "title",
+        "content"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(sm|sh|dm|dh|e|q|f|b)[0-9]+$",
+          "description": "Identifier of the node, unique within the course. The prefix must match the type: sm (static-md), sh (static-html), dm (dynamic-md), dh (dynamic-html), e (essay), q (quiz), f (form), b (bool).",
+          "examples": [
+            "sm1",
+            "sh2",
+            "dm3",
+            "dh4",
+            "e5",
+            "q6",
+            "f7",
+            "b8"
+          ]
+        },
+        "type": {
+          "$ref": "#/$defs/nodeType"
+        },
+        "section": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of the group the node is displayed in, named in 'info.sections' when it has a title. It is only a visual hint for the frontend, so that courses with many nodes can be shown in blocks; it has no effect on the order of the course, which is defined by 'edges'. Defaults to 1.",
+          "default": 1
+        },
+        "title": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Title of the node in each language. Plain text."
+        },
+        "content": {
+          "type": "object",
+          "description": "Content of the node. Its shape depends on 'type'."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "static-md"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^sm[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/staticMdContent"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "static-html"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^sh[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/staticHtmlContent"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "dynamic-md"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^dm[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/dynamicMdContent"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "dynamic-html"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^dh[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/dynamicHtmlContent"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "essay"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^e[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/essayContent"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "quiz"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^q[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/quizContent"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "form"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^f[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/formContent"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "bool"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^b[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/boolContent"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "staticMdContent": {
+      "type": "object",
+      "description": "Markdown content written in advance, translated into every language of the course.",
+      "required": [
+        "item"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "The content, in markdown."
+        }
+      }
+    },
+    "staticHtmlContent": {
+      "type": "object",
+      "description": "Web content built in advance, translated into every language of the course.",
+      "required": [
+        "item"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "The HTML markup shown to the student. It runs in the student's browser, so the frontend renders it in a sandboxed iframe rather than injecting it into the page: scripts run, but they have no access to the page or to the session of the student, and links open in a new tab. The markup must be self-contained: CSS, SVG and scripts written inline, with no external scripts or stylesheets."
+        }
+      }
+    },
+    "dynamicMdContent": {
+      "type": "object",
+      "description": "A prompt the AI runs to generate markdown during the course. It usually exists in a single language, and the answer is generated in the student's language. The generated result must be saved in the record that tracks the student's progress, so that the node always shows the same content whenever the student comes back to it. It does not produce keys of its own: only essay, quiz, form and bool nodes do.",
+      "required": [
+        "prompt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "prompt": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "The prompt, in markdown. It is recommended to write prompts in English and to instruct the AI to answer in the student's language. It can reference saved data with {{STORAGE: key}}, using a key produced by an essay, quiz, form or bool node, such as {{STORAGE: f1.goal}}. The spaces around the key are optional, but 'STORAGE' must be followed directly by the colon. Before the prompt is sent, a key the student has not produced yet is replaced by an empty text, and a list of answers (a 'check' field) by its values separated by ', '."
+        }
+      }
+    },
+    "dynamicHtmlContent": {
+      "type": "object",
+      "description": "A prompt the AI runs to generate web content during the course. It usually exists in a single language, and the answer is generated in the student's language. The generated result must be saved in the record that tracks the student's progress, so that the node always shows the same content whenever the student comes back to it. It does not produce keys of its own: only essay, quiz, form and bool nodes do. Because this markup is written by the AI at run time and never reviewed by the author, the frontend must render it in a sandboxed iframe, without access to the session of the student.",
+      "required": [
+        "prompt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "prompt": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "The prompt describing the HTML to build. It is recommended to write prompts in English and to instruct the AI to answer in the student's language. It can reference saved data with {{STORAGE: key}}, using a key produced by an essay, quiz, form or bool node, such as {{STORAGE: f1.goal}}, resolved as described for the prompt of dynamic-md nodes. The HTML returned is rendered like the item of a static-html node."
+        }
+      }
+    },
+    "essayContent": {
+      "type": "object",
+      "description": "An activity where the student writes a text and the AI grades it. It produces three keys in the record that tracks the student's progress, where <id> is the id of the node: '<id>.text' (what the student wrote), '<id>.score' (the grade given by the AI, from 0 to 100) and '<id>.feedback' (the comment written by the AI). A node with id 'e1' therefore produces 'e1.text', 'e1.score' and 'e1.feedback'. They can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges.",
+      "required": [
+        "instructions",
+        "prompt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "instructions": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Instructions shown to the student, in markdown."
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Hidden prompt the AI uses to grade the text submitted by the student. The text of the student is appended to it, after a line reading '--- STUDENT TEXT ---', and the whole is sent as the user message. It is recommended to write prompts in English and to instruct the AI to write the feedback in the student's language. The prompt must ask the AI to answer with a JSON object of the form {\"score\": <number from 0 to 100>, \"feedback\": \"<comment addressed to the student>\"}. The frontend reads that object from the answer, ignoring any text or code fence around it, rounds the score and keeps it between 0 and 100, and stores it in '<id>.score' and the comment in '<id>.feedback'. When no such object can be read, there is no grade and the whole answer is used as the feedback. It can reference {{STORAGE: key}}, resolved as described for the prompt of dynamic-md nodes."
+        }
+      }
+    },
+    "quizContent": {
+      "type": "object",
+      "description": "A set of objective questions the student answers. It produces three keys in the record that tracks the student's progress, where <id> is the id of the node: '<id>.score' (how many answers were right), '<id>.total' (how many questions there are) and '<id>.percent' (the share of right answers, from 0 to 100). A node with id 'q1' therefore produces 'q1.score', 'q1.total' and 'q1.percent'. A question that carries a 'key' produces one more key, holding the 'value' of the option the student picked. They can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges.",
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The questions, in display order.",
+          "items": {
+            "$ref": "#/$defs/quizQuestion"
+          }
+        }
+      }
+    },
+    "quizQuestion": {
+      "type": "object",
+      "description": "An objective question. Exactly one of its options is correct, so the student picks a single answer.",
+      "required": [
+        "question",
+        "options"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Name of the question, unique within the quiz. It makes this single answer addressable: a question named 'fractions' in the node 'q1' produces the key 'q1.fractions', holding the 'value' of the option the student picked. It cannot be 'score', 'total' or 'percent', which the quiz already produces on its own. Omit it when only the overall score matters. Optional.",
+          "examples": [
+            "fractions",
+            "q3"
+          ],
+          "not": {
+            "enum": [
+              "score",
+              "total",
+              "percent"
+            ]
+          }
+        },
+        "question": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Text of the question in each language, in markdown."
+        },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "description": "Answer options, in display order. Exactly one of them must have 'correct' set to true. The frontend shows them in the order listed and never shuffles them, so the position of the correct option is the author's choice and should vary from question to question.",
+          "items": {
+            "$ref": "#/$defs/quizOption"
+          },
+          "contains": {
+            "type": "object",
+            "properties": {
+              "correct": {
+                "const": true
+              }
+            },
+            "required": [
+              "correct"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        "feedback": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Explanation shown after the student answers, in markdown."
+        }
+      }
+    },
+    "quizOption": {
+      "type": "object",
+      "description": "One answer option of a question.",
+      "required": [
+        "value",
+        "label",
+        "correct"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Identifier of the option, unique within the question. It is what gets stored when the student picks this option, and what the 'when' of an edge is compared to, so it must not change with the language of the labels.",
+          "examples": [
+            "a",
+            "b",
+            "one-half"
+          ]
+        },
+        "label": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Text of the option in each language, in inline markdown."
+        },
+        "correct": {
+          "type": "boolean",
+          "description": "Whether this is the correct answer. Exactly one option of the question has it set to true."
+        }
+      }
+    },
+    "formContent": {
+      "type": "object",
+      "description": "A form filled in by the student. Each field produces one key in the record that tracks the student's progress, named '<id>.<key of the field>', where <id> is the id of the node: a field named 'goal' in the node 'f1' produces 'f1.goal'. It holds the text the student typed, or the 'value' of the option picked; a 'check' field holds the list of the values picked. They can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges.",
+      "required": [
+        "items"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Fields of the form, in display order.",
+          "items": {
+            "$ref": "#/$defs/formField"
+          }
+        }
+      }
+    },
+    "formField": {
+      "type": "object",
+      "description": "A single form field.",
+      "required": [
+        "key",
+        "type",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Name of the field, unique within the form. Together with the id of the node it forms the key of the answer in the record that tracks the student's progress: a field named 'goal' in the node 'f1' answers to 'f1.goal'.",
+          "examples": [
+            "goal",
+            "prior-experience"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "text-line",
+            "text-area",
+            "radio",
+            "check",
+            "select"
+          ],
+          "description": "Type of the field. It determines whether 'options' is used.",
+          "x-enumDescriptions": {
+            "text-line": "A single line of free text.",
+            "text-area": "A multi-line block of free text.",
+            "radio": "A list of options, of which the student picks one.",
+            "check": "A list of options, of which the student may pick several.",
+            "select": "A drop-down list, of which the student picks one."
+          }
+        },
+        "label": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Question or label of the field in each language, in inline markdown."
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the student must answer this field before moving on."
+        },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "description": "Choices offered by the field, in display order. Used by 'radio', 'check' and 'select'; not allowed on the text types.",
+          "items": {
+            "$ref": "#/$defs/formOption"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "radio",
+                  "check",
+                  "select"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "options"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "text-line",
+                  "text-area"
+                ]
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "options"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "formOption": {
+      "type": "object",
+      "description": "One choice offered by a form field.",
+      "required": [
+        "value",
+        "label"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Identifier of the option, unique within the field. It is what gets stored when the student picks this option, and what the 'when' of an edge is compared to, so it must not change with the language of the labels.",
+          "examples": [
+            "career",
+            "hobby"
+          ]
+        },
+        "label": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Text of the option in each language, in inline markdown. A 'select' field shows it as plain text, since a drop-down list cannot hold formatting."
+        }
+      }
+    },
+    "boolContent": {
+      "type": "object",
+      "description": "A yes/no question the student answers. It produces one key in the record that tracks the student's progress, '<id>.answer', holding true when the student answered yes and false when the student answered no: a node with id 'b1' therefore produces 'b1.answer'. It can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges, which is its main use: one edge for the yes path and one for the no path, so that the course continues into a longer or a shorter track.",
+      "required": [
+        "question"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "question": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Text of the question in each language, in markdown."
+        },
+        "yes-label": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Text of the affirmative answer in each language, when the default wording of the frontend should be replaced by something more specific, such as 'Yes, show me more'. Plain text. Optional."
+        },
+        "no-label": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Text of the negative answer in each language, when the default wording of the frontend should be replaced by something more specific, such as 'No, move on'. Plain text. Optional."
+        },
+        "default": {
+          "type": "boolean",
+          "description": "Answer preselected when the node is shown. Omit it to leave both answers unselected, which forces the student to choose. Optional."
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "description": "A directed link between two nodes. Without 'when' it is unconditional; with 'when' it is only taken when the condition holds.",
+      "required": [
+        "from",
+        "to"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "id of the source node."
+        },
+        "to": {
+          "type": "string",
+          "description": "id of the target node."
+        },
+        "when": {
+          "$ref": "#/$defs/edgeCondition",
+          "description": "Condition that makes this edge the one to follow: a single comparison, or several joined with 'and' or 'or', which can be nested. Omit it for an unconditional edge, which should be listed last among the edges leaving the same node, as a fallback."
+        }
+      }
+    },
+    "edgeCondition": {
+      "description": "A condition tested against the record that tracks the student's progress: either a single comparison, or several of them joined with 'and' or 'or'.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/comparison"
+        },
+        {
+          "$ref": "#/$defs/andCondition"
+        },
+        {
+          "$ref": "#/$defs/orCondition"
+        }
+      ]
+    },
+    "comparison": {
+      "type": "object",
+      "description": "A single comparison between a stored value and 'value'. It does not hold when the key has not been produced yet, which is the case while the student has not gone through the node that produces it.",
+      "required": [
+        "key",
+        "operator",
+        "value"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Key of the value to test, written as '<node-id>.<name>': one of the keys produced by an essay, quiz, form or bool node. It is the same key used in {{STORAGE: key}}.",
+          "pattern": "^(e|q|f|b)[0-9]+\\.[a-z][a-z0-9-]*$",
+          "examples": [
+            "q1.percent",
+            "e1.score",
+            "f1.goal",
+            "b1.answer"
+          ]
+        },
+        "operator": {
+          "type": "string",
+          "enum": [
+            "eq",
+            "ne",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "contains",
+            "not-contains"
+          ],
+          "description": "How the stored value is compared to 'value'.",
+          "x-enumDescriptions": {
+            "eq": "The stored value is equal to 'value'. For the answer of a bool node, compare it to true or false.",
+            "ne": "The stored value is different from 'value'.",
+            "gt": "The stored value is greater than 'value'. For numbers.",
+            "gte": "The stored value is greater than or equal to 'value'. For numbers.",
+            "lt": "The stored value is less than 'value'. For numbers.",
+            "lte": "The stored value is less than or equal to 'value'. For numbers.",
+            "contains": "The stored value contains 'value'. For texts and for lists of answers, such as a 'check' field.",
+            "not-contains": "The stored value does not contain 'value'. For texts and for lists of answers, such as a 'check' field."
+          }
+        },
+        "value": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ],
+          "description": "Value the stored one is compared to."
+        }
+      }
+    },
+    "andCondition": {
+      "type": "object",
+      "description": "Holds when every condition listed in 'and' holds.",
+      "required": [
+        "and"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "and": {
+          "type": "array",
+          "minItems": 2,
+          "description": "Conditions that must all hold. They can themselves be comparisons or further 'and' / 'or' groups.",
+          "items": {
+            "$ref": "#/$defs/edgeCondition"
+          }
+        }
+      }
+    },
+    "orCondition": {
+      "type": "object",
+      "description": "Holds when at least one of the conditions listed in 'or' holds.",
+      "required": [
+        "or"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "or": {
+          "type": "array",
+          "minItems": 2,
+          "description": "Conditions of which at least one must hold. They can themselves be comparisons or further 'and' / 'or' groups.",
+          "items": {
+            "$ref": "#/$defs/edgeCondition"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cats of the World (mini)</title>
+<style>
+  :root{
+    --paper:#E9EDF0;
+    --grid:#CBD5DD;
+    --ink:#16212B;
+    --muted:#5C6E7E;
+    --hair:#D3DBE2;
+    --surface:#FFFFFF;
+    --select:#1F5FA8;
+    --edge:#8FA3B3;
+    --edge-cond:#3F7F76;
+    --edge-back:#B03A48;
+    --warn:#B4641E;
+
+    --t-static-md:#4A6E8A;
+    --t-static-html:#3F7F76;
+    --t-dynamic-md:#7A4FB0;
+    --t-dynamic-html:#A24897;
+    --t-essay:#B4641E;
+    --t-quiz:#2E7D5B;
+    --t-form:#1F6FA8;
+    --t-bool:#B03A48;
+
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --serif:Charter,"Bitstream Charter","Iowan Old Style",Georgia,"Times New Roman",serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);
+    overflow:hidden;-webkit-font-smoothing:antialiased;
+  }
+  button{font:inherit;color:inherit}
+
+  /* ---------- chrome ---------- */
+  header{
+    position:fixed;inset:0 0 auto 0;height:54px;z-index:30;
+    display:flex;align-items:center;gap:14px;padding:0 16px;
+    background:rgba(233,237,240,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--hair);
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .brand h1{font-size:15px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand .meta{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+  .spacer{flex:1}
+  .bar{display:flex;align-items:center;gap:8px}
+  .btn{
+    border:1px solid var(--hair);background:var(--surface);border-radius:7px;
+    padding:7px 11px;font-size:13px;cursor:pointer;line-height:1;
+  }
+  .btn:hover{border-color:#B4C2CD}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent}
+  select.btn{padding:6px 8px}
+  .count{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+  /* ---------- canvas ---------- */
+  #stage{position:fixed;inset:54px 0 0 0;overflow:hidden;cursor:grab;
+    background-image:radial-gradient(var(--grid) 1px, transparent 1px);
+    background-size:22px 22px;background-position:-1px -1px;}
+  #stage.dragging{cursor:grabbing}
+  svg{width:100%;height:100%;display:block;user-select:none}
+  .node-hit{cursor:pointer}
+  .node-box{fill:var(--surface);stroke:#C3CEd8;stroke-width:1.25}
+  .node-hit:hover .node-box{stroke:#93A5B3}
+  .node-hit.sel .node-box{stroke:var(--select);stroke-width:2.25}
+  .node-hit.dim{opacity:.26}
+  .node-id{font-family:var(--mono);font-size:10.5px;fill:#fff;font-weight:600}
+  .node-title{font-size:12.5px;fill:var(--ink)}
+  .node-sub{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+  .flag{font-family:var(--mono);font-size:9.5px;fill:var(--muted)}
+  .edge{fill:none;stroke:var(--edge);stroke-width:1.6}
+  .edge.cond{stroke:var(--edge-cond)}
+  .edge.back{stroke:var(--edge-back);stroke-dasharray:5 4}
+  .edge.hot{stroke:var(--select);stroke-width:2.6}
+  .edge.dim{opacity:.16}
+  .elabel{font-family:var(--mono);font-size:10px;fill:#33505f}
+  .elabel-bg{fill:var(--paper);opacity:.94}
+  .elabel.dim,.elabel-bg.dim{opacity:.12}
+  .ord{font-family:var(--mono);font-size:9.5px;fill:#fff;font-weight:700}
+  .band{font-size:11px;fill:var(--muted);font-family:var(--mono)}
+  .band-rule{stroke:var(--hair);stroke-width:1;stroke-dasharray:2 5}
+
+  /* ---------- legend ---------- */
+  #legend{
+    position:fixed;left:14px;bottom:14px;z-index:20;
+    background:rgba(255,255,255,.9);border:1px solid var(--hair);border-radius:9px;
+    padding:10px 12px;font-size:11.5px;max-width:220px;backdrop-filter:blur(6px);
+  }
+  #legend h2{margin:0 0 7px;font-size:11px;font-weight:600;color:var(--muted)}
+  #legend ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+  #legend li{display:flex;align-items:center;gap:7px}
+  .swatch{width:9px;height:9px;border-radius:2px;flex:none}
+  #legend .rule{margin-top:8px;padding-top:8px;border-top:1px solid var(--hair);color:var(--muted);line-height:1.45}
+
+  /* ---------- inspector ---------- */
+  #panel{
+    position:fixed;top:54px;right:0;bottom:0;width:430px;max-width:92vw;z-index:25;
+    background:var(--surface);border-left:1px solid var(--hair);
+    transform:translateX(100%);transition:transform .22s cubic-bezier(.32,.72,0,1);
+    display:flex;flex-direction:column;box-shadow:-18px 0 40px -34px rgba(12,26,38,.5);
+  }
+  #panel.open{transform:none}
+  @media (prefers-reduced-motion:reduce){#panel{transition:none}}
+  .p-head{padding:16px 18px 13px;border-bottom:1px solid var(--hair);position:relative}
+  .p-type{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:#fff;
+    padding:3px 8px;border-radius:5px}
+  .p-head h2{margin:10px 34px 4px 0;font-size:19px;font-weight:600;line-height:1.25}
+  .p-head .where{font-size:12px;color:var(--muted)}
+  .close{position:absolute;top:13px;right:13px;border:none;background:transparent;cursor:pointer;
+    font-size:20px;line-height:1;color:var(--muted);padding:4px 7px;border-radius:6px}
+  .close:hover{background:#F0F3F6;color:var(--ink)}
+  .p-body{overflow:auto;padding:4px 18px 40px;flex:1}
+  .sec{padding:15px 0;border-bottom:1px solid #EDF1F4}
+  .sec:last-child{border-bottom:none}
+  .sec > h3{margin:0 0 9px;font-size:11.5px;font-weight:600;color:var(--muted)}
+  .prose{font-family:var(--serif);font-size:15px;line-height:1.62;color:#1B2932}
+  .prose h1,.prose h2,.prose h3{font-family:var(--sans);line-height:1.3;margin:1.1em 0 .4em}
+  .prose h1{font-size:19px}.prose h2{font-size:17px}.prose h3{font-size:15px}
+  .prose p{margin:0 0 .75em}
+  .prose ul,.prose ol{margin:0 0 .8em;padding-left:1.25em}
+  .prose li{margin:.2em 0}
+  .prose code{font-family:var(--mono);font-size:.85em;background:#F1F4F7;padding:1px 4px;border-radius:4px}
+  .prose pre{background:#F1F4F7;padding:10px 12px;border-radius:7px;overflow:auto}
+  .prose pre code{background:none;padding:0}
+  .math-display{display:block;margin:.6em 0;overflow-x:auto;overflow-y:hidden;text-align:center}
+  .math-display .katex-display{margin:0}
+  .prose blockquote{margin:0 0 .8em;padding-left:12px;border-left:2px solid var(--hair);color:var(--muted)}
+  .prose img{max-width:100%}
+  .prose hr{border:none;border-top:1px solid var(--hair);margin:1em 0}
+  .prose table{border-collapse:collapse;font-size:13px}
+  .prose th,.prose td{border:1px solid var(--hair);padding:5px 8px;text-align:left}
+  .code{font-family:var(--mono);font-size:12px;line-height:1.55;background:#F4F7F9;border:1px solid #E4EAEF;
+    border-radius:8px;padding:11px 12px;white-space:pre-wrap;word-break:break-word;color:#25323D}
+  .math{font-family:var(--serif);font-style:italic}
+  .tok{background:#E7DEF6;color:#5B3D8C;border-radius:4px;padding:1px 3px}
+  .keys{display:flex;flex-wrap:wrap;gap:6px}
+  .key{font-family:var(--mono);font-size:11.5px;background:#F1F4F7;border:1px solid #E1E8ED;border-radius:5px;padding:3px 7px}
+  .q{border:1px solid var(--hair);border-radius:9px;padding:12px 13px;margin-bottom:10px}
+  .q > .stem{font-family:var(--serif);font-size:14.5px;line-height:1.5;margin-bottom:9px}
+  .opts{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+  .opts li{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.45}
+  .mark{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none;width:58px}
+  .mark.ok{color:#2E7D5B;font-weight:600}
+  .qmeta{margin-top:9px;font-size:12.5px;color:var(--muted);line-height:1.5}
+  .field-head{display:flex;gap:8px;align-items:baseline;margin-bottom:6px;flex-wrap:wrap}
+  .tag{font-family:var(--mono);font-size:10.5px;background:#EEF2F5;border-radius:5px;padding:2px 6px;color:#42576a}
+  .tag.req{background:#FBEDE2;color:#8A4A15}
+  iframe{width:100%;border:1px solid var(--hair);border-radius:8px;background:#fff;min-height:200px}
+  .links{display:grid;gap:7px}
+  .lnk{display:flex;gap:9px;align-items:baseline;text-align:left;width:100%;
+    border:1px solid var(--hair);background:var(--surface);border-radius:8px;padding:8px 10px;cursor:pointer}
+  .lnk:hover{border-color:#B4C2CD;background:#FAFCFD}
+  .lnk .nid{font-family:var(--mono);font-size:11.5px;color:#fff;padding:2px 6px;border-radius:4px;flex:none}
+  .lnk .txt{font-size:13px;line-height:1.4;flex:1;min-width:0}
+  .lnk .cond{display:block;font-family:var(--mono);font-size:11px;color:var(--edge-cond);margin-top:3px;word-break:break-word}
+  .lnk .cond.fallback{color:var(--muted)}
+  .toggle{border:none;background:none;padding:0;margin-top:9px;font-size:12px;color:var(--select);cursor:pointer;text-decoration:underline}
+  .empty{font-size:13px;color:var(--muted)}
+
+  /* ---------- issues ---------- */
+  #issues{
+    position:fixed;right:14px;bottom:14px;z-index:26;max-width:330px;
+    background:var(--surface);border:1px solid #E7D6C3;border-left:3px solid var(--warn);
+    border-radius:9px;padding:11px 13px;font-size:12.5px;line-height:1.5;display:none
+  }
+  #issues.show{display:block}
+  #issues h2{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--warn)}
+  #issues ul{margin:0;padding-left:16px;display:grid;gap:3px;color:#42576a}
+  #issues .x{position:absolute;top:6px;right:8px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:15px}
+  #panel.open ~ #issues{right:446px}
+  @media (max-width:760px){#panel.open ~ #issues{display:none}}
+
+  @media (max-width:760px){
+    #panel{top:auto;left:0;width:100%;max-width:100%;height:68vh;border-left:none;border-top:1px solid var(--hair);
+      border-radius:14px 14px 0 0;transform:translateY(100%)}
+    #legend{display:none}
+    .brand .meta{display:none}
+  }
+  :focus-visible{outline:2px solid var(--select);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1 id="courseTitle">Course map</h1>
+    <span class="meta" id="courseMeta"></span>
+  </div>
+  <div class="spacer"></div>
+  <div class="bar">
+    <span class="count" id="stats"></span>
+    <select class="btn" id="lang" title="Content language"></select>
+    <button class="btn ghost" id="fit" title="Fit to screen (F)">Fit</button>
+  </div>
+</header>
+
+<div id="stage">
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--edge)"></path>
+      </marker>
+      <marker id="ar-cond" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--edge-cond)"></path>
+      </marker>
+      <marker id="ar-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--edge-back)"></path>
+      </marker>
+      <marker id="ar-hot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--select)"></path>
+      </marker>
+    </defs>
+    <g id="viewport">
+      <g id="gBands"></g>
+      <g id="gEdges"></g>
+      <g id="gLabels"></g>
+      <g id="gNodes"></g>
+    </g>
+  </svg>
+</div>
+
+<aside id="panel" aria-label="Node details">
+  <div class="p-head">
+    <span class="p-type" id="pType"></span>
+    <button class="close" id="pClose" title="Close (Esc)">&times;</button>
+    <h2 id="pTitle"></h2>
+    <div class="where" id="pWhere"></div>
+  </div>
+  <div class="p-body" id="pBody"></div>
+</aside>
+
+<div id="legend">
+  <h2>Node types</h2>
+  <ul id="legendList"></ul>
+  <div class="rule" id="legendRule"></div>
+</div>
+
+<div id="issues">
+  <button class="x" id="issuesClose" title="Close">&times;</button>
+  <h2>File check</h2>
+  <ul id="issuesList"></ul>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. Model
+   ============================================================ */
+
+const TYPES = {
+  "static-md":   {label:"Static markdown", color:"var(--t-static-md)",   short:"md"},
+  "static-html": {label:"Static HTML",     color:"var(--t-static-html)", short:"html"},
+  "dynamic-md":  {label:"AI markdown",     color:"var(--t-dynamic-md)",  short:"AI md"},
+  "dynamic-html":{label:"AI HTML",         color:"var(--t-dynamic-html)",short:"AI html"},
+  "essay":       {label:"Essay",           color:"var(--t-essay)",       short:"essay"},
+  "quiz":        {label:"Quiz",            color:"var(--t-quiz)",        short:"quiz"},
+  "form":        {label:"Form",            color:"var(--t-form)",        short:"form"},
+  "bool":        {label:"Yes/no question", color:"var(--t-bool)",        short:"yes/no"}
+};
+const PREFIX = {"static-md":"sm","static-html":"sh","dynamic-md":"dm","dynamic-html":"dh",
+                "essay":"e","quiz":"q","form":"f","bool":"b"};
+const OPS = {eq:"=", ne:"≠", gt:">", gte:"≥", lt:"<", lte:"≤",
+             contains:"contains", "not-contains":"does not contain"};
+
+let course = null;     // JSON carregado
+let lang = null;       // idioma escolhido
+let model = null;      // { nodes, edges, byId, layout, issues }
+let selected = null;
+
+/* ---- localized text ---- */
+function t(list){
+  if(!Array.isArray(list) || !list.length) return "";
+  const want = list.find(x => x && x.lang === lang);
+  if(want) return want.text || "";
+  const src = course && course.info && course.info["source-language"];
+  const fall = list.find(x => x && x.lang === src);
+  return (fall || list[0]).text || "";
+}
+
+/* ---- conditions in readable form ---- */
+function condText(c){
+  if(!c) return "";
+  if(c.and) return c.and.map(x => wrap(x, "and")).join("  and  ");
+  if(c.or)  return c.or.map(x => wrap(x, "or")).join("  or  ");
+  const v = typeof c.value === "string" ? '"' + c.value + '"'
+          : (c.value === true ? "yes" : c.value === false ? "no" : String(c.value));
+  return c.key + " " + (OPS[c.operator] || c.operator) + " " + v;
+}
+function wrap(c, parent){
+  const s = condText(c);
+  return (c.and || c.or) ? "(" + s + ")" : s;
+}
+
+/* ---- keys the node stores ---- */
+function storageKeys(n){
+  const id = n.id, out = [];
+  if(n.type === "essay") out.push(id+".text", id+".score", id+".feedback");
+  if(n.type === "quiz"){
+    out.push(id+".score", id+".total", id+".percent");
+    (n.content && n.content.items || []).forEach(q => { if(q.key) out.push(id+"."+q.key); });
+  }
+  if(n.type === "form") (n.content && n.content.items || []).forEach(f => out.push(id+"."+f.key));
+  if(n.type === "bool") out.push(id+".answer");
+  return out;
+}
+
+/* ============================================================
+   2. Layered layout
+   ============================================================ */
+
+const NW = 194, NH = 64, VGAP = 116, HGAP = 40;
+
+function buildModel(data){
+  const nodes = (data.nodes || []).map(n => Object.assign({}, n));
+  const edges = (data.edges || []).map((e, i) => Object.assign({}, e, {_i:i}));
+  const byId = new Map();
+  const issues = [];
+
+  nodes.forEach(n => {
+    if(byId.has(n.id)) issues.push("Two nodes use the id " + n.id + ".");
+    byId.set(n.id, n);
+    const p = PREFIX[n.type];
+    if(p && !new RegExp("^"+p+"\\d+$").test(n.id))
+      issues.push("The id " + n.id + " does not match the type " + n.type + " (expected the prefix “" + p + "”).");
+  });
+
+  const out = new Map(), inc = new Map();
+  nodes.forEach(n => { out.set(n.id, []); inc.set(n.id, []); });
+  edges.forEach(e => {
+    if(!byId.has(e.from)) { issues.push("An edge starts at " + e.from + ", which does not exist."); return; }
+    if(!byId.has(e.to))   { issues.push("An edge points to " + e.to + ", which does not exist."); return; }
+    out.get(e.from).push(e);
+    inc.get(e.to).push(e);
+    e._valid = true;
+  });
+
+  // evaluation order + warning when the fallback is not last
+  out.forEach((list, id) => {
+    list.forEach((e, i) => { e._ord = i + 1; e._of = list.length; });
+    const fb = list.findIndex(e => !e.when);
+    if(fb > -1 && fb < list.length - 1)
+      issues.push("In " + id + ", the unconditional edge is not the last one: the edges after it are never used.");
+  });
+
+  const start = data.info && data.info.start;
+  if(start && !byId.has(start)) issues.push("The start node " + start + " does not exist.");
+
+  // depth by BFS from the start node
+  const depth = new Map(), order = [];
+  if(byId.has(start)){
+    const q = [start]; depth.set(start, 0);
+    while(q.length){
+      const id = q.shift(); order.push(id);
+      out.get(id).forEach(e => {
+        if(!depth.has(e.to)){ depth.set(e.to, depth.get(id) + 1); q.push(e.to); }
+      });
+    }
+  }
+  const orphans = nodes.filter(n => !depth.has(n.id)).map(n => n.id);
+  if(orphans.length) issues.push("No path from the start node reaches: " + orphans.join(", ") + ".");
+
+  // layers by longest path, ignoring edges that go back
+  // (an edge goes back when its target is closer to the start than its source)
+  if(depth.size){
+    const fwd = e => e._valid && depth.has(e.from) && depth.has(e.to) && depth.get(e.to) >= depth.get(e.from);
+    const indeg = new Map(), rank = new Map();
+    depth.forEach((_, id) => { indeg.set(id, 0); rank.set(id, 0); });
+    edges.forEach(e => { if(fwd(e)) indeg.set(e.to, indeg.get(e.to) + 1); });
+    const q2 = [...indeg.keys()].filter(id => indeg.get(id) === 0);
+    let done = 0;
+    while(q2.length){
+      const id = q2.shift(); done++;
+      out.get(id).forEach(e => {
+        if(!fwd(e)) return;
+        rank.set(e.to, Math.max(rank.get(e.to), rank.get(id) + 1));
+        indeg.set(e.to, indeg.get(e.to) - 1);
+        if(indeg.get(e.to) === 0) q2.push(e.to);
+      });
+    }
+    // leftover cycles (rare): they keep the depth found by the breadth-first search
+    depth.forEach((d, id) => { depth.set(id, done === indeg.size ? rank.get(id) : (indeg.get(id) > 0 ? d : rank.get(id))); });
+  }
+
+  const maxDepth = depth.size ? Math.max.apply(null, [...depth.values()]) : -1;
+  orphans.forEach((id, i) => { depth.set(id, maxDepth + 2); order.push(id); });
+
+  // group by layer, keeping the order in which nodes were found
+  const rows = new Map();
+  order.forEach(id => {
+    const d = depth.get(id);
+    if(!rows.has(d)) rows.set(d, []);
+    rows.get(d).push(id);
+  });
+
+  // two barycentre passes to reduce crossings
+  const pos = new Map();
+  const levels = [...rows.keys()].sort((a,b)=>a-b);
+  levels.forEach(d => rows.get(d).forEach((id,i) => pos.set(id, i)));
+  for(let pass=0; pass<3; pass++){
+    levels.forEach(d => {
+      if(d === 0) return;
+      const list = rows.get(d);
+      const bc = new Map();
+      list.forEach((id,i) => {
+        const parents = inc.get(id).filter(e => depth.get(e.from) < d);
+        const vals = parents.map(e => pos.get(e.from)).filter(v => v !== undefined);
+        bc.set(id, vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : i);
+      });
+      list.sort((a,b) => bc.get(a) - bc.get(b));
+      list.forEach((id,i) => pos.set(id, i));
+    });
+  }
+
+  // coordinates
+  const widest = Math.max.apply(null, levels.map(d => rows.get(d).length).concat([1]));
+  const totalW = widest * (NW + HGAP);
+  levels.forEach(d => {
+    const list = rows.get(d);
+    const rowW = list.length * NW + (list.length - 1) * HGAP;
+    const x0 = (totalW - rowW) / 2;
+    list.forEach((id, i) => {
+      const n = byId.get(id);
+      n._x = x0 + i * (NW + HGAP);
+      n._y = d * (NH + VGAP);
+      n._depth = d;
+      n._orphan = orphans.indexOf(id) > -1;
+      n._out = out.get(id);
+      n._in  = inc.get(id);
+    });
+  });
+
+  const bands = [];
+  if(orphans.length) bands.push({y: (maxDepth + 2) * (NH + VGAP) - VGAP/2, label:"not reachable from the start node"});
+
+  return {nodes, edges, byId, issues, bands,
+          width: totalW, height: (Math.max.apply(null,[...depth.values()]) + 1) * (NH + VGAP),
+          start};
+}
+
+/* ============================================================
+   3. Drawing
+   ============================================================ */
+
+const SVGNS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs) => {
+  const n = document.createElementNS(SVGNS, tag);
+  for(const k in attrs) if(attrs[k] !== undefined && attrs[k] !== null) n.setAttribute(k, attrs[k]);
+  return n;
+};
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+function wrapText(s, max, lines){
+  const words = String(s || "").split(/\s+/).filter(Boolean);
+  const out = []; let cur = "";
+  for(const w of words){
+    const test = cur ? cur + " " + w : w;
+    if(test.length > max && cur){ out.push(cur); cur = w; if(out.length === lines) break; }
+    else cur = test;
+  }
+  if(out.length < lines && cur) out.push(cur);
+  if(out.length === lines){
+    const rest = words.join(" ");
+    if(out.join(" ").length < rest.length) out[lines-1] = out[lines-1].replace(/.{1}$/, "…");
+  }
+  return out.length ? out : [""];
+}
+
+function draw(){
+  const gN = document.getElementById("gNodes");
+  const gE = document.getElementById("gEdges");
+  const gL = document.getElementById("gLabels");
+  const gB = document.getElementById("gBands");
+  [gN,gE,gL,gB].forEach(g => { while(g.firstChild) g.removeChild(g.firstChild); });
+
+  model.bands.forEach(b => {
+    gB.appendChild(el("line",{x1:-60,x2:model.width+60,y1:b.y,y2:b.y,class:"band-rule"}));
+    const tx = el("text",{x:-56,y:b.y-8,class:"band"}); tx.textContent = b.label;
+    gB.appendChild(tx);
+  });
+
+  // edges
+  model.edges.forEach(e => {
+    if(!e._valid) return;
+    const a = model.byId.get(e.from), b = model.byId.get(e.to);
+    const back = b._depth <= a._depth;
+    const ax = a._x + NW/2, ay = a._y + NH;
+    const bx = b._x + NW/2, by = b._y;
+    let d, lx, ly;
+
+    if(!back){
+      const dy = Math.max(30, (by - ay) * .5);
+      const span = b._depth - a._depth;
+      if(span > 1){
+        // skips layers: bows sideways so it does not cross the nodes in between
+        const side = bx >= ax ? 1 : -1;
+        const bow = side * (NW/2 + 38);
+        d = `M${ax},${ay} C${ax+bow},${ay+dy*.7} ${bx+bow},${by-dy*.7} ${bx},${by-5}`;
+        lx = (ax+bx)/2 + bow*.82; ly = (ay+by)/2;
+      } else {
+        d = `M${ax},${ay} C${ax},${ay+dy} ${bx},${by-dy} ${bx},${by-5}`;
+        lx = (ax+bx)/2; ly = (ay+by)/2 + 4;
+      }
+    } else {
+      // goes back: leaves sideways and climbs
+      const side = bx <= ax ? -1 : 1;
+      const offX = side * (NW/2 + 46);
+      const sy = a._y + NH/2, ty = b._y + NH/2;
+      const sx = a._x + (side<0 ? 0 : NW), ex = b._x + (side<0 ? 0 : NW);
+      d = `M${sx},${sy} C${sx+offX},${sy} ${ex+offX},${ty} ${ex+(side<0?-5:5)},${ty}`;
+      lx = (sx+ex)/2 + offX*0.78; ly = (sy+ty)/2;
+    }
+
+    const cls = "edge " + (back ? "back" : (e.when ? "cond" : ""));
+    const p = el("path",{d, class:cls.trim(),
+      "marker-end":`url(#ar${back?"-back":(e.when?"-cond":"")})`});
+    p.dataset.from = e.from; p.dataset.to = e.to; p.dataset.i = e._i;
+    gE.appendChild(p);
+
+    // condition label / evaluation order
+    const txt = e.when ? condText(e.when) : (e._of > 1 ? "else" : "");
+    if(txt){
+      const short = txt.length > 30 ? txt.slice(0,29) + "…" : txt;
+      const w = short.length * 5.9 + 12;
+      const bg = el("rect",{x:lx-w/2, y:ly-9, width:w, height:16, rx:5, class:"elabel-bg"});
+      const tx = el("text",{x:lx, y:ly+3, class:"elabel", "text-anchor":"middle"});
+      tx.textContent = short;
+      const ti = el("title"); ti.textContent = txt; tx.appendChild(ti);
+      bg.dataset.i = e._i; tx.dataset.i = e._i;
+      gL.appendChild(bg); gL.appendChild(tx);
+    }
+    if(e._of > 1){
+      const px = ax + (e._ord - (e._of + 1) / 2) * 20, py = ay + 14;
+      const c = el("circle",{cx:px, cy:py, r:7.5, fill:back?"var(--edge-back)":(e.when?"var(--edge-cond)":"var(--edge)")});
+      const o = el("text",{x:px, y:py+3.2, class:"ord","text-anchor":"middle"});
+      o.textContent = e._ord;
+      c.dataset.i = e._i; o.dataset.i = e._i;
+      gL.appendChild(c); gL.appendChild(o);
+    }
+  });
+
+  // nodes
+  model.nodes.forEach(n => {
+    if(n._x === undefined) return;
+    const meta = TYPES[n.type] || {label:n.type, color:"#7A8B98", short:n.type};
+    const g = el("g",{class:"node-hit", transform:`translate(${n._x},${n._y})`, tabindex:"0", role:"button"});
+    g.dataset.id = n.id;
+
+    g.appendChild(el("rect",{x:0,y:0,width:NW,height:NH,rx:11,class:"node-box"}));
+    g.appendChild(el("path",{d:`M0,11 a11,11 0 0 1 11,-11 h${NW-22} a11,11 0 0 1 11,11 v3 h-${NW} z`, fill:meta.color}));
+
+    const idw = n.id.length * 6.6 + 14;
+    g.appendChild(el("rect",{x:11,y:11,width:idw,height:16,rx:4.5,fill:meta.color}));
+    const idt = el("text",{x:11+idw/2,y:22.5,class:"node-id","text-anchor":"middle"});
+    idt.textContent = n.id; g.appendChild(idt);
+
+    const sub = el("text",{x:11+idw+9,y:22.5,class:"node-sub"});
+    sub.textContent = meta.short; g.appendChild(sub);
+
+    const flags = [];
+    if(n.id === model.start) flags.push("start");
+    else if(!n._out || !n._out.length) flags.push("end");
+    if(storageKeys(n).length) flags.push("stores");
+    if(flags.length){
+      const f = el("text",{x:NW-11,y:22.5,class:"flag","text-anchor":"end"});
+      f.textContent = flags.join(" · "); g.appendChild(f);
+    }
+
+    wrapText(t(n.title), 27, 2).forEach((line, i) => {
+      const tx = el("text",{x:11,y:44+i*15,class:"node-title"});
+      tx.textContent = line; g.appendChild(tx);
+    });
+
+    const ti = el("title");
+    ti.textContent = n.id + " — " + meta.label + "\n" + t(n.title);
+    g.appendChild(ti);
+
+    g.addEventListener("click", ev => { ev.stopPropagation(); select(n.id); });
+    g.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); select(n.id); } });
+    gN.appendChild(g);
+  });
+}
+
+/* ---- highlight ---- */
+function highlight(){
+  const nodes = document.querySelectorAll(".node-hit");
+  const paths = document.querySelectorAll(".edge");
+  const labels = document.querySelectorAll(".elabel,.elabel-bg,.ord,circle[data-i]");
+  if(!selected){
+    nodes.forEach(n => n.classList.remove("dim","sel"));
+    paths.forEach(p => p.classList.remove("dim","hot"));
+    labels.forEach(l => l.classList.remove("dim"));
+    paths.forEach(p => resetMarker(p));
+    return;
+  }
+  const near = new Set([selected]);
+  const hotEdges = new Set();
+  model.edges.forEach(e => {
+    if(!e._valid) return;
+    if(e.from === selected){ near.add(e.to); hotEdges.add(e._i); }
+    if(e.to === selected){ near.add(e.from); hotEdges.add(e._i); }
+  });
+  nodes.forEach(n => {
+    const id = n.dataset.id;
+    n.classList.toggle("sel", id === selected);
+    n.classList.toggle("dim", !near.has(id));
+  });
+  paths.forEach(p => {
+    const hot = hotEdges.has(Number(p.dataset.i));
+    p.classList.toggle("hot", hot);
+    p.classList.toggle("dim", !hot);
+    hot ? p.setAttribute("marker-end","url(#ar-hot)") : resetMarker(p);
+  });
+  labels.forEach(l => l.classList.toggle("dim", !hotEdges.has(Number(l.dataset.i))));
+}
+function resetMarker(p){
+  const back = p.classList.contains("back"), cond = p.classList.contains("cond");
+  p.setAttribute("marker-end", `url(#ar${back?"-back":(cond?"-cond":"")})`);
+}
+
+/* ============================================================
+   4. Pan and zoom
+   ============================================================ */
+
+const view = {x:0, y:0, k:1};
+const vp = document.getElementById("viewport");
+const stage = document.getElementById("stage");
+function applyView(){ vp.setAttribute("transform", `translate(${view.x},${view.y}) scale(${view.k})`); }
+
+function fit(animate){
+  const r = stage.getBoundingClientRect();
+  const pad = 70;
+  const w = model.width + pad*2, h = model.height + pad*2;
+  const k = Math.min(r.width / w, r.height / h, 1.25);
+  view.k = Math.max(k, .12);
+  view.x = (r.width - model.width * view.k) / 2;
+  view.y = (r.height - model.height * view.k) / 2 + 20 * view.k;
+  applyView();
+}
+
+let drag = null;
+stage.addEventListener("pointerdown", e => {
+  if(e.target.closest(".node-hit")) return;
+  drag = {x:e.clientX, y:e.clientY, vx:view.x, vy:view.y};
+  stage.classList.add("dragging");
+  stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener("pointermove", e => {
+  if(!drag) return;
+  view.x = drag.vx + (e.clientX - drag.x);
+  view.y = drag.vy + (e.clientY - drag.y);
+  applyView();
+});
+["pointerup","pointercancel"].forEach(ev => stage.addEventListener(ev, e => {
+  if(drag && Math.abs(e.clientX-drag.x) < 3 && Math.abs(e.clientY-drag.y) < 3) select(null);
+  drag = null; stage.classList.remove("dragging");
+}));
+stage.addEventListener("wheel", e => {
+  e.preventDefault();
+  const r = stage.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const f = Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0016));
+  const k = Math.min(3, Math.max(.1, view.k * f));
+  view.x = mx - (mx - view.x) * (k / view.k);
+  view.y = my - (my - view.y) * (k / view.k);
+  view.k = k; applyView();
+}, {passive:false});
+
+// pinch on touch screens
+let pinch = null;
+stage.addEventListener("touchstart", e => {
+  if(e.touches.length === 2){
+    const [a,b] = e.touches;
+    pinch = {d: Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY), k: view.k};
+  }
+}, {passive:true});
+stage.addEventListener("touchmove", e => {
+  if(pinch && e.touches.length === 2){
+    e.preventDefault();
+    const [a,b] = e.touches;
+    const d = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+    view.k = Math.min(3, Math.max(.1, pinch.k * d / pinch.d));
+    applyView();
+  }
+}, {passive:false});
+stage.addEventListener("touchend", () => { pinch = null; }, {passive:true});
+
+function centerOn(id){
+  const n = model.byId.get(id);
+  if(!n || n._x === undefined) return;
+  const r = stage.getBoundingClientRect();
+  const panelW = document.getElementById("panel").classList.contains("open") && r.width > 760 ? 430 : 0;
+  view.x = (r.width - panelW)/2 - (n._x + NW/2) * view.k;
+  view.y = r.height/2 - (n._y + NH/2) * view.k;
+  applyView();
+}
+
+/* ============================================================
+   5. Minimal markdown
+   ============================================================ */
+
+function md(src){
+  const formulas = [];
+  // Markdown may carry simple HTML (e.g. <img>), so the text is not escaped; code is.
+  let s = protectMath(src == null ? "" : String(src), formulas).replace(/\r\n?/g,"\n");
+  const blocks = [];
+  s = s.replace(/```([\w-]*)\n([\s\S]*?)```/g, (m, lg, code) => {
+    blocks.push('<pre><code>' + esc(code.replace(/\n$/,"")) + '</code></pre>');
+    return "\u0000B" + (blocks.length-1) + "\u0000";
+  });
+
+  const lines = s.split("\n");
+  const out = [];
+  let list = null, para = [], quote = [];
+
+  const flushPara = () => { if(para.length){ out.push("<p>" + inline(para.join(" ")) + "</p>"); para = []; } };
+  const flushList = () => { if(list){ out.push("<"+list.tag+">" + list.items.map(i=>"<li>"+inline(i)+"</li>").join("") + "</"+list.tag+">"); list = null; } };
+  const flushQuote = () => { if(quote.length){ out.push("<blockquote>" + inline(quote.join(" ")) + "</blockquote>"); quote = []; } };
+  const flushAll = () => { flushPara(); flushList(); flushQuote(); };
+
+  for(let raw of lines){
+    const line = raw.replace(/\s+$/,"");
+    if(/^\u0000B\d+\u0000$/.test(line.trim())){ flushAll(); out.push(line.trim()); continue; }
+    if(!line.trim()){ flushAll(); continue; }
+    let m;
+    if((m = line.match(/^(#{1,6})\s+(.*)$/))){ flushAll(); const lv = Math.min(m[1].length,3); out.push("<h"+lv+">"+inline(m[2])+"</h"+lv+">"); continue; }
+    if(/^\s*([-*_])\s*\1\s*\1[\s\S]*$/.test(line) && line.replace(/[\s\-*_]/g,"") === ""){ flushAll(); out.push("<hr>"); continue; }
+    if((m = line.match(/^\s*>\s?(.*)$/))){ flushPara(); flushList(); quote.push(m[1]); continue; }
+    if((m = line.match(/^\s*[-*+]\s+(.*)$/))){ flushPara(); flushQuote();
+      if(!list || list.tag !== "ul"){ flushList(); list = {tag:"ul", items:[]}; }
+      list.items.push(m[1]); continue; }
+    if((m = line.match(/^\s*\d+[.)]\s+(.*)$/))){ flushPara(); flushQuote();
+      if(!list || list.tag !== "ol"){ flushList(); list = {tag:"ol", items:[]}; }
+      list.items.push(m[1]); continue; }
+    if(/^\s*\|.*\|\s*$/.test(line)){ flushPara(); flushQuote(); flushList();
+      const r = row(line);
+      if(r) out.push(r);
+      else if(out.length) out[out.length-1] = out[out.length-1].replace(/<td>/g,"<th>").replace(/<\/td>/g,"</th>");
+      continue; }
+    flushList(); flushQuote(); para.push(line.trim());
+  }
+  flushAll();
+  let html = out.join("\n");
+  html = html.replace(/(<tr>[\s\S]*?<\/tr>\n?)+/g, m => "<table>" + m.replace(/\n/g,"") + "</table>");
+  html = html.replace(/\u0000B(\d+)\u0000/g, (m,i) => blocks[Number(i)]);
+  html = html.replace(/\u0000M(\d+)\u0000/g, (m,i) => mathSpan(formulas[Number(i)]));
+  return html;
+
+  function row(line){
+    const cells = line.trim().replace(/^\||\|$/g,"").split("|").map(c => c.trim());
+    if(cells.every(c => /^:?-{2,}:?$/.test(c))) return "";
+    return "<tr>" + cells.map(c => "<td>" + inline(c) + "</td>").join("") + "</tr>";
+  }
+  function inline(x){
+    const codes = [];
+    return x
+      .replace(/`([^`]+)`/g, (m, code) => { codes.push("<code>" + esc(code) + "</code>"); return "\u0000C" + (codes.length-1) + "\u0000"; })
+      .replace(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g, (m,a,u) => /^(https?:|data:image\/)/i.test(u) ? '<img src="'+a2(u)+'" alt="'+esc(a)+'">' : a)
+      .replace(/\[([^\]]+)\]\(([^)\s]+)[^)]*\)/g, (m,txt,u) => /^(https?:|mailto:)/i.test(u) ? '<a href="'+a2(u)+'" target="_blank" rel="noopener noreferrer">'+txt+'</a>' : txt)
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+      .replace(/(^|\W)_([^_\n]+)_(?=\W|$)/g, "$1<em>$2</em>")
+      .replace(/\u0000C(\d+)\u0000/g, (m, i) => codes[Number(i)]);
+  }
+  function a2(u){ return u.replace(/"/g,"%22"); }
+}
+
+/* ---- LaTeX, delimited as the schema describes and typeset with KaTeX ---- */
+const KATEX = {
+  base: "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.18.6/",
+  js:  "sha384-7jGyG5zFwmEamqNWdCbpsPn+GTWEis3lnV7X/jXHyhFpJG7ExABLyMapabg8F4+p",
+  css: "sha384-M59ezskvvpvT+a+C1x088YJ3DVmK+wZdX0UkVKalOI4Qi5Nwv0WrvpqHcfa2HQqB"
+};
+// $$…$$ and \[…\] are blocks; \(…\) and $…$ are inline. A single $ does not open after a
+// letter or digit, nor before a space, and does not close before a digit: "R$ 10" stays text.
+const MATH = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|(?<![\\$\p{L}\p{N}])\$(?![\s$])((?:\\.|[^$\\\n])+?)(?<![\s\\])\$(?!\p{N})/gu;
+let katexLoading = null;
+
+// Swaps each formula for a placeholder, leaving fenced and inline code untouched.
+function protectMath(src, formulas){
+  return src.split(/(```[\w-]*\n[\s\S]*?```)/).map((part, i) => i % 2 ? part :
+    part.split(/(`[^`]+`)/).map((piece, j) => j % 2 ? piece :
+      piece.replace(MATH, (source, block, bracket, paren, dollar) => {
+        formulas.push({source, tex: block ?? bracket ?? paren ?? dollar, isDisplay: block !== undefined || bracket !== undefined});
+        return "\u0000M" + (formulas.length-1) + "\u0000";
+      })).join("")).join("");
+}
+
+// Until KaTeX arrives, or when it cannot be fetched, the formula shows as its source.
+function mathSpan(f){
+  if(!f) return "";
+  return '<span class="math' + (f.isDisplay ? " math-display" : "") + '" data-tex="' + esc(f.tex) + '"' +
+    (f.isDisplay ? " data-display" : "") + ">" + esc(f.source) + "</span>";
+}
+
+function loadKatex(){
+  return katexLoading ??= new Promise((resolve, reject) => {
+    if(window.katex) return resolve(window.katex);
+    const css = Object.assign(document.createElement("link"),
+      {rel:"stylesheet", href:KATEX.base + "katex.min.css", integrity:KATEX.css, crossOrigin:"anonymous", referrerPolicy:"no-referrer"});
+    const js = Object.assign(document.createElement("script"),
+      {src:KATEX.base + "katex.min.js", integrity:KATEX.js, crossOrigin:"anonymous", referrerPolicy:"no-referrer",
+       onload: () => window.katex ? resolve(window.katex) : reject(new Error("KaTeX did not load")),
+       onerror: () => reject(new Error("KaTeX did not load"))});
+    document.head.append(css, js);
+  });
+}
+
+function typesetMath(root){
+  const spans = root.querySelectorAll(".math:not([data-typeset])");
+  if(!spans.length) return;
+  loadKatex().then(katex => spans.forEach(span => {
+    if(!span.isConnected || span.hasAttribute("data-typeset")) return;
+    span.setAttribute("data-typeset", "");
+    try{ katex.render(span.dataset.tex, span, {displayMode: span.hasAttribute("data-display"), throwOnError: false}); }catch(err){}
+  }), () => {});
+}
+
+function promptHtml(text){
+  return esc(text).replace(/\{\{\s*STORAGE\s*:\s*([^}]+?)\s*\}\}/g,
+    (m,k) => '<span class="tok">{{ ' + k + ' }}</span>');
+}
+
+/* ============================================================
+   6. Inspector
+   ============================================================ */
+
+const panel = document.getElementById("panel");
+const pBody = document.getElementById("pBody");
+
+function select(id){
+  selected = id;
+  highlight();
+  if(!id){ panel.classList.remove("open"); return; }
+  const n = model.byId.get(id);
+  if(!n) return;
+  const meta = TYPES[n.type] || {label:n.type, color:"#7A8B98"};
+
+  const pt = document.getElementById("pType");
+  pt.textContent = n.id + " · " + meta.label;
+  pt.style.background = meta.color;
+  document.getElementById("pTitle").textContent = t(n.title) || "(untitled)";
+
+  const sec = (course.info.sections || []).find(s => s.number === (n.section || 1));
+  const bits = [];
+  bits.push(sec ? "Section " + sec.number + ": " + t(sec.title) : "Section " + (n.section || 1));
+  if(n.id === model.start) bits.push("start node");
+  if(n._orphan) bits.push("unreachable");
+  document.getElementById("pWhere").textContent = bits.join(" · ");
+
+  pBody.innerHTML = contentHtml(n) + keysHtml(n) + linksHtml(n);
+  typesetMath(pBody);
+  pBody.scrollTop = 0;
+  panel.classList.add("open");
+
+  pBody.querySelectorAll(".toggle").forEach(b => b.addEventListener("click", () => {
+    const box = document.getElementById(b.dataset.target);
+    const on = box.hidden;
+    box.hidden = !on;
+    b.textContent = on ? b.dataset.off : b.dataset.on;
+  }));
+  pBody.querySelectorAll(".lnk").forEach(b => b.addEventListener("click", () => {
+    select(b.dataset.go); centerOn(b.dataset.go);
+  }));
+  pBody.querySelectorAll("iframe[data-src]").forEach(f => { f.srcdoc = f.dataset.src; });
+}
+
+function section(title, inner){
+  return '<section class="sec"><h3>' + title + '</h3>' + inner + '</section>';
+}
+
+function contentHtml(n){
+  const c = n.content || {};
+  switch(n.type){
+    case "static-md": {
+      const raw = t(c.item);
+      return section("Markdown content",
+        '<div class="prose">' + md(raw) + '</div>' +
+        srcToggle("src-"+n.id, raw));
+    }
+    case "static-html": {
+      const raw = t(c.item);
+      return section("Prebuilt HTML (sandboxed)",
+        '<iframe sandbox data-src="' + esc(raw) + '" title="HTML preview"></iframe>' +
+        srcToggle("src-"+n.id, raw));
+    }
+    case "dynamic-md":
+    case "dynamic-html": {
+      const p = t(c.prompt);
+      const what = n.type === "dynamic-md" ? "markdown" : "HTML";
+      return section("Prompt the AI runs to generate the " + what,
+        '<div class="code">' + promptHtml(p) + '</div>');
+    }
+    case "essay": {
+      return section("Instructions for the student", '<div class="prose">' + md(t(c.instructions)) + '</div>') +
+             section("Grading prompt (hidden from the student)",
+               '<div class="code">' + promptHtml(c.prompt || "") + '</div>');
+    }
+    case "quiz": {
+      const items = c.items || [];
+      const qs = items.map((q, i) => {
+        const opts = (q.options || []).map(o =>
+          '<li><span class="mark' + (o.correct ? " ok" : "") + '">' +
+          (o.correct ? "correct" : esc(o.value)) + '</span><span>' + md(t(o.label)).replace(/^<p>|<\/p>$/g,"") + '</span></li>').join("");
+        const fb = t(q.feedback);
+        return '<div class="q">' +
+          '<div class="stem">' + (i+1) + '. ' + md(t(q.question)).replace(/^<p>|<\/p>$/g,"") + '</div>' +
+          '<ul class="opts">' + opts + '</ul>' +
+          (q.key ? '<div class="qmeta">Stores the chosen option in <span class="key">' + n.id + "." + esc(q.key) + '</span></div>' : "") +
+          (fb ? '<div class="qmeta">Feedback: ' + md(fb).replace(/^<p>|<\/p>$/g,"") + '</div>' : "") +
+        '</div>';
+      }).join("");
+      return section(items.length + (items.length === 1 ? " question" : " questions"), qs);
+    }
+    case "form": {
+      const fs = (c.items || []).map(f => {
+        const opts = (f.options || []).map(o =>
+          '<li><span class="mark">' + esc(o.value) + '</span><span>' + md(t(o.label)).replace(/^<p>|<\/p>$/g,"") + '</span></li>').join("");
+        return '<div class="q">' +
+          '<div class="field-head"><span class="tag">' + esc(f.type) + '</span>' +
+          (f.required ? '<span class="tag req">required</span>' : "") +
+          '<span class="key">' + n.id + "." + esc(f.key) + '</span></div>' +
+          '<div class="stem">' + md(t(f.label)).replace(/^<p>|<\/p>$/g,"") + '</div>' +
+          (opts ? '<ul class="opts">' + opts + '</ul>' : "") +
+        '</div>';
+      }).join("");
+      return section("Form fields", fs);
+    }
+    case "bool": {
+      const yes = t(c["yes-label"]) || "Yes";
+      const no  = t(c["no-label"]) || "No";
+      const def = c.default;
+      return section("Question",
+        '<div class="prose">' + md(t(c.question)) + '</div>' +
+        '<ul class="opts" style="margin-top:10px">' +
+          '<li><span class="mark' + (def === true ? " ok" : "") + '">yes</span><span>' + esc(yes) + (def===true?" (preselected)":"") + '</span></li>' +
+          '<li><span class="mark' + (def === false ? " ok" : "") + '">no</span><span>' + esc(no) + (def===false?" (preselected)":"") + '</span></li>' +
+        '</ul>' +
+        (def === undefined ? '<div class="qmeta">No answer is preselected: the student has to choose.</div>' : ""));
+    }
+    default:
+      return section("Content", '<div class="code">' + esc(JSON.stringify(n.content, null, 2)) + '</div>');
+  }
+}
+
+function srcToggle(id, raw){
+  return '<button class="toggle" data-target="' + id + '" data-on="Show source" data-off="Hide source">Show source</button>' +
+         '<div class="code" id="' + id + '" hidden style="margin-top:8px">' + esc(raw) + '</div>';
+}
+
+function keysHtml(n){
+  const keys = storageKeys(n);
+  if(!keys.length) return "";
+  return section("Data this node stores",
+    '<div class="keys">' + keys.map(k => '<span class="key">' + esc(k) + '</span>').join("") + '</div>');
+}
+
+function linkRow(otherId, edge, dir){
+  const o = model.byId.get(otherId);
+  const meta = TYPES[o.type] || {color:"#7A8B98"};
+  const cond = edge.when
+    ? '<span class="cond">' + esc(condText(edge.when)) + '</span>'
+    : '<span class="cond fallback">' + (edge._of > 1 ? "else (default path)" : "no condition") + '</span>';
+  const ord = dir === "out" && edge._of > 1 ? "#" + edge._ord + " · " : "";
+  return '<button class="lnk" data-go="' + esc(otherId) + '">' +
+    '<span class="nid" style="background:' + meta.color + '">' + esc(otherId) + '</span>' +
+    '<span class="txt">' + ord + esc(t(o.title)) + cond + '</span></button>';
+}
+
+function linksHtml(n){
+  const outs = (n._out || []);
+  const ins  = (n._in || []);
+  let html = "";
+  html += section("Goes to" + (outs.length > 1 ? " — evaluated top to bottom, the first that holds" : ""),
+    outs.length ? '<div class="links">' + outs.map(e => linkRow(e.to, e, "out")).join("") + '</div>'
+                : '<p class="empty">No edge leaves this node: it is an end of the course.</p>');
+  html += section("Comes from",
+    ins.length ? '<div class="links">' + ins.map(e => linkRow(e.from, e, "in")).join("") + '</div>'
+               : '<p class="empty">' + (n.id === model.start ? "This is the start node of the course." : "No edge reaches this node.") + '</p>');
+  return html;
+}
+
+document.getElementById("pClose").addEventListener("click", () => select(null));
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape") select(null);
+  if(e.key === "f" && !e.target.closest("input,select,textarea")) fit();
+});
+
+/* ============================================================
+   7. Rendering the course
+   ============================================================ */
+
+function render(data){
+  course = data;
+  const info = data.info || {};
+  const langs = [info["source-language"]].concat(info["other-languages"] || []).filter(Boolean);
+  if(!langs.length) langs.push("--");
+  if(!langs.includes(lang)) lang = langs[0];
+
+  const sel = document.getElementById("lang");
+  sel.innerHTML = langs.map(l => '<option value="' + esc(l) + '"' + (l===lang?" selected":"") + ">" + esc(l) + "</option>").join("");
+  sel.hidden = langs.length < 2;
+
+  document.getElementById("courseTitle").textContent = t(info.title) || "Untitled course";
+  document.getElementById("courseMeta").textContent =
+    [info.author, info.version ? "v"+info.version : "", info.date].filter(Boolean).join("  ·  ");
+
+  model = buildModel(data);
+  document.getElementById("stats").textContent =
+    model.nodes.length + " nodes · " + model.edges.filter(e=>e._valid).length + " edges";
+
+  draw();
+  selected = null;
+  panel.classList.remove("open");
+  highlight();
+  fit();
+  showIssues(model.issues);
+  buildLegend();
+}
+
+function buildLegend(){
+  const used = new Set(model.nodes.map(n => n.type));
+  document.getElementById("legendList").innerHTML =
+    Object.keys(TYPES).filter(k => used.has(k)).map(k =>
+      '<li><span class="swatch" style="background:' + TYPES[k].color + '"></span>' + TYPES[k].label + '</li>').join("");
+  document.getElementById("legendRule").innerHTML =
+    'Green line: conditional edge. Dashed red line: goes back to an earlier node. ' +
+    'The number on an outgoing edge is the order in which its condition is tested.';
+}
+
+function showIssues(list){
+  const box = document.getElementById("issues");
+  if(!list.length){ box.classList.remove("show"); return; }
+  document.getElementById("issuesList").innerHTML = list.map(i => "<li>" + esc(i) + "</li>").join("");
+  box.classList.add("show");
+}
+document.getElementById("issuesClose").addEventListener("click", () =>
+  document.getElementById("issues").classList.remove("show"));
+
+document.getElementById("lang").addEventListener("change", e => {
+  lang = e.target.value;
+  const keep = selected;
+  draw(); highlight();
+  if(keep) select(keep);
+});
+document.getElementById("fit").addEventListener("click", () => fit());
+window.addEventListener("resize", () => { if(model) fit(); });
+
+/* ============================================================
+   8. The course (replaced when the map is built)
+   ============================================================ */
+
+const COURSE = {"$schema": "https://edukors.org/graph/schema/v1/", "info": {"course-id": "387ac704-e2f2-4654-b9cf-091dd9093944", "source-language": "en", "other-languages": [], "title": [{"lang": "en", "text": "Cats of the World (mini)"}], "description": [{"lang": "en", "text": "A linear read in five steps: big cats, small wild cats and domestic cats."}], "author": "Mauricio Garcia", "version": "1.1.0", "date": "2026-09-17", "start": "sm1", "sections": [{"number": 1, "title": [{"lang": "en", "text": "Cats of the World"}]}]}, "nodes": [{"id": "sm1", "type": "static-md", "section": 1, "title": [{"lang": "en", "text": "Welcome to the world of cats"}], "content": {"item": [{"lang": "en", "text": "## Welcome to the world of cats\n\n![Lion resting in Namibia](https://commons.wikimedia.org/wiki/Special:FilePath/Lion%20waiting%20in%20Namibia.jpg?width=800)\n\nThere are about 40 species of cats on the planet, and they live on every continent except Antarctica and Oceania (where they arrived only in human hands). All of them descend from a common ancestor that lived some 10 million years ago, so they share one \"blueprint\": retractable claws, teeth built for slicing meat, excellent night vision and a body designed for the ambush. A 190 kg lion and a 4 kg sofa cat are, at heart, variations on the same theme.\n\nThis course is a journey through that group. You will meet three families of cats:\n\n- **The big cats**: lion, tiger, jaguar, leopard, snow leopard, puma and cheetah.\n- **The small wild cats**: lynx, serval, Pallas's cat, sand cat and European wildcat, among others that rarely make it into documentaries.\n- **Domestic cats**: how the cat moved into our homes some 10,000 years ago and spread around the world on ships.\n\n### How the course works\n\nIt is a straight read, in three short chapters, one for each group. There is no quiz and no activity: read at your own pace and move on.\n\nBy the end, you will be able to:\n\n1. Tell big cats from small cats and say where each one lives.\n2. Explain what makes cats such efficient hunters.\n3. Tell the story of the cat's domestication.\n\nLet's begin."}]}}, {"id": "sh1", "type": "static-html", "section": 1, "title": [{"lang": "en", "text": "Big cats: who is who"}], "content": {"item": [{"lang": "en", "text": "<h2>Big cats: who is who<\/h2>\n<p>\"Big cat\" is not a strict scientific term. It usually covers the five members of the genus <em>Panthera<\/em> (lion, tiger, jaguar, leopard and snow leopard), which have a flexible throat bone and can therefore <strong>roar<\/strong>, plus the puma and the cheetah, which are big in size but belong to \"small cat\" lineages: they do not roar, but they <strong>purr<\/strong> like a house cat.<\/p>\n<table style=\"width:100%;border-collapse:collapse;font-size:0.95em\">\n<thead><tr style=\"background:#f0e6d8\"><th style=\"padding:6px;text-align:left\">Species<\/th><th style=\"padding:6px;text-align:left\">Where it lives<\/th><th style=\"padding:6px;text-align:left\">Typical weight<\/th><th style=\"padding:6px;text-align:left\">Trademark<\/th><\/tr><\/thead>\n<tbody>\n<tr><td style=\"padding:6px\"><strong>Lion<\/strong><br><em>Panthera leo<\/em><\/td><td style=\"padding:6px\">African savannas; one small population in the Gir Forest, India<\/td><td style=\"padding:6px\">120 to 190 kg<\/td><td style=\"padding:6px\">The only social cat: lives in prides, and the females hunt as a group<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Tiger<\/strong><br><em>Panthera tigris<\/em><\/td><td style=\"padding:6px\">Forests and swamps of Asia, from India to the Russian Far East<\/td><td style=\"padding:6px\">100 to 260 kg<\/td><td style=\"padding:6px\">The largest living cat; each tiger has a unique stripe pattern, like a fingerprint<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Jaguar<\/strong><br><em>Panthera onca<\/em><\/td><td style=\"padding:6px\">From Mexico to Argentina, mainly the Amazon and the Pantanal<\/td><td style=\"padding:6px\">55 to 100 kg<\/td><td style=\"padding:6px\">Strongest bite for its size; an excellent swimmer that hunts caimans<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Leopard<\/strong><br><em>Panthera pardus<\/em><\/td><td style=\"padding:6px\">Africa and much of Asia<\/td><td style=\"padding:6px\">30 to 70 kg<\/td><td style=\"padding:6px\">The most adaptable: lives from deserts to cities; stores its prey up in trees<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Snow leopard<\/strong><br><em>Panthera uncia<\/em><\/td><td style=\"padding:6px\">Mountains of Central Asia, above 3,000 m<\/td><td style=\"padding:6px\">25 to 55 kg<\/td><td style=\"padding:6px\">A tail almost as long as its body, used as a blanket; cannot roar<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Puma<\/strong><br><em>Puma concolor<\/em><\/td><td style=\"padding:6px\">From Canada to Patagonia: the widest range of any land mammal in the Americas<\/td><td style=\"padding:6px\">35 to 80 kg<\/td><td style=\"padding:6px\">Jumps more than 5 m high; purrs<\/td><\/tr>\n<tr><td style=\"padding:6px\"><strong>Cheetah<\/strong><br><em>Acinonyx jubatus<\/em><\/td><td style=\"padding:6px\">Open savannas of Africa; a few dozen in Iran<\/td><td style=\"padding:6px\">35 to 65 kg<\/td><td style=\"padding:6px\">Fastest land animal, close to 100 km/h in short sprints; semi-retractable claws, like running spikes<\/td><\/tr>\n<\/tbody><\/table>\n\n<h3>Three portraits<\/h3>\n<div style=\"display:flex;flex-wrap:wrap;gap:12px\">\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Walking%20tiger%20female.jpg?width=600\" alt=\"Tigress walking through tall grass\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Tigress. The stripes break up her outline in tall vegetation.<\/figcaption><\/figure>\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Standing%20jaguar.jpg?width=600\" alt=\"Standing jaguar\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Jaguar. Note the rosettes with a dot in the middle, which the leopard lacks.<\/figcaption><\/figure>\n<figure style=\"flex:1 1 220px;margin:0\"><img src=\"https://commons.wikimedia.org/wiki/Special:FilePath/Uncia%20uncia.jpg?width=600\" alt=\"Snow leopard\" style=\"width:100%;border-radius:8px\"><figcaption style=\"font-size:0.85em\">Snow leopard. Thick fur and a long tail for the mountain cold.<\/figcaption><\/figure>\n<\/div>\n\n<h3>Why they matter<\/h3>\n<p>Big cats sit at the top of the food chain. Where they disappear, herbivores multiply, vegetation changes and rivers can even shift course. That is why they are called <strong>umbrella species<\/strong>: protecting a tiger means protecting the whole forest it hunts in. Today all seven are in decline; the tiger, for example, occupies less than 7% of the range it had a century ago.<\/p>\n<p><small>Images: Wikimedia Commons.<\/small><\/p>"}]}}, {"id": "sm2", "type": "static-md", "section": 1, "title": [{"lang": "en", "text": "Small wild cats"}], "content": {"item": [{"lang": "en", "text": "## Small wild cats: the ones nobody sees\n\nOf the planet's roughly 40 cats, only 7 are \"big\". The other 33 are small wild cats, and hardly anyone knows their names. Some fit in the palm of a hand as kittens; the largest, the Eurasian lynx, reaches 30 kg. This chapter introduces five of them, chosen for being very different from one another.\n\n### Eurasian lynx (*Lynx lynx*)\n\n![Eurasian lynx](https://commons.wikimedia.org/wiki/Special:FilePath/Lynx%20lynx%20poing.jpg?width=800)\n\nLives in the cold forests of Europe and Asia, from Scandinavia to Tibet. It has huge furry paws that work like snowshoes, and tufts of hair on its ears that help capture sound. It hunts mainly roe deer and hares. It was wiped out across much of Western Europe and is being reintroduced in Switzerland, Germany and France.\n\n### Serval (*Leptailurus serval*)\n\n![Serval in the Serengeti savanna](https://commons.wikimedia.org/wiki/Special:FilePath/Leptailurus%20serval%20-Serengeti%20National%20Park%2C%20Tanzania-8.jpg?width=800)\n\nThe cat with the longest legs relative to its body. It lives in the wet savannas of Africa and hunts rodents hidden in the grass: it listens with its enormous ears, leaps 2 metres into the air and lands with its front paws on the prey. It has one of the highest hunting success rates among cats, close to 50% of attempts.\n\n### Pallas's cat or manul (*Otocolobus manul*)\n\n![Manul](https://commons.wikimedia.org/wiki/Special:FilePath/Manul1.jpg?width=800)\n\nAn inhabitant of the cold steppes of Mongolia and Central Asia. Its fur is so dense that it looks twice its real size; its ears sit low so it does not show above the rocks, and its pupils are round, unlike the vertical slit of most small cats. It lives at close to 4,000 metres of altitude.\n\n### Sand cat (*Felis margarita*)\n\n![Sand cat](https://commons.wikimedia.org/wiki/Special:FilePath/Persian%20sand%20CAT.jpg?width=800)\n\nThe only cat that lives exclusively in deserts, from the Sahara to Iran. It has fur on the soles of its paws for walking on hot sand and can go months without drinking: it gets all the liquid it needs from its prey. It tolerates from -5 °C at night to over 50 °C by day.\n\n### European wildcat (*Felis silvestris*)\n\n![European wildcat](https://commons.wikimedia.org/wiki/Special:FilePath/Felis%20silvestris%20silvestris.jpg?width=800)\n\nIt looks like a sturdy tabby house cat, with a thick, black-tipped tail. It lives in the forests of Europe and is a close relative of the African wildcat, the direct ancestor of the house cat. Its greatest risk today is interbreeding with domestic cats and disappearing as a pure species.\n\n### What the small ones teach\n\nThe small cats show how a single body plan adapts to extreme environments: snow, desert, steppe, savanna. They are also the least studied and least protected, because they draw less attention than a tiger. Several, like the manul and the sand cat, were photographed in the wild for the first time only this century.\n\n*Images: Wikimedia Commons.*"}]}}, {"id": "sm3", "type": "static-md", "section": 1, "title": [{"lang": "en", "text": "Domestic cats around the world"}], "content": {"item": [{"lang": "en", "text": "## Domestic cats around the world\n\n![Domestic cat](https://commons.wikimedia.org/wiki/Special:FilePath/Cat%20November%202010-1a.jpg?width=800)\n\nThe house cat (*Felis catus*) is the most numerous cat on the planet: estimates run between 400 and 600 million, on every inhabited continent. And it is the only one that, to a large extent, chose to live with us.\n\n### How the cat moved in\n\nAll domestic cats descend from the **African wildcat** (*Felis lybica*), a small cat of the Middle East and North Africa. The story begins some 10,000 years ago, when the first farmers of the Fertile Crescent started storing grain. Grain attracted mice; mice attracted wildcats. The less fearful cats stayed near the villages, ate well and left more kittens. It was a two-way domestication: nobody \"captured\" the cat, it came closer on its own.\n\nThe oldest evidence of this relationship is a grave in Cyprus, about 9,500 years old, where a human was buried next to a cat. Since there were no wildcats on Cyprus, someone brought it by boat.\n\n### Egypt and the ships\n\nIn Egypt, from around 4,000 years ago, the cat became a pet and an object of worship: the goddess Bastet had a cat's head, and killing a cat could be punished by death. From there cats boarded Phoenician, Roman and, centuries later, Viking ships, always with the same job: controlling rats on board. That is why cats reached practically every port in the world before any other route. DNA studies show that the Egyptian lineage conquered the world precisely because of maritime trade.\n\n### Breeds: four examples from four continents\n\n| Breed | Origin | What sets it apart |\n|---|---|---|\n| **Siamese** | Thailand (formerly Siam), described since the 14th century | Pale body and dark points: the pigment only forms on the cooler parts of the body |\n| **Maine Coon** | Northeastern United States | One of the largest breeds, up to 8 kg, with a dense coat for winter |\n| **Sphynx** | Canada, from 1966 | A natural mutation that suppresses the coat; needs baths and warm clothing |\n| **Egyptian Mau** | Egypt | One of the few naturally spotted breeds, very like the cats in ancient paintings |\n\n![Siamese](https://commons.wikimedia.org/wiki/Special:FilePath/Siam%20lilacpoint.jpg?width=500)\n\n### The cat is still wild\n\nUnlike the dog, the cat has changed little from its ancestor: the genomes of the domestic cat and the African wildcat are almost identical. It still hunts alone, still sleeps 12 to 16 hours a day and still marks territory. Purring, which the big cats lack, serves both to soothe and to ask for food, and there is evidence that its frequency helps bones heal. When a cat \"brings a gift\" to the door, it is doing what the wildcat does with its kittens: teaching them to hunt.\n\n*Images: Wikimedia Commons.*"}]}}, {"id": "sm5", "type": "static-md", "section": 1, "title": [{"lang": "en", "text": "Closing"}], "content": {"item": [{"lang": "en", "text": "## Closing\n\n![Puma](https://commons.wikimedia.org/wiki/Special:FilePath/Puma%20face.jpg?width=800)\n\nYou have reached the end of the journey. It is worth looking back at what stays with you.\n\n### What cats have in common\n\nA single body plan, tuned to each environment: retractable claws to keep the tips sharp, teeth that slice rather than chew, eyes with a reflective layer that multiplies the light of the night, whiskers that feel the air, and a body built for the ambush rather than the long chase. The cheetah is the exception that proves the rule: to run, it gave up strength and fully retractable claws.\n\n### What sets them apart\n\n- **The big cats** roar, rule large territories and sustain whole ecosystems. All seven are in decline, and protecting one of them protects the landscape around it.\n- **The small wild cats** are 33 almost unknown species, living from snow to desert. They are the least studied and the ones that most need attention.\n- **The domestic cat** is the cat that came to us 10,000 years ago and conquered the world on ships, without ceasing to be a solitary hunter.\n\n### To go further\n\n- Look up the **IUCN Red List** (iucnredlist.org) to see the status of any species mentioned here.\n- If you have a cat at home, watch a week of its behaviour with this course's eyes: where it sleeps, what it \"hunts\", how it marks territory.\n- If you want to meet a real wild cat, visit a reserve or a conservation centre rather than a place offering direct contact: cats used for photos with tourists are rarely well treated.\n\nThank you for exploring the cats of the world.\n\n*Image: Wikimedia Commons.*"}]}}], "edges": [{"from": "sm1", "to": "sh1"}, {"from": "sh1", "to": "sm2"}, {"from": "sm2", "to": "sm3"}, {"from": "sm3", "to": "sm5"}]};
+render(COURSE);
+</script>
+</body>
+</html>
