@@ -35,13 +35,6 @@ $h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 
 
 <main>
   <h2>Courses</h2>
-  <p class="lead">
-    <?= count($courses) ?> published course<?= count($courses) === 1 ? '' : 's' ?>.
-    Each one can be read as a map of its steps, taken from beginning to end, or read as the
-    file it is written in. Nothing here needs an account, and nothing here is kept about you:
-    a course taken from this page runs entirely in your browser and is forgotten when you
-    close it.
-  </p>
 
   <?php if ($courses === []): ?>
     <p class="empty">Nothing published yet.</p>

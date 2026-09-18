@@ -53,17 +53,21 @@ function edukors_import(string $json, bool $publish = false): array
     // row is as good as any, and a version imported now joins the others
     // exactly where the one before it was.
     $kept = db_row(
-        'SELECT title, title_custom, category_id, sort_order FROM course
+        'SELECT title, doc, category_id, sort_order FROM course
          WHERE course_uuid = ? ORDER BY id DESC LIMIT 1',
         [$uuid]
     );
-    $named = $kept !== null && (int) $kept['title_custom'] === 1;
+
+    // A name given by hand is a name that is not the one in the file it came
+    // with. Nothing has to write that down: the two strings say it. It is also
+    // what makes emptying the name in the admin enough to undo it -- putting
+    // the file's own title back is what "not named by hand" means.
+    $named = $kept !== null && $kept['title'] !== Course::storedTitle((string) $kept['doc']);
 
     $columns = [
         'course_uuid'     => $uuid,
         'version'         => $version,
         'title'           => $named ? (string) $kept['title'] : mb_substr($course->title(), 0, 255),
-        'title_custom'    => $named ? 1 : 0,
         'author'          => mb_substr($course->author(), 0, 255),
         'source_language' => $course->sourceLanguage(),
         'languages'       => implode(',', $course->languages()),

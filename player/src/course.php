@@ -72,6 +72,20 @@ final class Course
         return self::localize($this->info['title'] ?? [], $lang ?? $this->sourceLanguage());
     }
 
+    /**
+     * The title as the `course.title` column holds it: the source language,
+     * cut to the width of the column.
+     *
+     * It exists so that a stored title can be compared with the one in the
+     * file it came from and the two are the same thing on both sides -- which
+     * is how the server knows whether a course was renamed by hand, without
+     * writing that down anywhere.
+     */
+    public static function storedTitle(string $doc): string
+    {
+        return mb_substr(self::fromJson($doc)->title(), 0, 255);
+    }
+
     public function description(?string $lang = null): string
     {
         return self::localize($this->info['description'] ?? [], $lang ?? $this->sourceLanguage());

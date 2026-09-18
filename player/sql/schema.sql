@@ -35,8 +35,8 @@ CREATE TABLE IF NOT EXISTS course (
   id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   course_uuid     CHAR(36)     NOT NULL,           -- info.course-id
   version         VARCHAR(20)  NOT NULL,           -- info.version
-  title           VARCHAR(255) NOT NULL,           -- title in the source language
-  title_custom    TINYINT(1)   NOT NULL DEFAULT 0, -- 1 = named by hand in the admin
+  title           VARCHAR(255) NOT NULL,           -- the source language's title, or
+                                                   -- the name given in the admin
   author          VARCHAR(255) NOT NULL,
   source_language VARCHAR(5)   NOT NULL,
   languages       VARCHAR(120) NOT NULL,           -- csv: source-language + other-languages

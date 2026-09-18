@@ -38,18 +38,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
         if ($title !== '') {
             db_run(
-                'UPDATE course SET title = ?, title_custom = 1 WHERE course_uuid = ?',
+                'UPDATE course SET title = ? WHERE course_uuid = ?',
                 [mb_substr($title, 0, 255), $row['course_uuid']]
             );
             admin_flash("This course is listed as $title now.", 'ok');
         } else {
             // An empty name field hands the name back to the JSON, where each
-            // version has a title of its own.
+            // version has a title of its own. Putting that title back is the
+            // whole of it: a name equal to the file's is, by definition, not
+            // one given by hand, and the next import will see that.
             $versions = db_all('SELECT id, doc FROM course WHERE course_uuid = ?', [$row['course_uuid']]);
             foreach ($versions as $v) {
                 db_run(
-                    'UPDATE course SET title = ?, title_custom = 0 WHERE id = ?',
-                    [mb_substr(Course::fromJson($v['doc'])->title(), 0, 255), (int) $v['id']]
+                    'UPDATE course SET title = ? WHERE id = ?',
+                    [Course::storedTitle((string) $v['doc']), (int) $v['id']]
                 );
             }
             admin_flash('Saved. The name comes from the course JSON again.', 'ok');
@@ -211,7 +213,7 @@ admin_head((string) $row['title']);
     The three belong to the course, not to this version: every version stored takes them, and
     the next one imported arrives with them. <strong>Name</strong> is what this server lists the
     course under, and the title in the JSON no longer replaces it — that title is
-    <q><?= h($course->title()) ?></q><?= (int) $row['title_custom'] === 1 ? '' : ', which is what this is' ?>,
+    <q><?= h($course->title()) ?></q><?= $row['title'] === Course::storedTitle((string) $row['doc']) ? ', which is what this is' : '' ?>,
     and emptying the field goes back to it. <strong>Order</strong> places the course inside its
     category, smallest first, courses sharing a number falling back to their name.
     Students see none of this: the player takes the title from the JSON, in the language they
