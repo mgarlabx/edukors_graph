@@ -1,6 +1,6 @@
 <?php
 /**
- * The catalogue: every published course, and the four ways into each one.
+ * The catalogue: every published course, and the three ways into each one.
  *
  * This is the only page of this server anybody may open without arriving from
  * a learning platform, and the only one that names a course to somebody who
@@ -59,10 +59,11 @@ $h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 
         <span class="langs"><?= $h($c['languages']) ?></span></span>
       <span class="actions">
         <?php $q = '?course=' . urlencode((string) $c['course_uuid']); ?>
-        <?= catalog_action('map.php' . $q,      'map',      'Map of the course',  true) ?>
-        <?= catalog_action('play.php' . $q,     'play',     'Take the course',    true) ?>
-        <?= catalog_action('json.php' . $q,     'json',     'Read the JSON')            ?>
-        <?= catalog_action('download.php' . $q, 'download', 'Download the JSON')        ?>
+        <?= catalog_action('map.php' . $q,  'map',  'Map of the course', true) ?>
+        <?= catalog_action('play.php' . $q, 'play', 'Take the course',   true) ?>
+        <?php // Downloading the file is offered on the JSON page, where somebody
+              // who wants the file is already looking at it. ?>
+        <?= catalog_action('json.php' . $q,  'json', 'Read the JSON')          ?>
       </span>
     </li>
   <?php endforeach; ?>

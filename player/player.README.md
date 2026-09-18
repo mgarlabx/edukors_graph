@@ -14,7 +14,7 @@ This server is the other half. It takes the same player, unchanged, and gives it
 | **Inference** | The dynamic steps and the essay grading run here, with this server's own key, from prompts the browser never sees.                                             |
 | **Progress**  | Where a student is, what they answered, what the AI wrote for them and what feedback they got, all in MySQL, so any device resumes where the last one stopped. |
 | **Download**  | One HTML file the student can keep and run with no network.                                                                                                    |
-| **Catalogue** | A public front page listing the published courses, each openable as a map, as a course to take anonymously, or as the file it is written in.                    |
+| **Catalogue** | A public front page listing the published courses, each openable as a map, as a course to take anonymously, or as the file it is written in.                     |
 
 It is written in plain PHP, with no framework and no Composer dependency. PHP 8.1 or later with `pdo_mysql`, `curl`, `openssl` and `json` is the whole requirement.
 
@@ -211,14 +211,13 @@ The session cookie is `edukors_graphs`, scoped to the path in `base_url`, so it 
 
 `public/catalog/` is the public face of the server, and the only part of it anybody may open: the front door redirects there, and it lists every course whose status is `published` — in the order the admin put them in, the categories by theirs and the courses by theirs inside each one. A draft is not a course the public has, so it is not listed, and asking for one by its id is answered the same way an invented id is: with a 404 that says nothing about what exists.
 
-Each course is a line, with four things you can do with it:
+Each course is a line, with three things you can do with it:
 
 | Icon         | What opens                                                                                                                                                               |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **map**      | `catalog/map.php` — the course graph, drawn by [assets/course_viewer.html](assets/course_viewer.html), the viewer the builder skill ships. The same file `build_viewer.py` writes on a laptop, built here from what the database holds. |
 | **play**     | `catalog/play.php` — the course itself, anonymously.                                                                                                                     |
-| **JSON**     | `catalog/json.php` — the file it is written in, every object and array folding, a folded step naming its id and its type.                                                 |
-| **download** | `catalog/download.php` — the same file, to keep.                                                                                                                         |
+| **JSON**     | `catalog/json.php` — the file it is written in, every object and array folding, a folded step naming its id and its type. Downloading it is offered there, on the page of somebody already looking at the file, rather than as a fourth icon on every line. `catalog/download.php` is what that link asks for. |
 
 **The anonymous course is the offline copy.** It is the single self-contained file `download.php` hands a student, served as a page instead of as a download. That is what makes it safe to leave open to anyone: once the page has loaded it asks this server for nothing, so there is no session to start, no progress to write down and no model to pay for. The steps written by AI say so and let the visitor carry on, exactly as in the downloaded copy — and their prompts are not in that page, as they are not in any player page. Whoever wants those steps to actually run takes the course from their learning platform, where there is a student to attribute the work to.
 
@@ -311,7 +310,7 @@ player/
 │  └─ dev.php                             the stand-in student
 ├─ public/                     ← the web root
 │  ├─ index.php  course.php  download.php
-│  ├─ catalog/…                           the public list: map, play, json, download
+│  ├─ catalog/…                           the public list: map, play, json (and its download)
 │  ├─ lti/login.php  lti/launch.php  lti/jwks.php
 │  ├─ api/ai.php  api/progress.php
 │  ├─ assets/bridge.js  assets/admin.css  assets/catalog.css  assets/catalog-json.js

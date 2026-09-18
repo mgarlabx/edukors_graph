@@ -1,14 +1,25 @@
-# This folder holds the player template, not pages: nothing in it should ever
-# be served directly. The server reads it and builds the page it sends.
+# This folder holds the player templates, not pages: neither of them should
+# ever be served directly. The server reads them and builds the page it sends.
 #
 # When the web root is player/public, as it should be, this folder is already
 # out of reach and these rules never come up. They are here for the installation
 # that cannot move its web root -- a subfolder of a bigger site -- where the
 # folder does sit under the document root.
-<IfModule mod_authz_core.c>
-    Require all denied
-</IfModule>
-<IfModule !mod_authz_core.c>
-    Order allow,deny
-    Deny from all
-</IfModule>
+#
+# The deny names the files rather than the folder, and in that installation
+# that is the whole point. There, /<app>/assets/ is also the URL every page
+# uses for public/assets/ -- the stylesheets, bridge.js -- which a rewrite
+# sends on to the folder that really holds them. A folder-wide `Require all
+# denied` is applied before that rewrite is ever reached, so it answers 403
+# even for names that are not in this folder at all, and the pages lose their
+# stylesheet and the player loses its bridge. Naming the templates denies
+# exactly what is here and leaves the rewrite alone.
+<FilesMatch "\.html$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

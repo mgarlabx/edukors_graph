@@ -1,6 +1,6 @@
 <?php
 /**
- * The four things the catalogue can do with a course, drawn.
+ * The three things the catalogue offers on a course, drawn.
  *
  * Inline SVG, stroked in currentColor: no icon font, no sprite sheet, nothing
  * to fetch. Each one is also given a label, because an icon alone tells a
@@ -35,9 +35,6 @@ function catalog_icon(string $name): string
         // the JSON: the braces it is written in
         'json'     => '<path d="M9.5 4C7 4 7.5 9.2 5 10.8v2.4C7.5 14.8 7 20 9.5 20"/>'
                     . '<path d="M14.5 4c2.5 0 2 5.2 4.5 6.8v2.4c-2.5 1.6-2 6.8-4.5 6.8"/>',
-        // the file: taken away with you
-        'download' => '<path d="M12 3.5v11"/><path d="M8 11l4 4 4-4"/>'
-                    . '<path d="M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2"/>',
     ];
 
     return $open . ($paths[$name] ?? '') . '</svg>';
