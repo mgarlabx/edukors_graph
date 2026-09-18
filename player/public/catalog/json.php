@@ -16,6 +16,8 @@ require_once __DIR__ . '/icons.php';
 
 $row    = catalog_require_course();
 $course = Course::fromJson($row['doc']);
+// Only the download link needs it: the map of this course is one line up, in
+// the list, and repeating it here would be a second way to the same page.
 $query  = '?course=' . urlencode((string) $row['course_uuid']);
 
 catalog_headers();
@@ -49,7 +51,6 @@ $h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 
     <button class="btn" type="button" data-json="expand">Expand all</button>
     <button class="btn" type="button" data-json="collapse">Collapse all</button>
     <a class="btn" href="download.php<?= $h($query) ?>">Download the file</a>
-    <a class="btn" href="map.php<?= $h($query) ?>" target="_blank" rel="noopener">Map</a>
   </p>
 
   <div class="json" id="json">
