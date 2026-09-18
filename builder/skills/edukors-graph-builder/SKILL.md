@@ -1,6 +1,6 @@
 ---
 name: edukors-graph-builder
-description: Build a complete Edukors course as a single adaptive-graph JSON file (info + nodes + edges), then open it for the author in three views: the raw JSON, a rendered course-map, and a playable course. Use this skill whenever someone wants to create, design, author, extend or restructure a course, a syllabus-based learning path, a training module, a challenge-based course, an adaptive or personalized learning track, or mentions course.schema.json, Edukors, course nodes/edges, static-md/dynamic-md nodes, or a course graph — even if they only say "make me a course about X" and never mention JSON.
+description: AUTHORING + GENERATION authority for Edukors courses. Covers both cases: (a) creating a whole course from scratch — designing info, nodes and edges from an idea, a syllabus or a brief — and (b) consolidating an existing exploded course (info/, nodes/, edges/) that was edited by hand. Either way it produces the same three deliverables in the course's `_output/` folder: `<slug>-course.json` (valid against course.schema.json), `<slug>-map.html` (course graph) and `<slug>-player.html` (playable course). This skill owns the format itself — node types, edges, conditions, prompts, quality bar — while the companion skill **edukors-graph-editor** defines the exploded folder layout the author edits during development. Use it whenever someone wants to create, design, author, extend, restructure, consolidate, build or rebuild a course, a syllabus-based learning path, a training module, a challenge-based course, an adaptive or personalized learning track, or wants the JSON, map or player regenerated — and also when they mention course.schema.json, Edukors, course nodes/edges, static-md/dynamic-md nodes, or a course graph, even if they only say "make me a course about X" and never mention JSON.
 ---
 
 # Edukors Graph Builder
@@ -16,6 +16,21 @@ The deliverable is always **three files** — the same course, seen three ways:
 3. `<slug>-player.html` — the course as the student meets it, produced by embedding the JSON into `assets/course_player.html`.
 
 All three are presented to the author at the end, JSON first.
+
+## Where this skill fits
+
+Two skills split the work, and they are not interchangeable:
+
+- **edukors-graph-editor** is the folder standard for *development*. The author
+  works in the exploded folders — `info/`, `nodes/<node-id>/`, `edges/` — for as
+  long as the course is being written and revised. That is where the source of
+  truth lives.
+- **edukors-graph-builder** (this skill) is the *generation* step. It defines the
+  format itself and, at the end, assembles those folders into the three files
+  above, written to the course's `_output/` folder, loose side by side.
+
+So: edit in the fragmented folders, generate into `_output/`. Never hand-write
+the course JSON as the primary artifact — it is a build output.
 
 ## Language rule
 

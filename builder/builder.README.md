@@ -2,26 +2,35 @@
 
 *Part of [Edukors Graph](../README.md).*
 
-The **builder** is an AI assistant *skill* named `edukors-graph-builder`. A skill is a folder with a `SKILL.md` file (instructions the model follows), plus reference documents, scripts and templates it can use. Once the skill is installed in an AI assistant, an IDE or a coding harness, an author can ask for "a course about compound interest" and get a valid Edukors Graph course back, without writing JSON by hand.
+The **builder** is a pair of AI assistant *skills*. A skill is a folder with a `SKILL.md` file (instructions the model follows), plus reference documents, scripts and templates it can use. Once the skills are installed in an AI assistant, an IDE or a coding harness, an author can ask for "a course about compound interest" and get a valid Edukors Graph course back, without writing JSON by hand.
 
-The skill lives in [skill/edukors-graph-builder](skill/edukors-graph-builder).
+The two skills split the work, and they are not interchangeable:
 
-## Installing it
+| Skill | Folder | What it owns |
+|-------|--------|--------------|
+| `edukors-graph-builder` | [skills/edukors-graph-builder](skills/edukors-graph-builder) | The **format** and the **generation** step: node types, edges, conditions, prompts, the quality bar — and the scripts that assemble and validate the course JSON, the map and the player. |
+| `edukors-graph-editor` | [skills/edukors-graph-editor](skills/edukors-graph-editor) | The **folder standard** a course is developed in: the course exploded into `info/`, `nodes/<node-id>/`, `edges/`, with every piece of prose as a real `.md`/`.html` file, plus the generated `_output/`. |
 
-Copy the whole `edukors-graph-builder` folder to wherever the assistant looks for skills, keeping its shape — `SKILL.md` must sit at the top of it, with `references`, `assets` and `scripts` beside it.
+The division of labour, in the order it happens: the author spends the whole development process inside the exploded folders (the editor), and at the end the builder generates the JSON, the map and the player into `_output/`. The course JSON is a build artifact, never the file a human edits.
 
-| Where | Put it in |
-|-------|-----------|
+A small course can still be written straight to JSON by the builder alone. The exploded layout pays off as soon as the course is long enough that nobody can read a 600-line JSON with markdown crammed into `"text"` strings — which is most of them.
+
+## Installing them
+
+Copy both folders to wherever the assistant looks for skills, keeping their shape — each `SKILL.md` must sit at the top of its own folder, with `references`, `assets` and `scripts` beside it.
+
+| Where | Put them in |
+|-------|-------------|
 | Claude Code, one project | `.claude/skills/` in that project |
 | Claude Code, every project | `~/.claude/skills/` |
-| claude.ai | upload the folder as a skill in the settings |
-| Another assistant | whatever folder it reads skills from; if it reads none, paste `SKILL.md` as the system prompt and attach the two reference files |
+| claude.ai | upload each folder as a skill in the settings |
+| Another assistant | whatever folder it reads skills from; if it reads none, paste `SKILL.md` as the system prompt and attach the reference files |
 
-The scripts need Python 3 and nothing else, so there is nothing to install beside them.
+Install both: the editor's `build_course.py` locates the builder's scripts on its own, and the builder's instructions assume the exploded layout the editor defines. The scripts need Python 3 and nothing else, so there is nothing to install beside them.
 
-## What it produces
+## What they produce
 
-For every course, the skill delivers three files:
+For every course, the builder delivers three files, written side by side into the course's `_output/` folder:
 
 | File | Content |
 |------|---------|
@@ -29,15 +38,17 @@ For every course, the skill delivers three files:
 | `<slug>-map.html` | A standalone viewer that draws the course graph, with a panel that shows each node's details. |
 | `<slug>-player.html` | A standalone player that runs the course the way a student sees it, one step at a time, with the edges choosing the next step. |
 
-Both HTML files have the course embedded, so they need no server. They serve only that course, so they must be rebuilt whenever the JSON changes.
+`<slug>` is the kebab-case of the course folder name. Both HTML files have the course embedded, so they need no server. They serve only that course, so they must be rebuilt whenever the source changes.
+
+Everything under `_output/` is generated and disposable: regenerate it, never edit it. An edit made there disappears on the next build.
 
 The map is a tool for the course author only: it shows the graph they are building, so they can check its nodes, edges and branches. Students never see it.
 
-The player built by the skill is only a preview: it lets the course author see what they are building while they work on it. It is not meant for production. To deliver a course to students, use the full player in the [player](../player) folder, which adds LMS integration and student progress tracking.
+The player built by the builder is only a preview: it lets the course author see what they are building while they work on it. It is not meant for production. To deliver a course to students, use the full player in the [player](../player) folder, which adds LMS integration and student progress tracking.
 
 ## Workflow
 
-1. **Collect the brief.** The skill reads eight decisions from the conversation and asks only for the ones that are missing. Each one has a default:
+1. **Collect the brief.** The builder reads eight decisions from the conversation and asks only for the ones that are missing. Each one has a default:
    - size (number of nodes and sections)
    - learning objectives
    - theory base (attached files, URLs, an MCP server or web search)
@@ -49,13 +60,14 @@ The player built by the skill is only a preview: it lets the course author see w
 
    It never starts writing without objectives and a theory base.
 2. **Build the theory base.** It reads the sources and turns them into an outline of concepts, ordered so that each concept comes after the ones it depends on.
-3. **Draft a blueprint.** It writes one row per node (id, type, section, title, storage keys, next node) and checks it against the brief before writing any JSON.
-4. **Write the JSON.** It uses the schema reference and the design patterns. For large courses, it writes one section at a time.
-5. **Validate.** It runs `validate_course.py` and fixes every error before delivering the course.
-6. **Build the views.** It runs `build_viewer.py` and `build_player.py`, then presents the three files, JSON first.
-7. **Report.** It gives the author a short summary in the author's language.
+3. **Draft a blueprint.** It writes one row per node (id, type, section, title, storage keys, next node) and checks it against the brief before writing any content.
+4. **Write the course.** It uses the schema reference and the design patterns, writing into the exploded folders the editor defines — one folder per node, prose in `.md`/`.html` files. For large courses, it writes one section at a time.
+5. **Build and validate.** `build_course.py` assembles the JSON into `_output/`, runs `validate_course.py` and builds the map and the player beside it. It exits non-zero on any error; a course that does not build is not done.
+6. **Report.** It presents the three files, JSON first, with a short summary in the author's language.
 
-The skill can also edit an existing course. It keeps node ids stable, bumps `info.version` (patch, minor or major, depending on the change) and updates `info.date`.
+Editing an existing course follows the same loop: change only `info/`, `nodes/` and `edges/`, then rebuild. Node ids stay stable, `info.version` is bumped (patch, minor or major, depending on the change) and `info.date` is updated.
+
+An existing single-file course is brought into the layout with `split_course.py`, which writes the full folder structure and copies the original into `_output/`. The round trip is faithful: splitting and rebuilding reproduces the same `info`, nodes and edges, down to the text.
 
 ## Key authoring rules
 
@@ -72,40 +84,88 @@ The skill can also edit an existing course. It keeps node ids stable, bumps `inf
   | `f` | form |
   | `b` | boolean question |
 
-- **Languages.** Every text a student reads is written in the author's language. Prompts sent to the AI (`system-prompt`, dynamic node prompts and essay grading prompts) are written in English and tell the model to answer in the student's language.
-- **Edges.** The edges that leave a node are ordered: edges with conditions come first, and the unconditional fallback comes last. A condition may only test a storage key that an earlier node produces.
+  A node folder is named exactly as its node id, and the build refuses a prefix that disagrees with the type inside.
+
+- **Languages.** Every text a student reads is written in the author's language, and lives in `content/<lang>/`, one folder per language the course declares — a missing language is a missing translation and the build refuses it. Prompts sent to the AI (`system-prompt`, dynamic node prompts and essay grading prompts) are written in English, tell the model to answer in the student's language, and sit above the language folders as `content/prompt.md`.
+- **Edges.** One file per source node, `edges/<from-node-id>.json`, holding the edges that leave it in evaluation order: edges with conditions first, the unconditional fallback last. A condition may only test a storage key that an earlier node produces.
+- **Activities.** A quiz, a form and a bool are whole documents, not fields: each one is `content/<lang>/{quiz,form,bool}.md`, readable end to end in one language. The structure (keys, option ids, types, which option is correct) belongs to the source language, and the build refuses a translation that reshapes it.
 - **Quizzes.** The position of the correct option changes from question to question.
 - **Content.** Content nodes carry real teaching material, usually 150–500 words each, not just headings.
 - **Adaptive branches.** Alternative paths must rejoin the main path or reach a proper ending.
 
 ## Folder structure
 
+The two skills:
+
 ```
-skill/edukors-graph-builder/
-├── SKILL.md                      # instructions the model follows
-├── references/
-│   ├── schema-reference.md       # field-by-field authoring reference
-│   └── course-patterns.md        # design recipes for the eight decisions
-├── assets/
-│   ├── course.schema.json        # JSON Schema a course must satisfy
-│   ├── course_viewer.html        # template for the map
-│   └── course_player.html        # template for the player
-└── scripts/
-    ├── validate_course.py        # schema, graph and storage-key checks
-    ├── build_viewer.py           # embeds a course into the viewer
-    └── build_player.py           # embeds a course into the player
+skills/
+├── edukors-graph-builder/
+│   ├── SKILL.md                      # the format and the generation step
+│   ├── references/
+│   │   ├── schema-reference.md       # field-by-field authoring reference
+│   │   └── course-patterns.md        # design recipes for the eight decisions
+│   ├── assets/
+│   │   ├── course.schema.json        # JSON Schema a course must satisfy
+│   │   ├── course_viewer.html        # template for the map
+│   │   └── course_player.html        # template for the player
+│   └── scripts/
+│       ├── validate_course.py        # schema, graph and storage-key checks
+│       ├── build_viewer.py           # embeds a course into the viewer
+│       └── build_player.py           # embeds a course into the player
+└── edukors-graph-editor/
+    ├── SKILL.md                      # the exploded folder standard
+    └── scripts/
+        ├── build_course.py           # exploded folder → JSON, map and player in _output/
+        ├── split_course.py           # single course JSON → exploded folder
+        ├── _layout.py                # the layout rules both scripts share
+        └── content_md.py             # the syntax of quiz.md, form.md and bool.md
 ```
 
-The scripts use only the Python 3 standard library.
+A course under development:
+
+```
+<Course Title>/
+├── info/
+│   └── info.json                   # the `info` object, alone, with no "$schema"
+├── nodes/
+│   └── <node-id>/
+│       ├── node.json               # the node, minus its externalized prose
+│       └── content/
+│           ├── <lang>/             # one folder per language: what the student reads
+│           │   └── item.md
+│           └── prompt.md           # non-localized text (the prompts)
+├── edges/
+│   └── <from-node-id>.json         # the edges leaving that node, ordered
+└── _output/                        # GENERATED — never edited by hand
+    ├── <slug>-course.json
+    ├── <slug>-map.html
+    └── <slug>-player.html
+```
+
+The scripts of both skills use only the Python 3 standard library.
 
 ## Using the scripts directly
 
-The scripts also work without the assistant:
+The scripts also work without the assistant.
+
+Build a course from its exploded folder — this is the one command an author normally needs, since it assembles, validates and builds the two HTML files in one go (`--json-only` skips the HTML while iterating):
 
 ```bash
-python3 skill/edukors-graph-builder/scripts/validate_course.py my-course.json
-python3 skill/edukors-graph-builder/scripts/build_viewer.py my-course.json -o my-course-map.html
-python3 skill/edukors-graph-builder/scripts/build_player.py my-course.json -o my-course-player.html
+python3 builder/skills/edukors-graph-editor/scripts/build_course.py "<Course Title>"
+```
+
+Explode an existing single-file course into the layout:
+
+```bash
+python3 builder/skills/edukors-graph-editor/scripts/split_course.py my-course.json -o "<Course Title>"
+```
+
+Work on a loose JSON file directly:
+
+```bash
+python3 builder/skills/edukors-graph-builder/scripts/validate_course.py my-course.json
+python3 builder/skills/edukors-graph-builder/scripts/build_viewer.py my-course.json -o my-course-map.html
+python3 builder/skills/edukors-graph-builder/scripts/build_player.py my-course.json -o my-course-player.html
 ```
 
 `validate_course.py` checks three things:
@@ -114,7 +174,7 @@ python3 skill/edukors-graph-builder/scripts/build_player.py my-course.json -o my
 - the graph: edges that point to missing nodes, fallbacks in the wrong position, unreachable nodes and dead ends
 - the storage keys used in conditions and in `{{STORAGE: key}}` references
 
-It exits with code `1` if it finds any error.
+It exits with code `1` if it finds any error. `build_course.py` additionally enforces the layout invariants — folder names against node ids, one language folder per declared language, the activity documents parsing and agreeing across languages, every `from` matching its edge file name.
 
 ## Where the preview player's AI steps run
 

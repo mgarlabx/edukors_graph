@@ -10,11 +10,11 @@
     "title": [
       {
         "lang": "en",
-        "text": "Cats of the World"
+        "text": "Cats of the World 3 (full)"
       },
       {
         "lang": "pt",
-        "text": "Gatos do Mundo"
+        "text": "Gatos do Mundo 3 (completo)"
       },
       {
         "lang": "zh",
@@ -793,33 +793,6 @@
       }
     },
     {
-      "id": "dm1",
-      "type": "dynamic-md",
-      "section": 2,
-      "title": [
-        {
-          "lang": "en",
-          "text": "Personalised reinforcement"
-        },
-        {
-          "lang": "pt",
-          "text": "Reforço personalizado"
-        },
-        {
-          "lang": "zh",
-          "text": "个性化强化"
-        }
-      ],
-      "content": {
-        "prompt": [
-          {
-            "lang": "en",
-            "text": "The student just took a 4-question quiz about cats of the world and scored below 70%. Write a short, encouraging remediation in markdown (250-350 words).\n\nInputs:\n- Group the student chose to explore: {{STORAGE: f1.interest}} (big = big cats, small = small wild cats, domestic = domestic cats)\n- Student's country: {{STORAGE: f1.country}}\n- Quiz score: {{STORAGE: q1.percent}}%\n- Their answer to \"which cat lives in Central Asian mountains and cannot roar\": {{STORAGE: q1.habitat}} (correct: snow-leopard)\n- Their answer to \"ancestor of the domestic cat\": {{STORAGE: q1.ancestor}} (correct: african-wildcat)\n- Their answer to \"only social cat\": {{STORAGE: q1.social}} (correct: lion)\n- Their answer to \"cat that can live without drinking water\": {{STORAGE: q1.water}} (correct: sand-cat)\n\nStructure: one sentence acknowledging what they got right; then, for each question they missed, a short paragraph that explains the correct answer and why their choice was a tempting mistake (do not lecture on questions they answered correctly); close with a memorable one-line mnemonic for each missed fact. If a country is given, add one sentence connecting a felid to that country or region (a native species, or a well-known zoo or conservation project) only if you are confident it is accurate. Do not include images. Answer in the student's language."
-          }
-        ]
-      }
-    },
-    {
       "id": "b1",
       "type": "bool",
       "section": 2,
@@ -878,6 +851,33 @@
           {
             "lang": "zh",
             "text": "否"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dm1",
+      "type": "dynamic-md",
+      "section": 2,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Personalised reinforcement"
+        },
+        {
+          "lang": "pt",
+          "text": "Reforço personalizado"
+        },
+        {
+          "lang": "zh",
+          "text": "个性化强化"
+        }
+      ],
+      "content": {
+        "prompt": [
+          {
+            "lang": "en",
+            "text": "The student just took a 4-question quiz about cats of the world and scored below 70%. Write a short, encouraging remediation in markdown (250-350 words).\n\nInputs:\n- Group the student chose to explore: {{STORAGE: f1.interest}} (big = big cats, small = small wild cats, domestic = domestic cats)\n- Student's country: {{STORAGE: f1.country}}\n- Quiz score: {{STORAGE: q1.percent}}%\n- Their answer to \"which cat lives in Central Asian mountains and cannot roar\": {{STORAGE: q1.habitat}} (correct: snow-leopard)\n- Their answer to \"ancestor of the domestic cat\": {{STORAGE: q1.ancestor}} (correct: african-wildcat)\n- Their answer to \"only social cat\": {{STORAGE: q1.social}} (correct: lion)\n- Their answer to \"cat that can live without drinking water\": {{STORAGE: q1.water}} (correct: sand-cat)\n\nStructure: one sentence acknowledging what they got right; then, for each question they missed, a short paragraph that explains the correct answer and why their choice was a tempting mistake (do not lecture on questions they answered correctly); close with a memorable one-line mnemonic for each missed fact. If a country is given, add one sentence connecting a felid to that country or region (a native species, or a well-known zoo or conservation project) only if you are confident it is accurate. Do not include images. Answer in the student's language."
           }
         ]
       }
@@ -946,6 +946,33 @@
       }
     },
     {
+      "id": "dm2",
+      "type": "dynamic-md",
+      "section": 3,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Summary of your journey"
+        },
+        {
+          "lang": "pt",
+          "text": "Síntese da sua jornada"
+        },
+        {
+          "lang": "zh",
+          "text": "你的旅程小结"
+        }
+      ],
+      "content": {
+        "prompt": [
+          {
+            "lang": "en",
+            "text": "Write a personalised closing summary in markdown (250-350 words) for a student who has just finished one pass through a short course on the cats of the world.\n\nInputs:\n- Group the student explored in this pass: {{STORAGE: f1.interest}} (big, small or domestic)\n- Student's country: {{STORAGE: f1.country}}\n- Quiz score: {{STORAGE: q1.percent}}%\n- The student's essay about the cat they would adopt: {{STORAGE: e1.text}}\n- Essay score: {{STORAGE: e1.score}}\n- Grader's feedback on the essay: {{STORAGE: e1.feedback}}\n\nStructure:\n1. A warm two-sentence opening that names the specific cat the student chose in the essay and one detail from their own text.\n2. \"What you now know\": three bullet points tying the group they explored to the course objectives (distinguish big from small cats and where they live; what makes felids efficient hunters; the story of cat domestication), phrased as things they can now do.\n3. \"One thing to take further\": a single concrete suggestion that builds on the essay feedback, such as one accurate fact about the chosen species they did not mention, or a conservation organisation or field guide relevant to the chosen species (only if you are confident it exists).\n4. A closing line inviting them to explore another group of cats if they have not yet.\nDo not include images. Do not repeat the grader's feedback verbatim. Answer in the student's language."
+          }
+        ]
+      }
+    },
+    {
       "id": "sm4",
       "type": "static-md",
       "section": 3,
@@ -976,33 +1003,6 @@
           {
             "lang": "zh",
             "text": "## 改进短文的建议\n\n你的分数低于 60，这通常出于以下三个原因之一。阅读你收到的评语，看看哪一条适用于你，然后返回重写。\n\n### 1. 四个问题中有一个没有回答\n\n短文需要说明猫科动物**生活在哪里**、**吃什么**以及如何狩猎、**哪种行为**让它与众不同，以及**它需要什么**。一个简单的技巧：按这个顺序为每个问题写一小段。四段各 40 到 60 字，加起来就达到了要求的篇幅。\n\n### 2. 有一个事实错了\n\n最常见的错误：\n\n- 把猫科动物放错了大陆。美洲豹只存在于美洲；花豹只在非洲和亚洲；老虎只在亚洲。\n- 混淆谁会吼叫、谁会呼噜。狮子、老虎、美洲豹和花豹会吼叫。美洲狮、猎豹和所有小型猫科动物会呼噜。\n- 称猎豹为\"最强壮的猫科动物\"。它是最快的，但体轻而脆弱：经常把猎物输给鬣狗和狮子。\n- 把家猫描述为\"需要群体\"的动物。它天性独居；它需要的是领地、藏身之处，以及模拟狩猎的游戏。\n\n如有疑问，请重读你所选类群的章节。\n\n### 3. 短文缺乏说服力\n\n把\"它真的很酷\"换成一个具体的事实，一切都会改变。比较一下：\n\n> *弱：*\"薮猫太棒了，我很想养一只。\"\n>\n> *强：*\"薮猫一半的狩猎都能成功，它跃起两米，扑向一只它从未看见、只是听见的老鼠。这样的动物需要开阔的空间和高草，所以我会支持一个草原保护区，而不是一个笼子。\"\n\n第二个例子用两句话展示了栖息地、行为和需求。\n\n### 重新提交前\n\n- 数一数字数：在 150 到 250 之间。\n- 核对学名或正确的俗名。\n- 大声朗读：如果一句话不能说服你，它也不能说服读者。\n\n准备好后，前进去重写。"
-          }
-        ]
-      }
-    },
-    {
-      "id": "dm2",
-      "type": "dynamic-md",
-      "section": 3,
-      "title": [
-        {
-          "lang": "en",
-          "text": "Summary of your journey"
-        },
-        {
-          "lang": "pt",
-          "text": "Síntese da sua jornada"
-        },
-        {
-          "lang": "zh",
-          "text": "你的旅程小结"
-        }
-      ],
-      "content": {
-        "prompt": [
-          {
-            "lang": "en",
-            "text": "Write a personalised closing summary in markdown (250-350 words) for a student who has just finished one pass through a short course on the cats of the world.\n\nInputs:\n- Group the student explored in this pass: {{STORAGE: f1.interest}} (big, small or domestic)\n- Student's country: {{STORAGE: f1.country}}\n- Quiz score: {{STORAGE: q1.percent}}%\n- The student's essay about the cat they would adopt: {{STORAGE: e1.text}}\n- Essay score: {{STORAGE: e1.score}}\n- Grader's feedback on the essay: {{STORAGE: e1.feedback}}\n\nStructure:\n1. A warm two-sentence opening that names the specific cat the student chose in the essay and one detail from their own text.\n2. \"What you now know\": three bullet points tying the group they explored to the course objectives (distinguish big from small cats and where they live; what makes felids efficient hunters; the story of cat domestication), phrased as things they can now do.\n3. \"One thing to take further\": a single concrete suggestion that builds on the essay feedback, such as one accurate fact about the chosen species they did not mention, or a conservation organisation or field guide relevant to the chosen species (only if you are confident it exists).\n4. A closing line inviting them to explore another group of cats if they have not yet.\nDo not include images. Do not repeat the grader's feedback verbatim. Answer in the student's language."
           }
         ]
       }
@@ -1159,10 +1159,6 @@
       "to": "dm1"
     },
     {
-      "from": "dm1",
-      "to": "b1"
-    },
-    {
       "from": "b1",
       "to": "dh1",
       "when": {
@@ -1174,6 +1170,10 @@
     {
       "from": "b1",
       "to": "e1"
+    },
+    {
+      "from": "dm1",
+      "to": "b1"
     },
     {
       "from": "dh1",
@@ -1193,12 +1193,12 @@
       "to": "sm4"
     },
     {
-      "from": "sm4",
-      "to": "e1"
-    },
-    {
       "from": "dm2",
       "to": "b2"
+    },
+    {
+      "from": "sm4",
+      "to": "e1"
     },
     {
       "from": "b2",

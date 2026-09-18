@@ -7,7 +7,7 @@
     "title": [
       {
         "lang": "en",
-        "text": "Cats of the World (short version)"
+        "text": "Cats of the World 2 (short version)"
       }
     ],
     "description": [
@@ -344,25 +344,6 @@
       }
     },
     {
-      "id": "dm1",
-      "type": "dynamic-md",
-      "section": 2,
-      "title": [
-        {
-          "lang": "en",
-          "text": "Personalised reinforcement"
-        }
-      ],
-      "content": {
-        "prompt": [
-          {
-            "lang": "en",
-            "text": "The student just took a 4-question quiz about cats of the world and scored below 70%. Write a short, encouraging remediation in markdown (250-350 words).\n\nInputs:\n- Quiz score: {{STORAGE: q1.percent}}%\n- Their answer to \"which cat lives in Central Asian mountains and cannot roar\": {{STORAGE: q1.habitat}} (correct: snow-leopard)\n- Their answer to \"ancestor of the domestic cat\": {{STORAGE: q1.ancestor}} (correct: african-wildcat)\n- Their answer to \"only social cat\": {{STORAGE: q1.social}} (correct: lion)\n- Their answer to \"fastest land animal\": {{STORAGE: q1.speed}} (correct: cheetah)\n\nStructure: one sentence acknowledging what they got right; then, for each question they missed, a short paragraph that explains the correct answer and why their choice was a tempting mistake (do not lecture on questions they answered correctly); close with a memorable one-line mnemonic for each missed fact. Do not include images. Answer in the student's language."
-          }
-        ]
-      }
-    },
-    {
       "id": "e1",
       "type": "essay",
       "section": 2,
@@ -380,6 +361,25 @@
           }
         ],
         "prompt": "Grade this short persuasive text (target 150-250 words) in which a student of a general-audience course on cats of the world argues for one cat species or breed they would 'adopt' (symbolically, for a wild species, or literally, for a domestic cat). Criteria: habitat correctly described (25); diet and hunting behaviour correctly described (25); one specific, accurate behaviour or trait that justifies the choice (25); realistic statement of what the animal needs to thrive (15); clarity and persuasive tone (10). Do not penalise length slightly outside the range, typos, or the choice of a species not covered in the course as long as the facts are right. Penalise factual errors about the species (e.g. a cheetah that roars, a jaguar in Africa). Return JSON: {\"score\": <0-100>, \"feedback\": \"<3-5 sentences addressed to the student: one thing that works, up to two concrete improvements, and a correction of any factual error, in the student's language>\"}."
+      }
+    },
+    {
+      "id": "dm1",
+      "type": "dynamic-md",
+      "section": 2,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Personalised reinforcement"
+        }
+      ],
+      "content": {
+        "prompt": [
+          {
+            "lang": "en",
+            "text": "The student just took a 4-question quiz about cats of the world and scored below 70%. Write a short, encouraging remediation in markdown (250-350 words).\n\nInputs:\n- Quiz score: {{STORAGE: q1.percent}}%\n- Their answer to \"which cat lives in Central Asian mountains and cannot roar\": {{STORAGE: q1.habitat}} (correct: snow-leopard)\n- Their answer to \"ancestor of the domestic cat\": {{STORAGE: q1.ancestor}} (correct: african-wildcat)\n- Their answer to \"only social cat\": {{STORAGE: q1.social}} (correct: lion)\n- Their answer to \"fastest land animal\": {{STORAGE: q1.speed}} (correct: cheetah)\n\nStructure: one sentence acknowledging what they got right; then, for each question they missed, a short paragraph that explains the correct answer and why their choice was a tempting mistake (do not lecture on questions they answered correctly); close with a memorable one-line mnemonic for each missed fact. Do not include images. Answer in the student's language."
+          }
+        ]
       }
     },
     {
@@ -429,12 +429,12 @@
       "to": "dm1"
     },
     {
-      "from": "dm1",
-      "to": "e1"
-    },
-    {
       "from": "e1",
       "to": "sm5"
+    },
+    {
+      "from": "dm1",
+      "to": "e1"
     }
   ]
 }

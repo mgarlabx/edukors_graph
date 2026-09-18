@@ -155,7 +155,9 @@ See the [schema.README](schema/schema.README.md) for the full description of the
 
 ## **Builder**
 
-The **builder** is an AI assistant *skill* named `edukors-graph-builder`: a folder with a `SKILL.md` file (the instructions the model follows), plus an authoring reference, design patterns, the schema, two HTML templates and three scripts. Once the skill is installed in an assistant, an IDE or a coding harness, an author asks for "a course about compound interest" and gets back three files:
+The **builder** is a pair of AI assistant *skills*, each a folder with a `SKILL.md` file (the instructions the model follows) plus the references and scripts it needs. `edukors-graph-builder` owns the format and the generation step — node types, edges, conditions, prompts, the schema, two HTML templates and three scripts. `edukors-graph-editor` owns the folder standard a course is developed in: the course exploded into `info/`, `nodes/<node-id>/` and `edges/`, with every piece of prose as a real `.md`/`.html` file, so it can be read, diffed and edited one node at a time. The author works in those folders, and the builder generates into `_output/`.
+
+Once the skills are installed in an assistant, an IDE or a coding harness, an author asks for "a course about compound interest" and gets back three files:
 
 | File                   | Content                                                                  |
 | ---------------------- | ------------------------------------------------------------------------ |
@@ -163,13 +165,13 @@ The **builder** is an AI assistant *skill* named `edukors-graph-builder`: a fold
 | `<slug>-map.html`    | A standalone viewer that draws the graph, for the author.                |
 | `<slug>-player.html` | A standalone preview player that runs the course as a student sees it.   |
 
-The skill collects the brief (size, objectives, sources, course type, static or dynamic content, media, linear or adaptive path), builds a blueprint, writes the JSON, validates it and builds the two HTML files. It can also edit an existing course. The scripts use only the Python 3 standard library and work without the assistant.
+The builder collects the brief (size, objectives, sources, course type, static or dynamic content, media, linear or adaptive path), builds a blueprint, writes the course, validates it and builds the two HTML files. It can also edit an existing course, and bring a loose course JSON into the exploded layout. The scripts use only the Python 3 standard library and work without the assistant.
 
 See the [builder.README](builder/builder.README.md) for details.
 
 ## **Player**
 
-The **player** is the server that delivers courses to students. It is a reference implementation in plain PHP (8.1 or later, no framework, no Composer dependency) with MySQL. It takes the standalone player the skill ships, unchanged, and adds around it what a real deployment needs:
+The **player** is the server that delivers courses to students. It is a reference implementation in plain PHP (8.1 or later, no framework, no Composer dependency) with MySQL. It takes the standalone player the builder ships, unchanged, and adds around it what a real deployment needs:
 
 - **LTI 1.3**: students arrive from Moodle, Canvas or Blackboard, already identified. The integration is one-way, with no grade passback.
 - **Inference**: dynamic nodes and essay grading run on the server, through [OpenRouter](https://openrouter.ai), with the server's own key and any model it names. The prompts of a course never reach the browser, and every call is checked against where the student actually is, with an hourly limit per student and a daily limit for the whole server.
@@ -197,17 +199,24 @@ Each sample comes as the three files the builder produces. See the [samples.READ
 
 **Explore a course.** Open [world-cats-3-full-map.html](samples/world-cats-3-full-map.html) in a browser to see the graph, and [world-cats-3-full-player.html](samples/world-cats-3-full-player.html) to walk it as a student. Both carry the whole course and need no server, though these particular samples fetch their photographs from Wikimedia Commons. Read the three sample JSON files next to the [schema.README](schema/schema.README.md) to learn the standard.
 
-**Build a course with an AI assistant.** Copy the folder [builder/skill/edukors-graph-builder](builder/skill/edukors-graph-builder) to wherever your assistant loads skills. In Claude Code that is `.claude/skills/` inside a project, or `~/.claude/skills/` for every project; in claude.ai, upload the folder as a skill in the settings. Then ask for a course. The skill asks only for what is missing from the brief and delivers the three files.
+**Build a course with an AI assistant.** Copy both folders under [builder/skills](builder/skills) — [edukors-graph-builder](builder/skills/edukors-graph-builder) and [edukors-graph-editor](builder/skills/edukors-graph-editor) — to wherever your assistant loads skills. In Claude Code that is `.claude/skills/` inside a project, or `~/.claude/skills/` for every project; in claude.ai, upload each folder as a skill in the settings. Then ask for a course. The skills ask only for what is missing from the brief and deliver the three files.
 
 **Validate and build by hand.** The scripts need Python 3 and nothing else:
 
 ```bash
-python3 builder/skill/edukors-graph-builder/scripts/validate_course.py my-course.json
-python3 builder/skill/edukors-graph-builder/scripts/build_viewer.py my-course.json -o my-course-map.html
-python3 builder/skill/edukors-graph-builder/scripts/build_player.py my-course.json -o my-course-player.html
+python3 builder/skills/edukors-graph-builder/scripts/validate_course.py my-course.json
+python3 builder/skills/edukors-graph-builder/scripts/build_viewer.py my-course.json -o my-course-map.html
+python3 builder/skills/edukors-graph-builder/scripts/build_player.py my-course.json -o my-course-player.html
 ```
 
 The validator checks the structure, the graph (dangling edges, fallback order, unreachable nodes, dead ends) and the storage keys, and exits with code `1` on any error.
+
+For a course kept in the exploded layout, one command does all three steps — assemble, validate, build — and a second brings a loose JSON file into that layout:
+
+```bash
+python3 builder/skills/edukors-graph-editor/scripts/build_course.py "<Course Title>"
+python3 builder/skills/edukors-graph-editor/scripts/split_course.py my-course.json -o "<Course Title>"
+```
 
 **Where the preview player's AI steps run.** The standalone player has no API key: it asks the host it runs in for a model. Today that works inside claude.ai chat artifacts and in Artifacts published with the `sample` capability (for example from Claude Code). Opened as a local file, in an IDE preview or in another harness, the AI steps show a retry button and everything else in the course works.
 
@@ -218,18 +227,18 @@ The validator checks the structure, the graph (dangling edges, fallback order, u
 ```
 edukors_graph/
 ├─ schema/    the standard: schema.json and its README
-├─ builder/   the authoring skill: SKILL.md, references, assets and scripts
+├─ builder/   the two authoring skills: edukors-graph-builder and edukors-graph-editor
 ├─ player/    the reference server: PHP, SQL, admin, LTI
 └─ samples/   three courses, each as JSON, map and player
 ```
 
-Two files exist in more than one place on purpose: `schema/schema.json` is copied verbatim into the skill as `assets/course.schema.json`, and the skill's `assets/course_player.html` is copied verbatim into `player/assets/`. When one copy changes, copy it over the other.
+Two files exist in more than one place on purpose: `schema/schema.json` is copied verbatim into the builder skill as `assets/course.schema.json`, and that skill's `assets/course_player.html` is copied verbatim into `player/assets/`. When one copy changes, copy it over the other.
 
 # **An ecosystem**
 
 More than a standard or a specification, Edukors Graph can become the basis of a global ecosystem:
 
-- **Authors**: teachers anywhere in the world will be able to produce advanced courses, supported by the skill provided in the builder. The JSON files created are small and very light, easy to port, and can form international catalogues of open courses. Translating a course in the Edukors Graph standard takes a single command in an AI assistant.
+- **Authors**: teachers anywhere in the world will be able to produce advanced courses, supported by the skills provided in the builder. The JSON files created are small and very light, easy to port, and can form international catalogues of open courses. Translating a course in the Edukors Graph standard takes a single command in an AI assistant.
 - **Providers**: courses created by authors can be hosted by providers, those who have the player developed and deployed on their infrastructure. This allows providers of all kinds: internal or open, commercial or community-run, and so on. Course marketplaces, with different monetization models, may even emerge.
 - **Consumers**: learning management systems (LMS) deployed in educational institutions across the planet will be able to consume the courses developed by authors and made available by providers. Some consumers may even integrate the whole cycle, being authors and providers as well.
 
@@ -257,7 +266,7 @@ Whether you want to fix a typo, report a bug, improve the documentation, suggest
 **Before you open a pull request:**
 
 - **Rebuild what you changed.** If you edited a sample's JSON, rebuild its map and player with `build_viewer.py` and `build_player.py`. A stale HTML file is a course that disagrees with itself.
-- **Keep the two copies in sync.** `schema/schema.json` is copied verbatim into the builder as `assets/course.schema.json`, and the builder's `assets/course_player.html` is copied verbatim into `player/assets/`. Change one and copy it over the other.
+- **Keep the two copies in sync.** `schema/schema.json` is copied verbatim into the `edukors-graph-builder` skill as `assets/course.schema.json`, and that skill's `assets/course_player.html` is copied verbatim into `player/assets/`. Change one and copy it over the other.
 - **Treat the schema as the contract.** A change to it also touches both validators (`validate_course.py` and `player/src/validate.php`), the authoring reference and [schema.README](schema/schema.README.md). They move together or not at all.
 
 If anything is unclear or you get stuck, open an issue and ask — questions are contributions too.

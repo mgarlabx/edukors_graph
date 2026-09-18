@@ -35,7 +35,7 @@ public/lti/login.php → public/lti/launch.php → session → public/course.php
                               public/api/ai.php   public/api/progress.php
 ```
 
-The player is used exactly as the skill ships it. Nothing in [assets/course_player.html](assets/course_player.html) is edited — it is a verbatim copy of [the builder's asset](../builder/skill/edukors-graph-builder/assets/course_player.html). When that one changes, copy it over again.
+The player is used exactly as the builder skill ships it. Nothing in [assets/course_player.html](assets/course_player.html) is edited — it is a verbatim copy of [the builder's asset](../builder/skills/edukors-graph-builder/assets/course_player.html). When that one changes, copy it over again.
 
 That is possible because the player was already written to ask a *host* for the model, trying, in order, a Claude artifact capability, a `fetch` to `api.anthropic.com`, and a claude.ai bridge. In an ordinary browser only the `fetch` exists, and it is meant to be intercepted. This server steps into that role: [public/assets/bridge.js](public/assets/bridge.js) catches the call and hands it to [public/api/ai.php](public/api/ai.php), which answers in the same envelope the player already reads.
 
