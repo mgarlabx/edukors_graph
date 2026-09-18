@@ -53,21 +53,3 @@ header('Content-Length: ' . strlen($html));
 header('Cache-Control: no-store, private');
 
 echo $html;
-
-
-/** A file name a browser and a file system will both accept. */
-function edukors_filename(string $title): string
-{
-    $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $title);
-    if ($ascii === false) {
-        $ascii = $title;
-    }
-    // Transliteration writes an accent as punctuation before the letter --
-    // "tecnico" comes out as "t'ecnico" -- so those marks go before slugging,
-    // or every accented word would end up split in two.
-    $ascii = str_replace(["'", '"', '`', '^', '~', '\\'], '', $ascii);
-
-    $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $ascii) ?? '');
-    $slug = trim($slug, '-');
-    return $slug === '' ? 'course' : rtrim(substr($slug, 0, 80), '-');
-}

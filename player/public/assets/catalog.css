@@ -1,0 +1,138 @@
+/*
+ * The catalogue: the one part of this server anybody may open.
+ *
+ * It keeps the look of the admin and of the viewer the builder skill ships --
+ * grey paper rather than white, white cards held by a single hairline, one blue
+ * accent, monospace for ids -- because the three are the same tool seen from
+ * three sides, and a visitor who opens a course map should not feel they have
+ * left the site.
+ */
+
+:root {
+  --paper:   #E9EDF0;
+  --ink:     #16212B;
+  --muted:   #5C6E7E;
+  --hair:    #D3DBE2;
+  --surface: #FFFFFF;
+  --select:  #1F5FA8;
+
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono:  ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --serif: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 14px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--select); }
+
+header {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: baseline; gap: 14px;
+  padding: 14px 16px;
+  background: rgba(233, 237, 240, .92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--hair);
+}
+header h1 { margin: 0; font-size: 15px; font-weight: 600; }
+header .meta { font: 11px var(--mono); color: var(--muted); }
+header nav { margin-left: auto; font-size: 13px; }
+
+main { max-width: 860px; margin: 0 auto; padding: 22px 16px 64px; }
+
+h2 { margin: 6px 0 4px; font: 600 20px/1.3 var(--sans); }
+.lead { margin: 0 0 22px; color: var(--muted); max-width: 60ch; }
+
+/* -- the shelves -------------------------------------------------------- */
+
+.shelf {
+  margin: 26px 0 8px;
+  font-size: 12px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted);
+}
+.shelf:first-of-type { margin-top: 10px; }
+
+.courses { list-style: none; margin: 0; padding: 0; }
+
+.course {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 14px; margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--hair); border-radius: 10px;
+}
+.course .name { font: 500 16px/1.35 var(--serif); flex: 1 1 320px; min-width: 0; }
+.course .meta { font-size: 12px; color: var(--muted); }
+.course .meta .langs { font-family: var(--mono); }
+
+/* -- the four things you can do with a course --------------------------- */
+
+.actions { display: flex; gap: 4px; margin-left: auto; }
+
+.action {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  color: var(--muted);
+  border: 1px solid transparent; border-radius: 8px;
+  text-decoration: none;
+}
+.action:hover, .action:focus-visible {
+  color: var(--select);
+  background: var(--paper);
+  border-color: var(--hair);
+}
+.action svg { width: 19px; height: 19px; display: block; }
+
+.empty { color: var(--muted); font-style: italic; padding: 24px 0; }
+
+:focus-visible { outline: 2px solid var(--select); outline-offset: 2px; }
+
+/* -- the JSON page ------------------------------------------------------ */
+
+.tools { display: flex; gap: 8px; align-items: center; margin: 0 0 14px; }
+.btn {
+  display: inline-block; padding: 6px 11px;
+  font: 500 13px var(--sans); color: var(--ink); text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--hair); border-radius: 8px;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--select); color: var(--select); }
+
+.json {
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--hair); border-radius: 10px;
+  font: 12.5px/1.6 var(--mono);
+  overflow-x: auto;
+}
+.json ul { list-style: none; margin: 0; padding: 0 0 0 18px; }
+.json > ul { padding-left: 0; }
+.json li { white-space: pre; }
+
+/* The disclosure control is the whole summary line, so a node folds by
+   clicking anywhere on it -- its key, its brace or its count. */
+.json details > summary {
+  list-style: none; cursor: pointer; display: block;
+}
+.json details > summary::-webkit-details-marker { display: none; }
+.json details > summary::before {
+  content: "▸"; display: inline-block; width: 1.1em;
+  color: var(--muted); font-size: 11px;
+}
+.json details[open] > summary::before { content: "▾"; }
+.json details > summary:hover { background: var(--paper); }
+
+.json .key   { color: var(--select); }
+.json .str   { color: #2E7D5B; }
+.json .num   { color: #B4641E; }
+.json .bool,
+.json .null  { color: #7A4FB0; }
+.json .count { color: var(--muted); font-style: italic; }
+.json .leaf  { padding-left: 1.1em; }

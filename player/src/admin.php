@@ -147,10 +147,11 @@ function h($value): string
 function admin_head(string $title, bool $withNav = true): void
 {
     $nav = [
-        'index.php'     => 'Courses',
-        'students.php'  => 'Students',
-        'platforms.php' => 'Platforms',
-        'ai-log.php'    => 'AI calls',
+        'index.php'      => 'Courses',
+        'categories.php' => 'Categories',
+        'students.php'   => 'Students',
+        'platforms.php'  => 'Platforms',
+        'ai-log.php'     => 'AI calls',
     ];
     $here = basename((string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH));
     if ($here === 'admin' || $here === '') {

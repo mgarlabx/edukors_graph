@@ -14,6 +14,7 @@ This server is the other half. It takes the same player, unchanged, and gives it
 | **Inference** | The dynamic steps and the essay grading run here, with this server's own key, from prompts the browser never sees.                                             |
 | **Progress**  | Where a student is, what they answered, what the AI wrote for them and what feedback they got, all in MySQL, so any device resumes where the last one stopped. |
 | **Download**  | One HTML file the student can keep and run with no network.                                                                                                    |
+| **Catalogue** | A public front page listing the published courses, each openable as a map, as a course to take anonymously, or as the file it is written in.                    |
 
 It is written in plain PHP, with no framework and no Composer dependency. PHP 8.1 or later with `pdo_mysql`, `curl`, `openssl` and `json` is the whole requirement.
 
@@ -60,6 +61,8 @@ The bridge reads the node id out of the marker and sends `{"node":"dm1"}` — or
 6. the student is under their hourly limit and the server under its daily one;
 7. the prompt is built here, from the stored course, with `{{STORAGE: key}}` filled in from the student's own saved answers;
 8. the model, the token limit and the temperature come from `config.php` and from nowhere else.
+
+That is about the **page a student is given**. The catalogue publishes something else: the course JSON as it was imported, prompts and all — see below. The two are not in conflict, they answer different questions. A prompt in the page is a prompt the browser can edit and send back as its own; a prompt in a published document is the author's work, read by whoever the author published it to. If a server holds courses whose prompts should not be public, that server should not publish its catalogue — [public/catalog/](public/catalog/) is the only thing here that opens without a launch, and it is a folder that can simply be deleted.
 
 ## Installing
 
@@ -204,6 +207,25 @@ If a launch succeeds and the course page then says "This course opens from your 
 
 The session cookie is `edukors_graphs`, scoped to the path in `base_url`, so it never shares cookie space with another application on the same domain.
 
+## The catalogue
+
+`public/catalog/` is the public face of the server, and the only part of it anybody may open: the front door redirects there, and it lists every course whose status is `published` — in the order the admin put them in, the categories by theirs and the courses by theirs inside each one. A draft is not a course the public has, so it is not listed, and asking for one by its id is answered the same way an invented id is: with a 404 that says nothing about what exists.
+
+Each course is a line, with four things you can do with it:
+
+| Icon         | What opens                                                                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **map**      | `catalog/map.php` — the course graph, drawn by [assets/course_viewer.html](assets/course_viewer.html), the viewer the builder skill ships. The same file `build_viewer.py` writes on a laptop, built here from what the database holds. |
+| **play**     | `catalog/play.php` — the course itself, anonymously.                                                                                                                     |
+| **JSON**     | `catalog/json.php` — the file it is written in, every object and array folding, a folded step naming its id and its type.                                                 |
+| **download** | `catalog/download.php` — the same file, to keep.                                                                                                                         |
+
+**The anonymous course is the offline copy.** It is the single self-contained file `download.php` hands a student, served as a page instead of as a download. That is what makes it safe to leave open to anyone: once the page has loaded it asks this server for nothing, so there is no session to start, no progress to write down and no model to pay for. The steps written by AI say so and let the visitor carry on, exactly as in the downloaded copy — and their prompts are not in that page, as they are not in any player page. Whoever wants those steps to actually run takes the course from their learning platform, where there is a student to attribute the work to.
+
+**The JSON is the document, whole.** Prompts included, `info.system-prompt` included: it is byte for byte what was imported, so that whoever downloads it can validate it against the schema it names, open it in the builder, or import it into a server of their own.
+
+The catalogue has no CSS of the admin's and no session of anyone's; [public/assets/catalog.css](public/assets/catalog.css) and [public/assets/catalog-json.js](public/assets/catalog-json.js) are all it loads, and it sets no cookie.
+
 ## Running a course
 
 `public/course.php` serves the player and nothing else: the student sees the player, and only the player. Light and dark follow the browser, as the player already does.
@@ -233,10 +255,11 @@ One thing does not travel: an image a course refers to by URL, as the [samples](
 
 ## The database
 
-Seven tables, in `sql/schema.sql`. The course JSON is stored whole, in `course.doc`: the schema is the contract of this project, and taking it apart into tables would only create a second, diverging description of it. Only what listing and routing need is copied into columns.
+Eight tables, in `sql/schema.sql`. The course JSON is stored whole, in `course.doc`: the schema is the contract of this project, and taking it apart into tables would only create a second, diverging description of it. Only what listing and routing need is copied into columns.
 
 | Table            | What it holds                                                               |
 | ---------------- | --------------------------------------------------------------------------- |
+| `category`     | the shelves the admin lists courses on: a name and a place in the order      |
 | `course`       | one row per imported version, with the JSON and the import warnings         |
 | `lti_platform` | the LMSs allowed to launch, and their cached public keys                    |
 | `lti_launch`   | the state and nonce of a login in flight, for ten minutes                   |
@@ -253,6 +276,12 @@ Seven tables, in `sql/schema.sql`. The course JSON is stored whole, in `course.d
 
 The one check not ported is how the correct answers of a quiz are spread across the options. That is a judgement about teaching rather than about running the course, and leaving it in the skill avoids two implementations of it drifting apart. Run `validate_course.py` for that.
 
+**How a course is listed.** The **How it is listed** card on a course's page in the admin holds three things the JSON has no say in: the **name** this server lists the course under whatever `info.title` says, the **category** it is on, and its **order** inside that category, smallest first. All three belong to the course rather than to one of its versions — every version already stored takes them, and `src/import.php` hands them to the next version imported, which is what `course.title_custom` is for. Emptying the name hands each version its own title from the JSON back. Students see none of it: the player takes the title from the JSON, in the language they are reading, and never hears of the categories.
+
+Categories are managed at `/admin/categories.php` — a name and a number each, the number deciding where the group comes in the list. `course.category_id` is the schema's only foreign key, and it is `ON DELETE SET NULL`: removing a category leaves its courses alone, on no category, listed after the rest.
+
+**Removing a course.** The **Remove** card at the end of a course's page takes either one version or the course entire. Removing one version of several leaves the others and moves a student who was reading it to the version that remains, which is what their next launch would have done anyway. Removing the course takes every version and the progress of everyone who had started it — where they were, what they answered, what the model wrote for them. The `ai_call` rows stay: that log is the bill, so it keeps them with `progress_id` emptied. Neither can be undone, and re-importing the JSON brings the course back with nobody in it.
+
 ## Notes on running this
 
 - **KaTeX.** The player fetches KaTeX 0.18.6 from `cdnjs.cloudflare.com`, with an integrity hash, the first time a step contains LaTeX. Under a strict CSP in the LMS, either allow that origin or host KaTeX yourself. Without it the LaTeX source stays readable; nothing breaks.
@@ -268,22 +297,25 @@ player/
 ├─ sql/schema.sql              the database
 ├─ private/config.sample.php   the configuration to copy; never in the web root
 ├─ assets/course_player.html   the skill's player, verbatim
+├─ assets/course_viewer.html   the skill's map viewer, verbatim
 ├─ src/
 │  ├─ config.php   db.php   session.php   admin.php     plumbing
 │  ├─ course.php                          a course: text, graph, conditions, prompts
 │  ├─ validate.php                        what may be imported
 │  ├─ import.php                          importing, for the CLI and the admin
-│  ├─ build.php                           the player HTML, online and offline
+│  ├─ build.php                           the player HTML, online and offline, and the map
+│  ├─ catalog.php                         what is published, and in what order
 │  ├─ progress.php                        where a student is, and what they produced
 │  ├─ ai.php                              prompts, guards, OpenRouter
 │  ├─ lti.php  jwt.php                    receiving a launch
 │  └─ dev.php                             the stand-in student
 ├─ public/                     ← the web root
 │  ├─ index.php  course.php  download.php
+│  ├─ catalog/…                           the public list: map, play, json, download
 │  ├─ lti/login.php  lti/launch.php  lti/jwks.php
 │  ├─ api/ai.php  api/progress.php
-│  ├─ assets/bridge.js  assets/admin.css
-│  └─ admin/…                             courses, students, platforms, AI calls
+│  ├─ assets/bridge.js  assets/admin.css  assets/catalog.css  assets/catalog-json.js
+│  └─ admin/…                             courses, categories, students, platforms, AI calls
 └─ tools/
    ├─ import.php               php tools/import.php course.json --publish
    ├─ admin-password.php       php tools/admin-password.php

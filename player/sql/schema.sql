@@ -18,22 +18,43 @@
 --   mysql -u root edukors_graphs < sql/schema.sql
 
 
+-- The shelves the admin lists courses on. Nothing the student sees reads this
+-- table: it groups and orders the list in the admin, and a course belongs to
+-- at most one of them. It is declared first because `course` points at it, and
+-- a foreign key cannot name a table that does not exist yet.
+CREATE TABLE IF NOT EXISTS category (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title      VARCHAR(160) NOT NULL,
+  sort_order INT          NOT NULL DEFAULT 0,  -- smallest first; ties fall back to the title
+  UNIQUE KEY uk_category (title)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
 -- One row per imported version of a course.
 CREATE TABLE IF NOT EXISTS course (
   id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   course_uuid     CHAR(36)     NOT NULL,           -- info.course-id
   version         VARCHAR(20)  NOT NULL,           -- info.version
   title           VARCHAR(255) NOT NULL,           -- title in the source language
+  title_custom    TINYINT(1)   NOT NULL DEFAULT 0, -- 1 = named by hand in the admin
   author          VARCHAR(255) NOT NULL,
   source_language VARCHAR(5)   NOT NULL,
   languages       VARCHAR(120) NOT NULL,           -- csv: source-language + other-languages
   start_node      VARCHAR(16)  NOT NULL,           -- info.start
   doc             LONGTEXT     NOT NULL,           -- the course JSON, as delivered
   warnings        TEXT         NULL,               -- import warnings, shown in the admin
+  category_id     INT UNSIGNED NULL,               -- category.id; NULL = on no shelf
+  sort_order      INT          NOT NULL DEFAULT 0, -- smallest first; ties fall back to the title
   status          ENUM('draft','published','archived') NOT NULL DEFAULT 'draft',
   created_at      DATETIME     NOT NULL,
   UNIQUE KEY uk_course (course_uuid, version),
-  KEY ix_status (status)
+  KEY ix_status (status),
+  KEY ix_listing (category_id, sort_order),
+  -- Emptying a shelf leaves the courses on it alone; they are simply no longer
+  -- on one. This is the only foreign key in the schema, and it is here because
+  -- a course pointing at a category that was deleted would have no meaning.
+  CONSTRAINT fk_course_category FOREIGN KEY (category_id)
+    REFERENCES category (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -134,3 +155,5 @@ CREATE TABLE IF NOT EXISTS ai_call (
   KEY ix_rate (progress_id, created_at),
   KEY ix_day (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+

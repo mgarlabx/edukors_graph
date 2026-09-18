@@ -47,10 +47,23 @@ function edukors_import(string $json, bool $publish = false): array
         [$uuid, $version]
     );
 
+    // What the admin decided about this course rather than what the JSON says:
+    // the name it is listed under, the shelf it is on, where in that shelf it
+    // sits. Every version of a course carries the same three, so the newest
+    // row is as good as any, and a version imported now joins the others
+    // exactly where the one before it was.
+    $kept = db_row(
+        'SELECT title, title_custom, category_id, sort_order FROM course
+         WHERE course_uuid = ? ORDER BY id DESC LIMIT 1',
+        [$uuid]
+    );
+    $named = $kept !== null && (int) $kept['title_custom'] === 1;
+
     $columns = [
         'course_uuid'     => $uuid,
         'version'         => $version,
-        'title'           => mb_substr($course->title(), 0, 255),
+        'title'           => $named ? (string) $kept['title'] : mb_substr($course->title(), 0, 255),
+        'title_custom'    => $named ? 1 : 0,
         'author'          => mb_substr($course->author(), 0, 255),
         'source_language' => $course->sourceLanguage(),
         'languages'       => implode(',', $course->languages()),
@@ -58,6 +71,8 @@ function edukors_import(string $json, bool $publish = false): array
         // Stored as delivered, so what the server runs is what the author wrote.
         'doc'             => json_encode($doc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         'warnings'        => $result['warnings'] === [] ? null : implode("\n", $result['warnings']),
+        'category_id'     => $kept === null || $kept['category_id'] === null ? null : (int) $kept['category_id'],
+        'sort_order'      => $kept === null ? 0 : (int) $kept['sort_order'],
     ];
 
     if ($existing !== null) {
@@ -96,6 +111,6 @@ function edukors_import(string $json, bool $publish = false): array
     $result['ok']      = true;
     $result['uuid']    = $uuid;
     $result['version'] = $version;
-    $result['title']   = $course->title();
+    $result['title']   = (string) $columns['title'];
     return $result;
 }

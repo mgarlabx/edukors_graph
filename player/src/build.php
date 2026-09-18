@@ -1,6 +1,7 @@
 <?php
 /**
- * Builds the HTML the student gets, out of assets/course_player.html.
+ * Builds the HTML the student gets, out of assets/course_player.html -- and
+ * the map of a course, out of assets/course_viewer.html.
  *
  * The template is the player the builder skill ships, taken as it is. It
  * already renders every node type, follows the edges, speaks ten languages and
@@ -18,6 +19,10 @@
  *
  * Both splice the course into the same block build_player.py uses, so the
  * template stays interchangeable with the one in the skill.
+ *
+ * The map is the third build, and the same idea a second time: the viewer the
+ * skill ships, with the placeholder course of its last script replaced by a
+ * real one, exactly as build_viewer.py does it.
  */
 
 declare(strict_types=1);
@@ -213,4 +218,79 @@ function edukors_offline_script(string $notice, Course $course, ?array $state): 
          . 'return Promise.resolve(new Response(JSON.stringify({content:[{type:"text",text:n}]}),'
          . '{status:200,headers:{"Content-Type":"application/json"}}));'
          . 'return f.apply(this,arguments)}})();';
+}
+
+
+/**
+ * The course map: the viewer the builder skill ships, with this course in it.
+ *
+ * The template carries a placeholder course between `const DEMO = {` and
+ * `render(DEMO);`, which is what build_viewer.py replaces and what is replaced
+ * here, so a map built by this server and one built on a laptop are the same
+ * file. Nothing is stripped: a map is for whoever is looking at how the course
+ * is built, and that includes the prompts.
+ */
+function edukors_build_map(Course $course, ?string $lang = null): string
+{
+    $path = __DIR__ . '/../assets/course_viewer.html';
+    $html = @file_get_contents($path);
+    if ($html === false) {
+        throw new RuntimeException("viewer template not found: $path");
+    }
+
+    $start = strpos($html, 'const DEMO = {');
+    $end   = strpos($html, 'render(DEMO);');
+    if ($start === false || $end === false || $end < $start) {
+        throw new RuntimeException('the template does not look like the course viewer');
+    }
+
+    $block = 'const COURSE = ' . edukors_js_literal($course->doc()) . ";\nrender(COURSE);";
+    $html  = substr($html, 0, $start) . $block . substr($html, $end + strlen('render(DEMO);'));
+
+    $title = htmlspecialchars($course->title($lang), ENT_QUOTES, 'UTF-8');
+    return preg_replace_callback(
+        '#<title>.*?</title>#s',
+        static fn() => "<title>$title</title>",
+        $html,
+        1
+    ) ?? $html;
+}
+
+/**
+ * JSON safe to sit inside a <script> block, as build_viewer.py writes it.
+ *
+ * `</` is the only sequence that could end the block early, and `<\/` is the
+ * same string to a JavaScript parser. Outside a string a JSON document has no
+ * `<` at all, so replacing every one of them cannot touch the structure -- and
+ * the result is still valid JSON, which is what lets the JSON page below use
+ * the same escaping on text it never decoded.
+ */
+function edukors_js_literal($data): string
+{
+    $json = is_string($data)
+        ? $data
+        : (string) json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    return str_replace(
+        ['</', "\u{2028}", "\u{2029}"],
+        ['<\/', '\u2028', '\u2029'],
+        $json
+    );
+}
+
+/** A file name a browser and a file system will both accept. */
+function edukors_filename(string $title): string
+{
+    $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $title);
+    if ($ascii === false) {
+        $ascii = $title;
+    }
+    // Transliteration writes an accent as punctuation before the letter --
+    // "tecnico" comes out as "t'ecnico" -- so those marks go before slugging,
+    // or every accented word would end up split in two.
+    $ascii = str_replace(["'", '"', '`', '^', '~', '\\'], '', $ascii);
+
+    $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $ascii) ?? '');
+    $slug = trim($slug, '-');
+    return $slug === '' ? 'course' : rtrim(substr($slug, 0, 80), '-');
 }

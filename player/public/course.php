@@ -3,7 +3,10 @@
  * The course itself: the player, with this student's course in it.
  *
  * Reached only from an LTI launch, which is what put the student in the
- * session. There is no catalogue and no way to name another course here.
+ * session: this page has no way to name a course, it serves the one the launch
+ * named. The course anybody can open without a launch is a different page --
+ * public/catalog/play.php -- and a different build, which asks this server for
+ * nothing and writes nothing down.
  */
 
 declare(strict_types=1);

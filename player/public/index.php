@@ -1,46 +1,28 @@
 <?php
 /**
- * The front door, which is deliberately almost empty.
+ * The front door, which is the catalogue.
  *
- * Courses open from a learning platform and nowhere else, so there is no
- * catalogue here and no way in. This page exists to say so, and to give an
- * administrator the addresses their LMS asks for.
+ * Everything this server offers to somebody who was not sent here by a
+ * learning platform is in public/catalog/, and this is how they arrive at it:
+ * the address they typed is the root, and the root is the list of courses.
+ *
+ * The page itself lives one folder down rather than here, so that it can sit
+ * beside the four pages it links to -- the map, the player, the JSON and the
+ * download -- and so that every one of them resolves its assets the same way.
+ *
+ * The addresses an LMS administrator needs are no longer on this page: they
+ * are in the admin, on the platforms page and on each course's own, which is
+ * where somebody who has a password to this server is already looking.
  */
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../src/config.php';
-
+// Relative on purpose: this application is installed at whatever path the site
+// gives it -- the root of its own host, or /graphs of a bigger site -- and a
+// relative redirect lands in the right place under either, with nothing to
+// configure. Browsers have resolved these since RFC 7231.
+header('Location: catalog/', true, 302);
 header('Content-Type: text/html; charset=utf-8');
-header('X-Content-Type-Options: nosniff');
 
-$base = edukors_config()['base_url'];
-$h = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-?>
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Edukors Graph player</title>
-<link rel="stylesheet" href="<?= $h(edukors_asset('assets/admin.css')) ?>">
-</head>
-<body>
-<header><h1>Edukors</h1><span class="meta">graph player</span>
-  <nav><a class="btn" href="admin/">Admin</a></nav>
-</header>
-<main style="max-width:640px">
-  <h2>Edukors Graph player</h2>
-  <p class="lead">
-    This server runs Edukors Graph courses for students who reach them through their
-    learning platform. There is nothing to open here.
-  </p>
-  <div class="card">
-    <h3>For an LMS administrator</h3>
-    <p style="margin:0 0 6px">Login URL <span class="key"><?= $h($base) ?>/lti/login.php</span></p>
-    <p style="margin:0 0 6px">Redirect URL <span class="key"><?= $h($base) ?>/lti/launch.php</span></p>
-    <p style="margin:0">Launch URL <span class="key"><?= $h($base) ?>/lti/launch.php?course=&lt;course id&gt;</span></p>
-  </div>
-</main>
-</body>
-</html>
+echo '<!doctype html><meta charset="utf-8"><title>Edukors</title>'
+   . '<p style="font:16px system-ui;margin:3rem"><a href="catalog/">The courses</a></p>';
