@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../src/admin.php';
 require_once __DIR__ . '/../../src/course.php';
 require_once __DIR__ . '/../../src/import.php';
+require_once __DIR__ . '/../catalog/icons.php';
 admin_require();
 
 $id  = (int) ($_GET['id'] ?? 0);
@@ -171,7 +172,16 @@ $warnings = $row['warnings'] === null ? [] : explode("\n", (string) $row['warnin
 
 admin_head((string) $row['title']);
 ?>
-<h2><?= h($row['title']) ?></h2>
+<div class="head">
+  <h2><?= h($row['title']) ?></h2>
+  <span class="actions">
+    <?php // The catalogue's three, for this version -- and here the AI steps run. ?>
+    <?php $q = '?id=' . (int) $row['id']; ?>
+    <?= catalog_action('map.php' . $q,  'map',  'Map of the course', true) ?>
+    <?= catalog_action('play.php' . $q, 'play', 'Take the course, with the AI steps running', true) ?>
+    <?= catalog_action('json.php' . $q, 'json', 'Read the JSON') ?>
+  </span>
+</div>
 <p class="lead">
   <?= h($course->author()) ?> · v<?= h($row['version']) ?> ·
   <?= h($row['languages']) ?> ·
@@ -198,33 +208,31 @@ admin_head((string) $row['title']);
 </div>
 <?php endif; ?>
 
-<div class="row">
-  <div class="card">
-    <h3>Contents</h3>
-    <p><?= count($nodes) ?> nodes, <?= count($course->doc()['edges'] ?? []) ?> edges,
-       starting at <span class="nid"><?= h((string) $course->firstNodeId()) ?></span></p>
-    <p>
-      <?php foreach ($counts as $type => $n): ?>
-        <span class="chip" style="background:<?= h(admin_type_colour($type)) ?>"><?= h($type) ?> <?= $n ?></span>
-      <?php endforeach; ?>
-    </p>
-  </div>
+<div class="card">
+  <h3>Contents</h3>
+  <p><?= count($nodes) ?> nodes, <?= count($course->doc()['edges'] ?? []) ?> edges,
+     starting at <span class="nid"><?= h((string) $course->firstNodeId()) ?></span></p>
+  <p>
+    <?php foreach ($counts as $type => $n): ?>
+      <span class="chip" style="background:<?= h(admin_type_colour($type)) ?>"><?= h($type) ?> <?= $n ?></span>
+    <?php endforeach; ?>
+  </p>
+</div>
 
-  <div class="card">
-    <h3>Give these to the LMS</h3>
-    <p style="margin:0 0 6px">Login URL<br><button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/login.php</button></p>
-    <p style="margin:0 0 6px">Redirect URL<br><button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/launch.php</button></p>
-    <p style="margin:0 0 6px">Launch URL for this course<br>
-      <button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/launch.php?course=<?= h($row['course_uuid']) ?></button><br>
-      <span class="muted" style="font-size:12.5px">or, where the tool URL is fixed (Moodle), under
-      Show more → Custom parameters:</span><br>
-      <button type="button" class="key copy" title="Click to copy">course_id=<?= h($row['course_uuid']) ?></button></p>
-    <p style="margin:0 0 6px">Public keyset URL<br>
-      <button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/jwks.php</button></p>
-    <p class="muted" style="font-size:12px;margin:10px 0 0">
-      The key set is empty on purpose: this tool never answers the platform, so it signs nothing.
-    </p>
-  </div>
+<div class="card">
+  <h3>Give these to the LMS</h3>
+  <p style="margin:0 0 6px">Login URL<br><button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/login.php</button></p>
+  <p style="margin:0 0 6px">Redirect URL<br><button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/launch.php</button></p>
+  <p style="margin:0 0 6px">Launch URL for this course<br>
+    <button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/launch.php?course=<?= h($row['course_uuid']) ?></button><br>
+    <span class="muted" style="font-size:12.5px">or, where the tool URL is fixed (Moodle), under
+    Show more → Custom parameters:</span><br>
+    <button type="button" class="key copy" title="Click to copy">course_id=<?= h($row['course_uuid']) ?></button></p>
+  <p style="margin:0 0 6px">Public keyset URL<br>
+    <button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/jwks.php</button></p>
+  <p class="muted" style="font-size:12px;margin:10px 0 0">
+    The key set is empty on purpose: this tool never answers the platform, so it signs nothing.
+  </p>
 </div>
 
 <div class="card">

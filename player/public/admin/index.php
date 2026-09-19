@@ -41,7 +41,7 @@ admin_head('Courses');
     <tr><td class="shelf" colspan="8"><?= $shelf === null ? 'On no category' : h($shelf) ?></td></tr>
     <?php endif; ?>
   <tr>
-    <td><a href="course.php?id=<?= (int) $c['id'] ?>"><?= h($c['title']) ?></a><br>
+    <td><?= h($c['title']) ?><br>
         <span class="muted" style="font:11px var(--mono)"><?= h($c['course_uuid']) ?></span></td>
     <td class="num"><?= (int) $c['sort_order'] ?></td>
     <td class="num"><?= h($c['version']) ?></td>
@@ -53,11 +53,7 @@ admin_head('Courses');
     <td class="num"><?= (int) $c['students'] ?></td>
     <td class="num"><?= h(substr((string) $c['created_at'], 0, 10)) ?></td>
     <td class="actions">
-      <?php // The catalogue's three, for any version -- and here the AI steps run. ?>
-      <?php $q = '?id=' . (int) $c['id']; ?>
-      <?= catalog_action('map.php' . $q,  'map',  'Map of the course', true) ?>
-      <?= catalog_action('play.php' . $q, 'play', 'Take the course, with the AI steps running', true) ?>
-      <?= catalog_action('json.php' . $q, 'json', 'Read the JSON') ?>
+      <?= catalog_action('course.php?id=' . (int) $c['id'], 'edit', 'Edit the course') ?>
     </td>
   </tr>
   <?php endforeach; ?>
