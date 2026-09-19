@@ -145,6 +145,8 @@
   // the bar exists.
 
   function addDownload() {
+    // The admin's own run of a course has no copy to hand out.
+    if (!config.downloadUrl) { return; }
     var bar = document.querySelector('.edukors-player-bar');
     if (!bar || bar.querySelector('[data-edukors-download]')) { return; }
 

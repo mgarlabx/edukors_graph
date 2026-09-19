@@ -111,8 +111,10 @@ function edukors_insert_before_player(string $html, string $script): string
  *
  * $bridge is what public/assets/bridge.js needs to know: where to send the
  * model calls and the progress, and the state already saved for this student.
+ * $prefix is the way from the page back to the web root, for a page served
+ * from a folder -- the admin's run of a course is one.
  */
-function edukors_build_online(Course $course, string $lang, array $bridge): string
+function edukors_build_online(Course $course, string $lang, array $bridge, string $prefix = ''): string
 {
     $payload = [
         // Prompts are stripped here: see Course::withoutPrompts().
@@ -127,7 +129,7 @@ function edukors_build_online(Course $course, string $lang, array $bridge): stri
 
     $config = edukors_boot_json($bridge);
     $script = '<script type="application/json" id="edukors-server">' . $config . '</script>'
-            . "\n" . '<script src="' . edukors_asset('assets/bridge.js') . '"></script>';
+            . "\n" . '<script src="' . edukors_asset('assets/bridge.js', $prefix) .'"></script>';
 
     return edukors_insert_before_player($html, $script);
 }

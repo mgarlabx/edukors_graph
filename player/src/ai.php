@@ -51,26 +51,48 @@ function ai_generate(array $progressRow, Course $course, string $nodeId): string
     }
 
     $state = progress_state($progressRow);
-    $lang  = (string) ($state['lang'] ?? $course->sourceLanguage());
-    $vars  = progress_vars($progressRow);
+    $text  = ai_write_step(
+        $course,
+        $nodeId,
+        (string) ($state['lang'] ?? $course->sourceLanguage()),
+        progress_vars($progressRow),
+        (int) $progressRow['id']
+    );
+
+    node_state_write((int) $progressRow['id'], $nodeId, $type, ['generated_text' => $text]);
+
+    return $text;
+}
+
+/**
+ * Runs the prompt of a dynamic node, with nothing kept: the text, and only that.
+ *
+ * ai_generate() is this plus the freezing. The admin's own run of a course
+ * comes here directly, with no student and so no progress to charge the call
+ * to or to freeze the answer in -- an author trying a prompt wants it run
+ * again, not handed back.
+ */
+function ai_write_step(Course $course, string $nodeId, string $lang, array $vars, ?int $progressId): string
+{
+    $node = $course->node($nodeId);
+    $type = $node === null ? '' : (string) ($node['type'] ?? '');
+    if ($type !== 'dynamic-md' && $type !== 'dynamic-html') {
+        throw new AiError("node $nodeId is not a node the AI writes", 400);
+    }
 
     $prompt = Course::localize($node['content']['prompt'] ?? [], $lang);
     if (trim($prompt) === '') {
         throw new AiError("node $nodeId has no prompt", 400);
     }
 
-    $text = ai_call(
+    return ai_call(
         $course->systemPrompt(),
         Course::resolveStorage($prompt, $vars),
         $lang,
-        (int) $progressRow['id'],
+        $progressId,
         $nodeId,
         'generate'
     );
-
-    node_state_write((int) $progressRow['id'], $nodeId, $type, ['generated_text' => $text]);
-
-    return $text;
 }
 
 /**
@@ -82,6 +104,32 @@ function ai_generate(array $progressRow, Course $course, string $nodeId): string
  */
 function ai_grade(array $progressRow, Course $course, string $nodeId, string $studentText): array
 {
+    $state = progress_state($progressRow);
+    $grade = ai_grade_text(
+        $course,
+        $nodeId,
+        $studentText,
+        (string) ($state['lang'] ?? $course->sourceLanguage()),
+        progress_vars($progressRow),
+        (int) $progressRow['id']
+    );
+    $studentText = trim($studentText);
+
+    node_state_write((int) $progressRow['id'], $nodeId, 'essay', [
+        'answer'   => json_encode(['text' => $studentText], JSON_UNESCAPED_UNICODE),
+        'score'    => $grade['score'],
+        'feedback' => $grade['feedback'],
+    ]);
+
+    return $grade;
+}
+
+/**
+ * Grades an essay with nothing kept, as ai_write_step() writes a step.
+ */
+function ai_grade_text(
+    Course $course, string $nodeId, string $studentText, string $lang, array $vars, ?int $progressId
+): array {
     $node = $course->node($nodeId);
     if ($node === null || ($node['type'] ?? '') !== 'essay') {
         throw new AiError("node $nodeId is not an essay", 400);
@@ -95,9 +143,6 @@ function ai_grade(array $progressRow, Course $course, string $nodeId, string $st
         throw new AiError('the text is too long to grade', 413);
     }
 
-    $state = progress_state($progressRow);
-    $lang  = (string) ($state['lang'] ?? $course->sourceLanguage());
-    $vars  = progress_vars($progressRow);
     $vars["$nodeId.text"] = $studentText;
 
     $prompt = (string) ($node['content']['prompt'] ?? '');
@@ -105,24 +150,14 @@ function ai_grade(array $progressRow, Course $course, string $nodeId, string $st
         throw new AiError("node $nodeId has no grading prompt", 400);
     }
 
-    $answer = ai_call(
+    return ai_parse_grade(ai_call(
         $course->systemPrompt(),
         Course::resolveStorage($prompt, $vars) . "\n\n--- STUDENT TEXT ---\n" . $studentText,
         $lang,
-        (int) $progressRow['id'],
+        $progressId,
         $nodeId,
         'grade'
-    );
-
-    $grade = ai_parse_grade($answer);
-
-    node_state_write((int) $progressRow['id'], $nodeId, 'essay', [
-        'answer'   => json_encode(['text' => $studentText], JSON_UNESCAPED_UNICODE),
-        'score'    => $grade['score'],
-        'feedback' => $grade['feedback'],
-    ]);
-
-    return $grade;
+    ));
 }
 
 /**
@@ -165,7 +200,7 @@ function ai_call(
     string $systemPrompt,
     string $userPrompt,
     string $lang,
-    int $progressId,
+    ?int $progressId,
     string $nodeId,
     string $kind
 ): string {
@@ -249,10 +284,14 @@ function ai_call(
     return $text;
 }
 
-/** Stops one student, or one bad day, from emptying the account. */
-function ai_check_rate(int $progressId, int $perHour, int $perDay): void
+/**
+ * Stops one student, or one bad day, from emptying the account. A call with no
+ * progress is the admin's own, which has no hourly share -- but it is paid
+ * from the same account, so the daily limit counts it all the same.
+ */
+function ai_check_rate(?int $progressId, int $perHour, int $perDay): void
 {
-    if ($perHour > 0) {
+    if ($perHour > 0 && $progressId !== null) {
         $mine = (int) db_value(
             'SELECT COUNT(*) FROM ai_call WHERE progress_id = ? AND created_at > ?',
             [$progressId, gmdate('Y-m-d H:i:s', time() - 3600)]

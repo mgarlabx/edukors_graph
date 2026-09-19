@@ -2,6 +2,7 @@
 /** Every course version this server holds. */
 declare(strict_types=1);
 require_once __DIR__ . '/../../src/admin.php';
+require_once __DIR__ . '/../catalog/icons.php';
 admin_require();
 
 // The order the admin chose: the categories in theirs, the courses in theirs
@@ -51,7 +52,13 @@ admin_head('Courses');
         <?php endif; ?></td>
     <td class="num"><?= (int) $c['students'] ?></td>
     <td class="num"><?= h(substr((string) $c['created_at'], 0, 10)) ?></td>
-    <td><a class="btn" href="course.php?id=<?= (int) $c['id'] ?>">Open</a></td>
+    <td class="actions">
+      <?php // The catalogue's three, for any version -- and here the AI steps run. ?>
+      <?php $q = '?id=' . (int) $c['id']; ?>
+      <?= catalog_action('map.php' . $q,  'map',  'Map of the course', true) ?>
+      <?= catalog_action('play.php' . $q, 'play', 'Take the course, with the AI steps running', true) ?>
+      <?= catalog_action('json.php' . $q, 'json', 'Read the JSON') ?>
+    </td>
   </tr>
   <?php endforeach; ?>
 </table>

@@ -223,6 +223,8 @@ Each course is a line, with three things you can do with it:
 
 **The JSON is the document, whole.** Prompts included, `info.system-prompt` included: it is byte for byte what was imported, so that whoever downloads it can validate it against the schema it names, open it in the builder, or import it into a server of their own.
 
+**The admin has the same three icons**, on every version in its list of courses — drafts and archived ones included, since they are opened by version rather than by course: `admin/map.php`, `admin/play.php` and `admin/json.php` (whose download link is `admin/download.php`). The one that differs is play. The admin's player is the online one, and its AI steps run: [public/admin/play-ai.php](public/admin/play-ai.php) builds the prompt on the server exactly as `api/ai.php` does, and `admin/play-state.php` keeps where the run is in the admin's session, which is what fills a prompt's `{{STORAGE: key}}`. There is no student behind it, so nothing is written to `progress` or `node_state`, nobody joins the list of students, and no step is frozen — reopening a step asks the model again, which is what an author trying a prompt wants. The calls are paid from the same account, so they are logged in AI calls (with no student or course on them) and count against the daily limit; the hourly one is a student's, and does not apply. See [src/preview.php](src/preview.php).
+
 The catalogue has no CSS of the admin's and no session of anyone's; [public/assets/catalog.css](public/assets/catalog.css) and [public/assets/catalog-json.js](public/assets/catalog-json.js) are all it loads, and it sets no cookie.
 
 ## Running a course
@@ -304,6 +306,8 @@ player/
 │  ├─ import.php                          importing, for the CLI and the admin
 │  ├─ build.php                           the player HTML, online and offline, and the map
 │  ├─ catalog.php                         what is published, and in what order
+│  ├─ json_page.php                       the foldable JSON page, for the catalogue and the admin
+│  ├─ preview.php                         the admin's run of a course, AI steps included
 │  ├─ progress.php                        where a student is, and what they produced
 │  ├─ ai.php                              prompts, guards, OpenRouter
 │  ├─ lti.php  jwt.php                    receiving a launch
@@ -314,7 +318,8 @@ player/
 │  ├─ lti/login.php  lti/launch.php  lti/jwks.php
 │  ├─ api/ai.php  api/progress.php
 │  ├─ assets/bridge.js  assets/admin.css  assets/catalog.css  assets/catalog-json.js
-│  └─ admin/…                             courses, categories, students, platforms, AI calls
+│  └─ admin/…                             courses, categories, students, platforms, AI calls,
+│                                         and each version's map, play and json
 └─ tools/
    ├─ import.php               php tools/import.php course.json --publish
    ├─ admin-password.php       php tools/admin-password.php

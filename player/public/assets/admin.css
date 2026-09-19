@@ -96,6 +96,22 @@ td { padding: 10px 12px; border-bottom: 1px solid #EDF1F4; vertical-align: top; 
 tr:last-child td { border-bottom: 0; }
 td.num { font: 12.5px var(--mono); font-variant-numeric: tabular-nums; }
 
+/* the catalogue's three icons -- map, play, json -- at the end of a course's row */
+td.actions { white-space: nowrap; padding-top: 5px; padding-bottom: 5px; }
+.action {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  color: var(--muted);
+  border: 1px solid transparent; border-radius: 8px;
+  text-decoration: none;
+}
+.action:hover, .action:focus-visible {
+  color: var(--select);
+  background: var(--paper);
+  border-color: var(--hair);
+}
+.action svg { width: 18px; height: 18px; display: block; }
+
 .key, .nid {
   display: inline-block;
   font: 11.5px var(--mono);
