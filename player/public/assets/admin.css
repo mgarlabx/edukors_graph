@@ -98,6 +98,7 @@ td.num { font: 12.5px var(--mono); font-variant-numeric: tabular-nums; }
 
 /* action icons: edit at the end of a course's row; map, play, json beside its title */
 td.actions { white-space: nowrap; padding-top: 5px; padding-bottom: 5px; }
+p.back { margin: 0 0 14px; }
 .head { display: flex; align-items: center; gap: 12px; margin: 0 0 4px; }
 .head h2 { margin: 0; }
 .head .actions { display: flex; gap: 2px; margin-left: auto; }

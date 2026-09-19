@@ -35,9 +35,9 @@ function catalog_icon(string $name): string
         // the JSON: the braces it is written in
         'json'     => '<path d="M9.5 4C7 4 7.5 9.2 5 10.8v2.4C7.5 14.8 7 20 9.5 20"/>'
                     . '<path d="M14.5 4c2.5 0 2 5.2 4.5 6.8v2.4c-2.5 1.6-2 6.8-4.5 6.8"/>',
-        // the admin's edit: a brush, handle up and to the right
-        'edit'     => '<path d="M20 4 11.5 12.5"/>'
-                    . '<path d="M13.5 14.5 9.5 10.5c-2 0-3.5 1.5-3.5 3.5 0 1.8-1 3-2.5 4 3 1 7 .5 8.5-1 .8-.8 1-1.6 1.5-2.5z"/>',
+        // the admin's edit: a pencil, point down and to the left
+        'edit'     => '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
+                    . '<path d="M14.5 5.5l3 3"/>',
     ];
 
     return $open . ($paths[$name] ?? '') . '</svg>';

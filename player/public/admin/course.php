@@ -172,6 +172,7 @@ $warnings = $row['warnings'] === null ? [] : explode("\n", (string) $row['warnin
 
 admin_head((string) $row['title']);
 ?>
+<p class="back"><a class="btn" href="index.php">← Courses</a></p>
 <div class="head">
   <h2><?= h($row['title']) ?></h2>
   <span class="actions">

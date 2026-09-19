@@ -34,18 +34,15 @@ admin_head('Courses');
   <p class="empty">Nothing imported yet.</p>
 <?php else: ?>
 <table>
-  <tr><th>Title</th><th>Order</th><th>Version</th><th>Languages</th><th>Status</th>
+  <tr><th>Title</th><th>Version</th><th>Status</th>
       <th>Students</th><th>Imported</th><th></th></tr>
   <?php $shelf = false; foreach ($courses as $c): ?>
     <?php if ($shelves && $shelf !== $c['category']): $shelf = $c['category']; ?>
-    <tr><td class="shelf" colspan="8"><?= $shelf === null ? 'On no category' : h($shelf) ?></td></tr>
+    <tr><td class="shelf" colspan="6"><?= $shelf === null ? 'On no category' : h($shelf) ?></td></tr>
     <?php endif; ?>
   <tr>
-    <td><?= h($c['title']) ?><br>
-        <span class="muted" style="font:11px var(--mono)"><?= h($c['course_uuid']) ?></span></td>
-    <td class="num"><?= (int) $c['sort_order'] ?></td>
+    <td><?= h($c['title']) ?></td>
     <td class="num"><?= h($c['version']) ?></td>
-    <td class="num"><?= h($c['languages']) ?></td>
     <td><span class="tag <?= h($c['status']) ?>"><?= h($c['status']) ?></span>
         <?php if ($c['warnings'] !== null): ?>
           <span class="tag" title="the import left warnings">!</span>
