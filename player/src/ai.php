@@ -219,6 +219,8 @@ function ai_call(
         'model'       => $ai['model'],
         'max_tokens'  => (int) $ai['max_tokens'],
         'temperature' => (float) $ai['temperature'],
+        // Asks OpenRouter to put what the call cost, in dollars, in `usage`.
+        'usage'       => ['include' => true],
         'messages'    => [
             ['role' => 'system', 'content' => $system],
             ['role' => 'user',   'content' => $userPrompt],
@@ -270,11 +272,14 @@ function ai_call(
     $text = trim((string) ($answer['choices'][0]['message']['content'] ?? ''));
     $usage = $answer['usage'] ?? [];
     ai_log(
-        $progressId, $nodeId, $kind, $ai['model'],
+        // The model that answered, which is not always the slug that was asked
+        // for: a router such as openrouter/auto picks one of its own.
+        $progressId, $nodeId, $kind, (string) ($answer['model'] ?? $ai['model']),
         isset($usage['prompt_tokens']) ? (int) $usage['prompt_tokens'] : null,
         isset($usage['completion_tokens']) ? (int) $usage['completion_tokens'] : null,
         $text !== '',
-        $text === '' ? 'empty answer' : null
+        $text === '' ? 'empty answer' : null,
+        isset($usage['cost']) && is_numeric($usage['cost']) ? (float) $usage['cost'] : null
     );
 
     if ($text === '') {
@@ -313,12 +318,45 @@ function ai_check_rate(?int $progressId, int $perHour, int $perDay): void
 
 function ai_log(
     ?int $progressId, string $nodeId, string $kind, string $model,
-    ?int $tokensIn, ?int $tokensOut, bool $ok, ?string $error
+    ?int $tokensIn, ?int $tokensOut, bool $ok, ?string $error, ?float $cost = null
 ): void {
+    ai_ensure_cost_column();
     db_run(
-        'INSERT INTO ai_call (progress_id, node_id, kind, model, tokens_in, tokens_out, ok, error, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [$progressId, $nodeId, $kind, $model, $tokensIn, $tokensOut, $ok ? 1 : 0,
+        'INSERT INTO ai_call (progress_id, node_id, kind, model, tokens_in, tokens_out, cost, ok, error, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$progressId, $nodeId, $kind, mb_substr($model, 0, 80), $tokensIn, $tokensOut, $cost, $ok ? 1 : 0,
          $error === null ? null : mb_substr($error, 0, 255), db_now()]
     );
+}
+
+/**
+ * `ai_call.cost` came after the first installations, whose table does not have
+ * it. Rather than leave every call failing until someone runs an ALTER by hand,
+ * the column is added the first time it is missed. Once per request.
+ */
+function ai_ensure_cost_column(): void
+{
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+    $checked = true;
+    $has = (int) db_value(
+        "SELECT COUNT(*) FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ai_call' AND COLUMN_NAME = 'cost'"
+    );
+    if ($has === 0) {
+        db_run('ALTER TABLE ai_call ADD COLUMN cost DECIMAL(12,8) NULL AFTER tokens_out');
+    }
+}
+
+/** A cost as the admin reads it: dollars, with as many decimals as a cheap call needs. */
+function ai_cost_label($cost): string
+{
+    if ($cost === null || $cost === '') {
+        return '—';
+    }
+    $cost = (float) $cost;
+    $text = number_format($cost, $cost >= 0.01 ? 4 : 6, '.', '');
+    return '$' . rtrim(rtrim($text, '0'), '.');
 }

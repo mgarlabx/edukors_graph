@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../../src/admin.php';
 require_once __DIR__ . '/../../src/progress.php';
+require_once __DIR__ . '/../../src/ai.php';
 admin_require();
 
 $id  = (int) ($_GET['id'] ?? 0);
@@ -106,13 +107,15 @@ admin_head($row['name'] ?? 'Student');
 <div class="card">
   <h3>AI calls</h3>
   <table>
-    <tr><th>When</th><th>Step</th><th>Kind</th><th>Tokens</th><th>Result</th></tr>
+    <tr><th>When</th><th>Step</th><th>Kind</th><th>Model</th><th>Tokens</th><th>Cost</th><th>Result</th></tr>
     <?php foreach ($calls as $c): ?>
     <tr>
       <td class="num"><?= h(substr((string) $c['created_at'], 0, 16)) ?></td>
       <td><span class="nid"><?= h($c['node_id']) ?></span></td>
       <td><?= h($c['kind']) ?></td>
+      <td><?= h($c['model']) ?></td>
       <td class="num"><?= (int) $c['tokens_in'] ?> / <?= (int) $c['tokens_out'] ?></td>
+      <td class="num"><?= h(ai_cost_label($c['cost'] ?? null)) ?></td>
       <td><?= (int) $c['ok'] === 1 ? 'ok' : '<span style="color:var(--bad)">' . h((string) $c['error']) . '</span>' ?></td>
     </tr>
     <?php endforeach; ?>

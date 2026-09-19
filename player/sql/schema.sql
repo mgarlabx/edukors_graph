@@ -149,6 +149,7 @@ CREATE TABLE IF NOT EXISTS ai_call (
   model       VARCHAR(80)  NOT NULL,
   tokens_in   INT UNSIGNED NULL,
   tokens_out  INT UNSIGNED NULL,
+  cost        DECIMAL(12,8) NULL,  -- in dollars, as OpenRouter reports it; NULL when it did not
   ok          TINYINT(1)   NOT NULL,
   error       VARCHAR(255) NULL,
   created_at  DATETIME     NOT NULL,

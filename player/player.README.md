@@ -267,7 +267,7 @@ Eight tables, in `sql/schema.sql`. The course JSON is stored whole, in `course.d
 | `student`      | one row per person, identified by platform and `sub`                      |
 | `progress`     | where each student is, plus the state object mirrored from the player       |
 | `node_state`   | what each step produced: the AI's text, the answer, the score, the feedback |
-| `ai_call`      | every call to the model, for the rate limit and for the bill                |
+| `ai_call`      | every call to the model — which model answered, the tokens and what it cost — for the rate limit and for the bill |
 
 `progress.state` and `node_state` have different jobs. `state` is the literal mirror of what the player keeps in `localStorage`, and it is what makes a course resumable on another device. `node_state` is the server's own record: `api/ai.php` writes a generated step there *before* the student sees it, which is what freezes the content and what stops a page reload from paying twice.
 
