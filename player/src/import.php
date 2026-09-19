@@ -13,10 +13,14 @@ require_once __DIR__ . '/course.php';
 require_once __DIR__ . '/validate.php';
 
 /**
+ * $only, when given, is the course the file has to be: the admin's Update
+ * button sends it so that a file for some other course is refused rather
+ * than imported beside this one.
+ *
  * @return array{ok:bool, errors:string[], warnings:string[], course_id:?int,
  *                uuid:?string, version:?string, title:?string, replaced:bool}
  */
-function edukors_import(string $json, bool $publish = false): array
+function edukors_import(string $json, bool $publish = false, ?string $only = null): array
 {
     $result = [
         'ok' => false, 'errors' => [], 'warnings' => [],
@@ -41,6 +45,11 @@ function edukors_import(string $json, bool $publish = false): array
     $course = new Course($doc);
     $uuid    = $course->id();
     $version = $course->version();
+
+    if ($only !== null && $uuid !== $only) {
+        $result['errors'][] = "this file is the course $uuid, not $only: import it from the course list instead";
+        return $result;
+    }
 
     $existing = db_row(
         'SELECT id FROM course WHERE course_uuid = ? AND version = ?',

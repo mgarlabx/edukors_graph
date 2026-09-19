@@ -66,7 +66,8 @@ admin_head('Platforms');
   </p>
   <p style="margin:0 0 6px">Login URL <span class="key"><?= h($base) ?>/lti/login.php</span></p>
   <p style="margin:0 0 6px">Redirect URL <span class="key"><?= h($base) ?>/lti/launch.php</span></p>
-  <p style="margin:0 0 6px">Launch URL <span class="key"><?= h($base) ?>/lti/launch.php?course=&lt;course id&gt;</span></p>
+  <p style="margin:0 0 6px">Launch URL <span class="key"><?= h($base) ?>/lti/launch.php?course=&lt;course id&gt;</span>
+    <span class="muted">or custom parameter</span> <span class="key">course_id=&lt;course id&gt;</span></p>
   <p style="margin:0 0 6px">Public keyset URL <span class="key"><?= h($base) ?>/lti/jwks.php</span></p>
   <p class="muted" style="font-size:12px;margin:8px 0 0">
     That key set is empty on purpose: this tool signs nothing, because it sends nothing back.

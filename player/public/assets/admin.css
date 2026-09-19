@@ -118,6 +118,10 @@ td.actions { white-space: nowrap; padding-top: 5px; padding-bottom: 5px; }
   padding: 2px 6px; border-radius: 5px;
   background: #F1F4F7; border: 1px solid #E1E8ED;
 }
+button.key { color: inherit; text-align: left; word-break: break-all; }
+.copy { cursor: copy; }
+.copy:hover, .copy:focus-visible { border-color: var(--select); }
+.copy.copied::after { content: "  copied"; color: var(--ok); }
 .tag {
   display: inline-block; font: 10.5px var(--mono);
   padding: 2px 6px; border-radius: 5px;

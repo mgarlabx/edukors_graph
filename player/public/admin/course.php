@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../../src/admin.php';
 require_once __DIR__ . '/../../src/course.php';
+require_once __DIR__ . '/../../src/import.php';
 admin_require();
 
 $id  = (int) ($_GET['id'] ?? 0);
@@ -20,7 +21,34 @@ $versions = db_all(
     [$row['course_uuid']]
 );
 
-if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+// Updating from a new JSON. The file goes through the same import as the
+// upload page, held to this course: the same version replaces its row, a new
+// version number is stored beside the others. A refusal stays on this page.
+$update = null;
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') === 'update') {
+    admin_check_csrf();
+    if (isset($_FILES['file']) && ($_FILES['file']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+        $update = edukors_import(
+            (string) file_get_contents($_FILES['file']['tmp_name']),
+            isset($_POST['publish']),
+            (string) $row['course_uuid']
+        );
+    } else {
+        $update = ['ok' => false, 'errors' => ['no file was sent'], 'warnings' => []];
+    }
+    if ($update['ok']) {
+        admin_flash(
+            ($update['replaced'] ? 'Updated ' : 'Added ') . $update['title'] . ' v' . $update['version']
+            . ($update['warnings'] === [] ? '' : ', with ' . count($update['warnings']) . ' warning'
+                . (count($update['warnings']) === 1 ? '' : 's')),
+            'ok'
+        );
+        header('Location: course.php?id=' . (int) $update['course_id']);
+        exit;
+    }
+}
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $update === null) {
     admin_check_csrf();
 
     // How the course is listed: all three belong to the course rather than to
@@ -150,6 +178,19 @@ admin_head((string) $row['title']);
   <span class="tag <?= h($row['status']) ?>"><?= h($row['status']) ?></span>
 </p>
 
+<?php if ($update !== null): ?>
+<div class="notice bad">
+  <strong>Not updated — <?= count($update['errors']) ?> error<?= count($update['errors']) === 1 ? '' : 's' ?>.</strong>
+  <ul><?php foreach ($update['errors'] as $e): ?><li><?= h($e) ?></li><?php endforeach; ?></ul>
+</div>
+<?php if ($update['warnings'] !== []): ?>
+<div class="notice">
+  <strong>Warnings.</strong>
+  <ul><?php foreach ($update['warnings'] as $w): ?><li><?= h($w) ?></li><?php endforeach; ?></ul>
+</div>
+<?php endif; ?>
+<?php endif; ?>
+
 <?php if ($warnings !== []): ?>
 <div class="notice">
   <strong>The import left <?= count($warnings) ?> warning<?= count($warnings) === 1 ? '' : 's' ?>.</strong>
@@ -171,12 +212,15 @@ admin_head((string) $row['title']);
 
   <div class="card">
     <h3>Give these to the LMS</h3>
-    <p style="margin:0 0 6px">Login URL<br><span class="key"><?= h($base) ?>/lti/login.php</span></p>
-    <p style="margin:0 0 6px">Redirect URL<br><span class="key"><?= h($base) ?>/lti/launch.php</span></p>
+    <p style="margin:0 0 6px">Login URL<br><button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/login.php</button></p>
+    <p style="margin:0 0 6px">Redirect URL<br><button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/launch.php</button></p>
     <p style="margin:0 0 6px">Launch URL for this course<br>
-      <span class="key"><?= h($base) ?>/lti/launch.php?course=<?= h($row['course_uuid']) ?></span></p>
+      <button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/launch.php?course=<?= h($row['course_uuid']) ?></button><br>
+      <span class="muted" style="font-size:12.5px">or, where the tool URL is fixed (Moodle), under
+      Show more → Custom parameters:</span><br>
+      <button type="button" class="key copy" title="Click to copy">course_id=<?= h($row['course_uuid']) ?></button></p>
     <p style="margin:0 0 6px">Public keyset URL<br>
-      <span class="key"><?= h($base) ?>/lti/jwks.php</span></p>
+      <button type="button" class="key copy" title="Click to copy"><?= h($base) ?>/lti/jwks.php</button></p>
     <p class="muted" style="font-size:12px;margin:10px 0 0">
       The key set is empty on purpose: this tool never answers the platform, so it signs nothing.
     </p>
@@ -233,6 +277,25 @@ admin_head((string) $row['title']);
     <button class="btn" type="submit">Change</button>
     <span class="muted" style="font-size:12.5px">Publishing this version archives the other published one.</span>
   </form>
+</div>
+
+<div class="card">
+  <h3>Update</h3>
+  <form method="post" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <?= admin_csrf_field() ?>
+    <input type="hidden" name="action" value="update">
+    <input name="file" type="file" accept=".json,application/json" required style="width:auto;flex:1 1 240px">
+    <label style="display:inline;font-weight:400;margin:0">
+      <input type="checkbox" name="publish" style="width:auto"<?= $row['status'] === 'published' ? ' checked' : '' ?>> publish it
+    </label>
+    <button class="btn primary" type="submit">Update</button>
+  </form>
+  <p class="muted" style="font-size:12.5px;margin:10px 0 0">
+    A new JSON for this course, checked as an import is. If it still says
+    v<?= h($row['version']) ?> it replaces this version, and students reading it carry on where
+    they were; a new version number is stored beside this one, as a draft unless published.
+    A file for another course is refused. The name, category and order stay as they are.
+  </p>
 </div>
 
 <?php if (count($versions) > 1): ?>

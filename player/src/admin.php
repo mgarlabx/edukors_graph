@@ -182,7 +182,7 @@ function admin_head(string $title, bool $withNav = true): void
 
 function admin_foot(): void
 {
-    echo '</main></body></html>';
+    echo '</main><script src="' . h(edukors_asset('assets/admin.js', '../')) . '"></script></body></html>';
 }
 
 /** The colour the viewer gives a node type, so the two agree. */
