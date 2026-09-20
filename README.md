@@ -115,7 +115,7 @@ The project has four parts. The **schema** is the standard itself. The **builder
 The centerpiece is the schema ([schema](schema) folder): a [JSON Schema](https://json-schema.org) (draft 2020-12) describing a course as a single JSON file with three parts:
 
 - `info` — metadata: title, author, version, languages, the `start` node and an optional course-wide `system-prompt` for the AI.
-- `nodes` — **what** the student sees: content and activities.
+- `nodes` — the **steps** of the course: content, activities, and the judgements that decide where a student goes next.
 - `edges` — **in which order**: directed links between nodes. Because edges can carry conditions, the order is not fixed and the course adapts to each student.
 
 A course file should name the version of the standard it follows. The field is optional, but it lets editors validate the file as it is typed:
@@ -124,7 +124,7 @@ A course file should name the version of the standard it follows. The field is o
 "$schema": "https://edukors.org/graph/schema/v1/"
 ```
 
-There are eight node types. Node ids carry their type as a prefix (`sm1`, `q1`, `e1`, and so on).
+There are eleven node types. Node ids carry their type as a prefix (`sm1`, `q1`, `e1`, and so on).
 
 | Type             | What it is                                                                          | Stores data? |
 | ---------------- | ----------------------------------------------------------------------------------- | :----------: |
@@ -136,8 +136,13 @@ There are eight node types. Node ids carry their type as a prefix (`sm1`, `q1`, 
 | `quiz`         | A set of multiple-choice questions.                                                 |     Yes     |
 | `form`         | A form the student fills in.                                                        |     Yes     |
 | `bool`         | A yes/no question, usually asked to choose between two paths.                       |     Yes     |
+| `choice`       | The AI picks one of the options the author listed, and never anything else.          |     Yes     |
+| `score`        | The AI places the student on a scale of levels the author wrote.                     |     Yes     |
+| `noul`         | The AI answers a yes/no question with the probability that the answer is yes.        |     Yes     |
 
-Activities store what the student produced under keys named `<node-id>.<name>`, such as `q1.percent`, `f1.goal`, `e1.score` or `b1.answer`. Those keys drive the two adaptive mechanisms of the standard. In **edges**, a `when` condition decides the path; edges leaving a node are tried from top to bottom, the first one that holds is taken, and an edge without `when` is the fallback:
+The last three are the only nodes the student never sees, and the only ones answered by the AI rather than by the student. They are the same three shapes as a `form` with `radio`, a quiz score and a `bool`, judged from what the student has already produced: a course can read an essay and decide, from the options its author wrote, whether the student needs the remedial track, the standard one or the advanced one.
+
+Activities store what the student produced, and judgements what the AI decided, under keys named `<node-id>.<name>` — `q1.percent`, `f1.goal`, `e1.score`, `b1.answer`, `c1.track`, `s1.evidence`, `n1.ready`. Those keys drive the two adaptive mechanisms of the standard. In **edges**, a `when` condition decides the path; edges leaving a node are tried from top to bottom, the first one that holds is taken, and an edge without `when` is the fallback:
 
 ```json
 "edges": [

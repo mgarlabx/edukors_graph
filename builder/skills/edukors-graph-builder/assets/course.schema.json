@@ -33,7 +33,7 @@
     },
     "edges": {
       "type": "array",
-      "description": "Directed links between nodes. They define the sequence of the course. The edges leaving a node are evaluated from top to bottom, and the first one whose 'when' holds is the path taken, which is what makes the graph adaptive; an edge without 'when' always holds, so it works as the fallback and should come last. A condition on a key the student has not produced yet never holds, so an edge can safely test a node that may not have been answered. An edge may lead back to a node the student has already gone through, which is how a course sends a student to study again and retake an activity. Coming back to a node is a new visit: essay, quiz, form and bool nodes are answered again, and the new answers overwrite the keys they produced before, while dynamic-md and dynamic-html nodes keep showing the content already generated for the student. Every such cycle needs an edge out of it whose condition the student can eventually meet, or the student never leaves it.",
+      "description": "Directed links between nodes. They define the sequence of the course. The edges leaving a node are evaluated from top to bottom, and the first one whose 'when' holds is the path taken, which is what makes the graph adaptive; an edge without 'when' always holds, so it works as the fallback and should come last. A condition on a key the student has not produced yet never holds, so an edge can safely test a node that may not have been answered. An edge may lead back to a node the student has already gone through, which is how a course sends a student to study again and retake an activity. Coming back to a node is a new visit: essay, quiz, form and bool nodes are answered again, and choice, score and noul nodes are judged again, so that in either case the new answers overwrite the keys produced before, while dynamic-md and dynamic-html nodes keep showing the content already generated for the student. Every such cycle needs an edge out of it whose condition the student can eventually meet, or the student never leaves it. A choice, score or noul node decides nothing by itself: it only produces keys, and the edges leaving it are what read them. One of those edges must be unconditional, because the call that produces the keys can fail, and because a judgement can land anywhere in its range; without it a student can reach the node and have nowhere to go.",
       "items": {
         "$ref": "#/$defs/edge"
       }
@@ -110,7 +110,7 @@
         "start": {
           "type": "string",
           "pattern": "^(sm|sh|dm|dh|e|q|f|b)[0-9]+$",
-          "description": "id of the node the course starts at. It is the only entry point: every other node is reached by following edges from here.",
+          "description": "id of the node the course starts at. It is the only entry point: every other node is reached by following edges from here. A choice, score or noul node cannot be the start, which is why their prefixes are not accepted here: they judge what the student has produced, and at the start there is nothing to judge.",
           "examples": [
             "sm1"
           ]
@@ -205,7 +205,10 @@
         "essay",
         "quiz",
         "form",
-        "bool"
+        "bool",
+        "choice",
+        "score",
+        "noul"
       ],
       "x-enumDescriptions": {
         "static-md": "Markdown content written in advance and shown to the student as written.",
@@ -215,12 +218,15 @@
         "essay": "An activity where the student writes a text and the AI grades it.",
         "quiz": "A set of objective questions the student answers.",
         "form": "A form the student fills in.",
-        "bool": "A yes/no question the student answers; the answer is stored and is typically used to branch the course into a longer or a shorter path."
+        "bool": "A yes/no question the student answers; the answer is stored and is typically used to branch the course into a longer or a shorter path.",
+        "choice": "A question the AI answers by picking one of the options the author listed, and never anything outside that list. The answer is stored and read by the edges leaving the node, which is how the course sends the student down one track rather than another.",
+        "score": "A question the AI answers by placing the student on a scale of levels the author wrote, from the lowest to the highest. The level reached is stored and read by the edges leaving the node.",
+        "noul": "A yes/no question the AI answers with the probability that the answer is yes, from 0 to 1. The probability is stored and read by the edges leaving the node, which compare it against a threshold the author chooses."
       }
     },
     "node": {
       "type": "object",
-      "description": "A single node of the course.",
+      "description": "A single node of the course. Most nodes are something the student sees. The choice, score and noul nodes are not: the student passes through them without stopping, while the AI judges what they have produced so far, the answer is stored, and the course carries on along the first edge whose condition that answer satisfies.",
       "required": [
         "id",
         "type",
@@ -231,8 +237,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^(sm|sh|dm|dh|e|q|f|b)[0-9]+$",
-          "description": "Identifier of the node, unique within the course. The prefix must match the type: sm (static-md), sh (static-html), dm (dynamic-md), dh (dynamic-html), e (essay), q (quiz), f (form), b (bool).",
+          "pattern": "^(sm|sh|dm|dh|e|q|f|b|c|s|n)[0-9]+$",
+          "description": "Identifier of the node, unique within the course. The prefix must match the type: sm (static-md), sh (static-html), dm (dynamic-md), dh (dynamic-html), e (essay), q (quiz), f (form), b (bool), c (choice), s (score), n (noul). The nodes that store data carry a one-letter prefix, those that only show content carry two.",
           "examples": [
             "sm1",
             "sh2",
@@ -241,7 +247,10 @@
             "e5",
             "q6",
             "f7",
-            "b8"
+            "b8",
+            "c9",
+            "s10",
+            "n11"
           ]
         },
         "type": {
@@ -435,6 +444,72 @@
               },
               "content": {
                 "$ref": "#/$defs/boolContent"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "choice"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^c[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/choiceContent"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "score"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^s[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/scoreContent"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "noul"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "id": {
+                "pattern": "^n[0-9]+$"
+              },
+              "content": {
+                "$ref": "#/$defs/noulContent"
               }
             }
           }
@@ -790,6 +865,217 @@
         }
       }
     },
+    "judgeState": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What the AI is given to judge, written by the author. Like the grading prompt of an essay it is never shown to the student, and so it has no version per language. It embeds saved data with {{STORAGE: key}}, using a key produced by an essay, quiz, form, bool, choice, score or noul node, such as {{STORAGE: e1.text}}. The spaces around the key are optional, but 'STORAGE' must be followed directly by the colon. Before the call is made, a key the student has not produced yet is replaced by an empty text, and a list of answers (a 'check' field) by its values separated by ', '. Write only what the judgement needs: what is named here is what the AI sees, and nothing else is sent.",
+      "examples": [
+        "What the student wrote:\n{{STORAGE: e1.text}}"
+      ]
+    },
+    "judgeKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Name of the question, unique within the node. Together with the id of the node it forms the key of the answer in the record that tracks the student's progress: a question named 'track' in the node 'c1' answers to 'c1.track'. It cannot end in '-confidence', which is the suffix the node produces on its own.",
+      "examples": [
+        "track",
+        "evidence",
+        "ready-for-the-next-part"
+      ],
+      "not": {
+        "pattern": "-confidence$"
+      }
+    },
+    "judgeInstructions": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The question the AI answers, written as one clear and specific question about the 'state'. It is never shown to the student and has no version per language; it is recommended to write it in English. Ask one thing: a question that tries to weigh several things at once is better split into several questions of its own, combined afterwards in the 'when' of the edges with 'and' or 'or'. It can reference saved data with {{STORAGE: key}}, resolved as described for 'state'.",
+      "examples": [
+        "Which track does this student need next?"
+      ]
+    },
+    "choiceContent": {
+      "type": "object",
+      "description": "One or more questions the AI answers by picking an option from a list the author wrote. Each question produces two keys in the record that tracks the student's progress, where <id> is the id of the node and <key> the name of the question: '<id>.<key>' (the name of the option picked) and '<id>.<key>-confidence' (how sure the AI is, from 0 to 1). A question named 'track' in the node 'c1' therefore produces 'c1.track' and 'c1.track-confidence'. They can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges, which is their main use. The answer is always one of the options listed and never anything else, so edges covering every option cover every answer the AI can give; the unconditional edge is what catches a call that failed.",
+      "required": [
+        "state",
+        "items"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "$ref": "#/$defs/judgeState"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The questions. They are judged together, in a single call, against the same 'state', and none of them sees the answer of another. Asking several narrow questions here costs almost nothing over asking one.",
+          "items": {
+            "$ref": "#/$defs/choiceQuestion"
+          }
+        }
+      }
+    },
+    "choiceQuestion": {
+      "type": "object",
+      "description": "A question answered by picking one of the options listed in 'criteria'.",
+      "required": [
+        "key",
+        "instructions",
+        "criteria"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/judgeKey"
+        },
+        "instructions": {
+          "$ref": "#/$defs/judgeInstructions"
+        },
+        "criteria": {
+          "type": "object",
+          "description": "The options the answer is picked from: a map of the name of each option to what that option covers. The name is what gets stored and what the 'when' of an edge is compared to, so it must not change with the language of the course; the description may be null when the name says it all. Include an option such as 'unclear' when the state may not fit any of the others, because the AI has to answer with one of these and has nowhere else to put a case the list forgot.",
+          "minProperties": 2,
+          "maxProperties": 255,
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "examples": [
+            {
+              "remedial": "Confuses the basic concepts and needs them again",
+              "standard": "Has the essentials and can carry on",
+              "advanced": "Goes beyond what was taught",
+              "unclear": "The text is too short or too off-topic to tell"
+            }
+          ]
+        }
+      }
+    },
+    "scoreContent": {
+      "type": "object",
+      "description": "One or more questions the AI answers by placing the student on a scale of levels the author wrote. Each question produces two keys in the record that tracks the student's progress, where <id> is the id of the node and <key> the name of the question: '<id>.<key>' (the level reached) and '<id>.<key>-confidence' (how sure the AI is, from 0 to 1). A question named 'evidence' in the node 's1' therefore produces 's1.evidence' and 's1.evidence-confidence'. They can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges, which is their main use. The level runs from 0, the first level listed, to one less than the number of levels, and it is not a whole number: it is the average of the levels the AI weighed, so 1.43 on a scale of three levels is an ordinary answer meaning 'between the second and the third, nearer the second'. Compare it with gt, gte, lt and lte rather than with eq. It is not a percentage: '<id>.score' of an essay and '<id>.percent' of a quiz run from 0 to 100, while this one runs over the levels of its own question.",
+      "required": [
+        "state",
+        "items"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "$ref": "#/$defs/judgeState"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The questions. They are judged together, in a single call, against the same 'state', and none of them sees the answer of another. Judging several things separately, each with its own scale, and joining them in the 'when' of an edge with 'and' gives a course that is easier to adjust than one question that tries to weigh everything at once.",
+          "items": {
+            "$ref": "#/$defs/scoreQuestion"
+          }
+        }
+      }
+    },
+    "scoreQuestion": {
+      "type": "object",
+      "description": "A question answered by placing the state on the scale listed in 'criteria'.",
+      "required": [
+        "key",
+        "instructions",
+        "criteria"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/judgeKey"
+        },
+        "instructions": {
+          "$ref": "#/$defs/judgeInstructions"
+        },
+        "criteria": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 10,
+          "description": "The levels of the scale, in order, from the low end to the high end. The position is the number of the level: the first one listed is level 0. Say what each level means rather than naming it, so that the AI can tell one from the next, and keep the step between levels even, since the answer is an average over them.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [
+            [
+              "No evidence given for the claims",
+              "Claims backed by one example",
+              "Claims backed by several examples, weighed against each other"
+            ]
+          ]
+        }
+      }
+    },
+    "noulContent": {
+      "type": "object",
+      "description": "One or more yes/no questions the AI answers with the probability that the answer is yes. Each question produces one key in the record that tracks the student's progress, '<id>.<key>', holding a number from 0 to 1: a question named 'ready' in the node 'n1' therefore produces 'n1.ready'. It can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges, which is its main use. Unlike choice and score it produces no '-confidence' key, because the probability is itself the measure of how sure the AI is: near 1 is yes, near 0 is no, and near 0.5 means it cannot tell. The edges compare it against a threshold the author picks: 0.5 when both answers are equally easy to act on, higher when acting on a wrong yes costs more, lower when missing a true yes costs more.",
+      "required": [
+        "state",
+        "items"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "$ref": "#/$defs/judgeState"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The questions. They are judged together, in a single call, against the same 'state', and none of them sees the answer of another.",
+          "items": {
+            "$ref": "#/$defs/noulQuestion"
+          }
+        }
+      }
+    },
+    "noulQuestion": {
+      "type": "object",
+      "description": "A yes/no question, answered with the probability that the answer is yes.",
+      "required": [
+        "key",
+        "instructions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/judgeKey"
+        },
+        "instructions": {
+          "$ref": "#/$defs/judgeInstructions"
+        },
+        "criteria": {
+          "type": "object",
+          "description": "What a yes and a no cover, for a question that could be read in more than one way. Omit it when the question is plain on its own. Optional.",
+          "additionalProperties": false,
+          "properties": {
+            "true": {
+              "type": "string",
+              "minLength": 1,
+              "description": "What counts as a yes."
+            },
+            "false": {
+              "type": "string",
+              "minLength": 1,
+              "description": "What counts as a no."
+            }
+          },
+          "examples": [
+            {
+              "true": "The student names the mechanism, even loosely",
+              "false": "The student only restates the result"
+            }
+          ]
+        }
+      }
+    },
     "edge": {
       "type": "object",
       "description": "A directed link between two nodes. Without 'when' it is unconditional; with 'when' it is only taken when the condition holds.",
@@ -840,13 +1126,17 @@
         "key": {
           "type": "string",
           "minLength": 1,
-          "description": "Key of the value to test, written as '<node-id>.<name>': one of the keys produced by an essay, quiz, form or bool node. It is the same key used in {{STORAGE: key}}.",
-          "pattern": "^(e|q|f|b)[0-9]+\\.[a-z][a-z0-9-]*$",
+          "description": "Key of the value to test, written as '<node-id>.<name>': one of the keys produced by an essay, quiz, form, bool, choice, score or noul node. It is the same key used in {{STORAGE: key}}.",
+          "pattern": "^(e|q|f|b|c|s|n)[0-9]+\\.[a-z][a-z0-9-]*$",
           "examples": [
             "q1.percent",
             "e1.score",
             "f1.goal",
-            "b1.answer"
+            "b1.answer",
+            "c1.track",
+            "c1.track-confidence",
+            "s1.evidence",
+            "n1.ready"
           ]
         },
         "operator": {
@@ -863,7 +1153,7 @@
           ],
           "description": "How the stored value is compared to 'value'.",
           "x-enumDescriptions": {
-            "eq": "The stored value is equal to 'value'. For the answer of a bool node, compare it to true or false.",
+            "eq": "The stored value is equal to 'value'. For the answer of a bool node, compare it to true or false; for the answer of a choice node, to the name of one of the options that question lists.",
             "ne": "The stored value is different from 'value'.",
             "gt": "The stored value is greater than 'value'. For numbers.",
             "gte": "The stored value is greater than or equal to 'value'. For numbers.",
