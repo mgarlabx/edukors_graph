@@ -182,4 +182,6 @@ The preview player carries no API key. It asks the host the file is running in f
 
 Anywhere else — a local file in a browser, an IDE preview, another harness — the dynamic steps and the essay grading show a retry button instead of content, and every other node type still works.
 
+The `choice`, `score` and `noul` nodes ask no model anywhere, not even inside a host that answers: the preview player shows the author the question as written and lets them pick, which is what makes every branch walkable from one file. To see how the model would have answered instead of guessing, that same panel has **Download the request**: it writes the [System One](https://docs.typesafe.ai/api) call this node would make — `state` (with every `{{STORAGE: key}}` already replaced by what the student produced), `model` and `questions` — as `<node-id>-systemone.json`, to paste into the [TypeSafe playground](https://console.typesafe.ai/playground). The answer that comes back is what the author then picks in the panel.
+
 The preview player also keeps progress only in the browser where the file is open, and connects to no LMS. For both of those, use the full player in [player](../player).

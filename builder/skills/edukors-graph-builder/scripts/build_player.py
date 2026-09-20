@@ -16,7 +16,10 @@ The nodes the AI decides with (choice, score, noul) never ask a model here. They
 are invisible to a student, so the file this script writes marks itself as the
 author's copy and shows a panel instead: the question as written, the options as
 declared, and the author picks. That is what lets every branch of an adaptive
-course be walked by opening one file, with no server and no key.
+course be walked by opening one file, with no server and no key. The panel also
+downloads the request the node would have sent -- state, model and questions,
+with {{STORAGE: key}} resolved from what the student produced -- as JSON, to
+paste into https://console.typesafe.ai/playground and see the real answer.
 
 Usage:
     python3 build_player.py course.json

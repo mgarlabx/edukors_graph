@@ -191,6 +191,12 @@ python3 <skill-dir>/scripts/build_player.py <slug>-course.json -o <slug>-player.
   written, the options as declared, and the author picks. That is what lets the
   author walk **every** branch of an adaptive course by opening one file, with
   no server and no key — and it is the answer to "how do I test this?".
+  The panel also has a **Download the request** button, which saves the call the
+  node would make — `state`, `model` and `questions`, with every
+  `{{STORAGE: key}}` already replaced by what the student produced — as
+  `<node-id>-systemone.json`, to paste into the TypeSafe playground
+  (https://console.typesafe.ai/playground). That turns the author's pick from a
+  guess into a check of what the model actually answers.
 
 Rebuild both after every change to the JSON, or the author reads a stale graph
 and walks a stale course.

@@ -223,7 +223,7 @@ python3 builder/skills/edukors-graph-editor/scripts/build_course.py "<Course Tit
 python3 builder/skills/edukors-graph-editor/scripts/split_course.py my-course.json -o "<Course Title>"
 ```
 
-**Where the preview player's AI steps run.** The standalone player has no API key: it asks the host it runs in for a model. Today that works inside claude.ai chat artifacts and in Artifacts published with the `sample` capability (for example from Claude Code). Opened as a local file, in an IDE preview or in another harness, the AI steps show a retry button and everything else in the course works.
+**Where the preview player's AI steps run.** The standalone player has no API key: it asks the host it runs in for a model. Today that works inside claude.ai chat artifacts and in Artifacts published with the `sample` capability (for example from Claude Code). Opened as a local file, in an IDE preview or in another harness, the AI steps show a retry button and everything else in the course works. The `choice`, `score` and `noul` nodes never ask a model there: the author picks in a panel, and a button on it downloads the request the node would have sent — `state`, `model` and `questions`, with the student's answers already in the state — to paste into the [TypeSafe playground](https://console.typesafe.ai/playground) and see what the AI would have answered.
 
 **Deliver a course to students.** Deploy the [player](player) server (PHP 8.1+ with `pdo_mysql`, `curl`, `openssl` and `json`, a MySQL database, an OpenRouter key and HTTPS), import the course JSON and register the server as an LTI 1.3 tool in the LMS. The [player.README](player/player.README.md) walks through every step, including Moodle.
 
