@@ -201,12 +201,47 @@ Combine when a decision depends on two things:
     { "key": "f1.goal", "operator": "eq", "value": "career" } ] } }
 ```
 
+*Judged by the AI* — the branch the student did not declare. A `bool` forks on
+what the student says about themselves and a quiz on what they got right; a
+`choice` forks on what the AI reads in what they wrote. Use it after an `essay`
+or a `form` with free text, where the answer that matters is not a number:
+
+```json
+{ "id": "c1", "type": "choice",
+  "title": [{ "lang": "pt", "text": "Escolher a trilha" }],
+  "content": {
+    "state": "What the student wrote:\n{{STORAGE: e1.text}}",
+    "items": [{ "key": "track",
+      "instructions": "Which track does this student need next?",
+      "criteria": { "remedial": "Confuses the basic concepts",
+                    "standard": "Has the essentials",
+                    "advanced": "Goes beyond what was taught",
+                    "unclear":  "Too short or too off-topic to tell" } }] } }
+```
+
+```json
+{ "from": "c1", "to": "sm5", "when": { "key": "c1.track", "operator": "eq", "value": "remedial" } },
+{ "from": "c1", "to": "sm7", "when": { "and": [
+    { "key": "c1.track",            "operator": "eq",  "value": "advanced" },
+    { "key": "c1.track-confidence", "operator": "gte", "value": 0.8 } ] } },
+{ "from": "c1", "to": "sm6" }
+```
+
+The confidence is there for the branch you would regret taking wrongly: send a
+student down the demanding track only when the AI is sure. For anything the
+author can weigh in numbers, use a `score` node with one question per dimension
+and join them with `and` — when the priorities change, the numbers in the edge
+change, not the wording of a prompt.
+
 Three rules for any adaptive graph:
 
 1. **Every branch reunites** — or reaches the intended ending. A path that trails
    off leaves the student stranded mid-course.
 2. **The fallback is last** and always exists. Every node with outgoing edges needs
-   one unconditional edge, or a student who matches nothing gets stuck.
+   one unconditional edge, or a student who matches nothing gets stuck. On a
+   `choice`, `score` or `noul` node this is not advice but a rule the validators
+   enforce: a judgement the AI could not make produces no key, so nothing holds,
+   and the player reads "no next step" as the course being finished.
 3. **Test only keys already produced** — a condition on a node further down the
    graph never holds, so that edge is dead and the fallback always wins.
 

@@ -17,19 +17,22 @@ declare(strict_types=1);
 final class CourseValidator
 {
     private const LANG_RE    = '/^[a-z]{2}(-[A-Z]{2})?$/';
-    private const ID_RE      = '/^(sm|sh|dm|dh|e|q|f|b)[0-9]+$/';
+    private const ID_RE      = '/^(sm|sh|dm|dh|e|q|f|b|c|s|n)[0-9]+$/';
     private const NAME_RE    = '/^[a-z][a-z0-9-]*$/';
     private const VERSION_RE = '/^[0-9]+\.[0-9]+\.[0-9]+$/';
     private const DATE_RE    = '/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/';
     private const UUID_RE    = '/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/';
-    private const KEY_RE     = '/^(e|q|f|b)[0-9]+\.[a-z][a-z0-9-]*$/';
+    private const KEY_RE     = '/^(e|q|f|b|c|s|n)[0-9]+\.[a-z][a-z0-9-]*$/';
     private const STORAGE_RE = '/\{\{\s*STORAGE:\s*([^}]+?)\s*\}\}/';
 
     private const PREFIX = [
         'static-md' => 'sm', 'static-html' => 'sh',
         'dynamic-md' => 'dm', 'dynamic-html' => 'dh',
         'essay' => 'e', 'quiz' => 'q', 'form' => 'f', 'bool' => 'b',
+        'choice' => 'c', 'score' => 's', 'noul' => 'n',
     ];
+    /** The nodes the AI decides with. The student never stops at one of them. */
+    private const JUDGE_TYPES = ['choice', 'score', 'noul'];
     private const OPERATORS   = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'contains', 'not-contains'];
     private const FIELD_TYPES = ['text-line', 'text-area', 'radio', 'check', 'select'];
     private const CHOICE_TYPES = ['radio', 'check', 'select'];
@@ -42,6 +45,9 @@ final class CourseValidator
         'quiz'         => [['items'], []],
         'form'         => [['items'], []],
         'bool'         => [['question'], ['yes-label', 'no-label', 'default']],
+        'choice'       => [['state', 'items'], []],
+        'score'        => [['state', 'items'], []],
+        'noul'         => [['state', 'items'], []],
     ];
 
     private array $errors = [];
@@ -344,6 +350,140 @@ final class CourseValidator
                 }
                 $this->produce($id, ['answer']);
                 break;
+
+            case 'choice':
+            case 'score':
+            case 'noul':
+                $this->validateJudge($content, $id, $type, $where);
+                break;
+        }
+    }
+
+    /**
+     * A node the AI decides with: choice, score or noul.
+     *
+     * The three differ only in what an answer may be -- one of the options
+     * listed, a level of the scale listed, or a probability -- so everything
+     * around that is checked here once: a 'state' to judge, and one question per
+     * key. Every question produces '<id>.<key>'; choice and score produce
+     * '<id>.<key>-confidence' as well, which is what lets an edge require the AI
+     * to be sure before it sends a student down an expensive path.
+     */
+    private function validateJudge(array $content, string $id, string $type, string $where): void
+    {
+        $state = $content['state'] ?? null;
+        if (!is_string($state) || trim($state) === '') {
+            $this->error("$where.state", 'the state the AI judges must be a non-empty string');
+        } else {
+            // Recorded as a prompt so it goes through the same {{STORAGE: key}}
+            // checks: a key nothing produces, or one produced downstream, is the
+            // same mistake here as in a dynamic node.
+            $this->prompts[$id][] = $state;
+            if (preg_match(self::STORAGE_RE, $state) !== 1) {
+                $this->warn("node $id", 'the state reads no {{STORAGE: key}}, so the AI judges the same thing '
+                    . 'for every student and the node always takes the same edge');
+            }
+        }
+
+        $items = $content['items'] ?? null;
+        if (!is_array($items) || $items === [] || !array_is_list($items)) {
+            $this->error("$where.items", 'a judgement node needs at least one question');
+            return;
+        }
+
+        $seen = [];
+        foreach (array_values($items) as $index => $item) {
+            $spot     = "$where.items[$index]";
+            $required = $type === 'noul' ? ['key', 'instructions'] : ['key', 'instructions', 'criteria'];
+            $optional = $type === 'noul' ? ['criteria'] : [];
+            if (!$this->checkKeys($item, $spot, $required, $optional)) {
+                continue;
+            }
+
+            $key = $item['key'] ?? null;
+            if (!is_string($key) || preg_match(self::NAME_RE, $key) !== 1) {
+                $this->error("$spot.key", "must be a name like 'track': lowercase letters, digits and -");
+                continue;
+            }
+            if (str_ends_with($key, '-confidence')) {
+                $this->error("$spot.key", "cannot end in '-confidence': the node produces that key on its own");
+                continue;
+            }
+            if (isset($seen[$key])) {
+                $this->error("$spot.key", "'$key' is used twice in the same node");
+                continue;
+            }
+            $seen[$key] = true;
+
+            if (!is_string($item['instructions'] ?? null) || trim($item['instructions']) === '') {
+                $this->error("$spot.instructions", 'the question the AI answers must be a non-empty string');
+            } else {
+                $this->prompts[$id][] = $item['instructions'];
+            }
+
+            $this->produce($id, $type === 'noul' ? [$key] : [$key, "$key-confidence"]);
+            $this->validateJudgeCriteria($item['criteria'] ?? null, $type, $spot);
+        }
+    }
+
+    /** What an answer may be: the options, the scale, or what yes and no cover. */
+    private function validateJudgeCriteria($criteria, string $type, string $spot): void
+    {
+        if ($type === 'choice') {
+            if (!is_array($criteria) || array_is_list($criteria)) {
+                $this->error("$spot.criteria", 'must be a map of the name of each option to what it covers');
+                return;
+            }
+            if (count($criteria) < 2) {
+                $this->error("$spot.criteria", 'a choice needs at least two options');
+            }
+            if (count($criteria) > 255) {
+                $this->error("$spot.criteria", 'a choice takes at most 255 options, got ' . count($criteria));
+            }
+            foreach ($criteria as $name => $what) {
+                if (preg_match(self::NAME_RE, (string) $name) !== 1) {
+                    $this->error("$spot.criteria", "the option '$name' must be a name the edges can compare "
+                        . 'to: lowercase letters, digits and -');
+                }
+                if ($what !== null && !is_string($what)) {
+                    $this->error("$spot.criteria.$name", 'must be a text saying what the option covers, or null');
+                }
+            }
+            return;
+        }
+
+        if ($type === 'score') {
+            if (!is_array($criteria) || !array_is_list($criteria)) {
+                $this->error("$spot.criteria", 'must be the levels of the scale, in order, from the low end '
+                    . 'to the high end');
+                return;
+            }
+            if (count($criteria) < 2 || count($criteria) > 10) {
+                $this->error("$spot.criteria", 'a scale has between 2 and 10 levels, got ' . count($criteria));
+            }
+            foreach ($criteria as $index => $level) {
+                if (!is_string($level) || trim($level) === '') {
+                    $this->error("$spot.criteria[$index]", 'each level must say what it means');
+                }
+            }
+            return;
+        }
+
+        // noul: 'criteria' only clears up what a yes and a no cover, and a plain
+        // question does not need it.
+        if ($criteria === null) {
+            return;
+        }
+        if (!is_array($criteria) || array_is_list($criteria)) {
+            $this->error("$spot.criteria", "must say what 'true' and what 'false' cover");
+            return;
+        }
+        foreach ($criteria as $name => $what) {
+            if ($name !== 'true' && $name !== 'false') {
+                $this->error("$spot.criteria", "'$name' is not a field here: only 'true' and 'false' are");
+            } elseif (!is_string($what) || trim($what) === '') {
+                $this->error("$spot.criteria.$name", 'must be a non-empty text');
+            }
         }
     }
 
@@ -539,8 +679,18 @@ final class CourseValidator
                 }
             }
             if ($plain === [] && $out !== []) {
-                $this->warn("node $id", 'every edge leaving it is conditional; a student matching none of '
-                    . 'them gets stuck -- add an unconditional edge last');
+                // For a node the AI decides with this is not a risk but a
+                // certainty waiting to happen: the call can fail, and then the
+                // node produces no key at all. With nothing to match, the player
+                // finds no edge, and reads that as the course being over -- the
+                // student is shown a finished course at 100%, silently.
+                if (in_array($this->types[$id] ?? '', self::JUDGE_TYPES, true)) {
+                    $this->error("node $id", 'every edge leaving it is conditional; a judgement the AI could '
+                        . 'not make leaves the student with nowhere to go -- add an unconditional edge last');
+                } else {
+                    $this->warn("node $id", 'every edge leaving it is conditional; a student matching none of '
+                        . 'them gets stuck -- add an unconditional edge last');
+                }
             }
             if (count($plain) > 1) {
                 $this->warn("node $id", count($plain) . ' unconditional edges; only the first can ever be taken');
@@ -682,9 +832,11 @@ final class CourseValidator
             }
         }
 
-        // Activity nodes whose results nothing ever reads.
+        // Nodes whose results nothing ever reads: an activity answered for
+        // nothing, or a judgement paid for and thrown away.
         foreach ($this->order as $id) {
-            if (!in_array($this->types[$id] ?? '', ['quiz', 'essay', 'form', 'bool'], true)) {
+            $stores = array_merge(['quiz', 'essay', 'form', 'bool'], self::JUDGE_TYPES);
+            if (!in_array($this->types[$id] ?? '', $stores, true)) {
                 continue;
             }
             $own = array_keys(array_filter($this->produced, static fn($owner) => $owner === $id));

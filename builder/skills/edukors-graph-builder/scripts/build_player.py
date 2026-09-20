@@ -9,8 +9,14 @@ another, so rebuild it whenever the JSON changes.
 Steps written by the AI (dynamic-md, dynamic-html) and the grading of essay
 nodes ask the model of the host the file runs in: the `sample` capability of an
 Artifact that declares it (e.g. published from Claude Code), or the AI bridge of
-a claude.ai chat artifact. Opened anywhere else, those steps show a retry
-instead of content; every other node type works offline.
+a claude.ai chat artifact. Opened anywhere else, those steps show a note saying
+so; every other node type works offline.
+
+The nodes the AI decides with (choice, score, noul) never ask a model here. They
+are invisible to a student, so the file this script writes marks itself as the
+author's copy and shows a panel instead: the question as written, the options as
+declared, and the author picks. That is what lets every branch of an adaptive
+course be walked by opening one file, with no server and no key.
 
 Usage:
     python3 build_player.py course.json
@@ -33,8 +39,16 @@ BOOT_CLOSE = "</script>"
 
 
 def boot_json(course):
-    """The course, safe to sit inside a <script type="application/json"> block."""
-    text = json.dumps({"course": course}, ensure_ascii=False)
+    """The course, safe to sit inside a <script type="application/json"> block.
+
+    `preview` is what tells the player this copy belongs to the author. Only this
+    script writes it: the server's own builds leave it out, so a student never
+    gets the author's panel on a choice, score or noul node. Those nodes decide
+    where the course goes, and on the author's machine there is no model to ask,
+    so the panel asks the author instead -- which is also the only way to walk
+    every branch of an adaptive course without a server.
+    """
+    text = json.dumps({"course": course, "preview": True}, ensure_ascii=False)
     # only '</script' could close the block early; \u003c is the same character
     return text.replace("<", "\\u003c")
 

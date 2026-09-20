@@ -90,6 +90,15 @@ The id prefix must match the type:
 | `quiz` | `q` | `items` — list of questions |
 | `form` | `f` | `items` — list of fields |
 | `bool` | `b` | `question`, optional `yes-label`, `no-label`, `default` |
+| `choice` | `c` | `state`, `items` — the AI picks one of the options listed |
+| `score` | `s` | `state`, `items` — the AI places the student on a scale |
+| `noul` | `n` | `state`, `items` — the AI gives the probability of a yes |
+
+The last three are the only nodes the student never sees: they are passed
+through while the AI judges what the student has produced, and the edges leaving
+them read the answer. Their `state`, `instructions` and `criteria` are
+instructions for the AI, never shown, so they are plain strings with no version
+per language — like the grading `prompt` of an essay.
 
 ### static-md
 
@@ -213,9 +222,52 @@ version?".
 }
 ```
 
+### choice / score / noul
+
+The three nodes the AI decides with. All carry the same two fields: a `state`,
+built with `{{STORAGE: key}}`, which is everything the AI gets to judge, and
+`items`, one question per key. All the questions of a node are judged together,
+in one call, over the same state.
+
+```json
+{
+  "id": "c1", "type": "choice",
+  "title": [{ "lang": "pt", "text": "Escolher a trilha" }],
+  "content": {
+    "state": "What the student wrote:\n{{STORAGE: e1.text}}",
+    "items": [{
+      "key": "track",
+      "instructions": "Which track does this student need next?",
+      "criteria": {
+        "remedial": "Confuses the basic concepts",
+        "standard": "Has the essentials",
+        "advanced": "Goes beyond what was taught",
+        "unclear":  "Too short or too off-topic to tell"
+      }
+    }]
+  }
+}
+```
+
+`criteria` is what an answer may be, and it is the one part that differs:
+
+- **choice** — a map of option name to what it covers. The names are compared by
+  the edges, so they follow the same rule as a form option's `value`
+  (`^[a-z][a-z0-9-]*$`), 2 to 255 of them. Add an `unclear` option: the AI must
+  answer with one of these and has nowhere else to put a case the list forgot.
+- **score** — the levels of the scale, in order, low end first, 2 to 10 of them.
+  The level stored is **fractional**: `1.43` on a scale of three is ordinary.
+  Compare with `gte` and `lt`, never `eq`.
+- **noul** — optional, and only says what `true` and `false` cover.
+
+Every node like this needs an **unconditional edge**. A judgement the AI could
+not make produces no key, nothing holds, and without that edge the player finds
+no next step and shows the course as finished. Both validators refuse a course
+that omits it.
+
 ## Storage keys
 
-Only four node types store data, and the key is always `<node-id>.<name>`:
+Seven node types store data, and the key is always `<node-id>.<name>`:
 
 | Node | Keys produced |
 |------|---------------|
@@ -223,6 +275,13 @@ Only four node types store data, and the key is always `<node-id>.<name>`:
 | quiz `q1` | `q1.score`, `q1.total`, `q1.percent` (0–100), plus `q1.<key>` per keyed question |
 | form `f1` | one per field: `f1.goal`, `f1.pain`… (`check` fields store a list) |
 | bool `b1` | `b1.answer` — `true` / `false` |
+| choice `c1` | per question: `c1.track` (the option picked), `c1.track-confidence` (0–1) |
+| score `s1` | per question: `s1.evidence` (level, fractional), `s1.evidence-confidence` (0–1) |
+| noul `n1` | per question: `n1.ready` — the probability of a yes, 0–1. No confidence key: the probability already is one |
+
+Mind the scales. `e1.score` and `q1.percent` run 0–100. A score node runs over
+the levels of its own question — 0 to 2 on a scale of three. A noul and every
+`-confidence` key run 0–1.
 
 They have exactly two uses: `{{STORAGE: key}}` inside prompts (dynamic nodes and
 essay grading), and `when` on edges. `dynamic-*` nodes produce nothing.

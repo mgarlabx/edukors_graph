@@ -25,14 +25,14 @@ import sys
 from collections import deque
 
 LANG_RE = re.compile(r"^[a-z]{2}(-[A-Z]{2})?$")
-ID_RE = re.compile(r"^(sm|sh|dm|dh|e|q|f|b)[0-9]+$")
+ID_RE = re.compile(r"^(sm|sh|dm|dh|e|q|f|b|c|s|n)[0-9]+$")
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]*$")
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 DATE_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 UUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
-KEY_RE = re.compile(r"^(e|q|f|b)[0-9]+\.[a-z][a-z0-9-]*$")
+KEY_RE = re.compile(r"^(e|q|f|b|c|s|n)[0-9]+\.[a-z][a-z0-9-]*$")
 STORAGE_RE = re.compile(r"\{\{\s*STORAGE:\s*([^}]+?)\s*\}\}")
 
 PREFIX = {
@@ -44,8 +44,13 @@ PREFIX = {
     "quiz": "q",
     "form": "f",
     "bool": "b",
+    "choice": "c",
+    "score": "s",
+    "noul": "n",
 }
 NODE_TYPES = set(PREFIX)
+# The nodes the AI decides with. The student never stops at one of them.
+JUDGE_TYPES = ("choice", "score", "noul")
 OPERATORS = {"eq", "ne", "gt", "gte", "lt", "lte", "contains", "not-contains"}
 FIELD_TYPES = {"text-line", "text-area", "radio", "check", "select"}
 CHOICE_TYPES = {"radio", "check", "select"}
@@ -73,6 +78,9 @@ CONTENT_FIELDS = {
     "quiz": (["items"], []),
     "form": (["items"], []),
     "bool": (["question"], ["yes-label", "no-label", "default"]),
+    "choice": (["state", "items"], []),
+    "score": (["state", "items"], []),
+    "noul": (["state", "items"], []),
 }
 
 
@@ -375,6 +383,120 @@ def validate_form(content, where, rep, langs):
     return produced
 
 
+def validate_judge_criteria(criteria, ntype, spot, rep):
+    """What an answer may be: the options, the scale, or what yes and no cover."""
+    if ntype == "choice":
+        if not isinstance(criteria, dict):
+            rep.error(f"{spot}.criteria", "must be a map of the name of each option to what it covers")
+            return
+        if len(criteria) < 2:
+            rep.error(f"{spot}.criteria", "a choice needs at least two options")
+        if len(criteria) > 255:
+            rep.error(f"{spot}.criteria", f"a choice takes at most 255 options, got {len(criteria)}")
+        for name, what in criteria.items():
+            if not isinstance(name, str) or not NAME_RE.match(name):
+                rep.error(
+                    f"{spot}.criteria",
+                    f"the option '{name}' must be a name the edges can compare to: "
+                    "lowercase letters, digits and -",
+                )
+            if what is not None and not isinstance(what, str):
+                rep.error(f"{spot}.criteria.{name}", "must be a text saying what the option covers, or null")
+        return
+
+    if ntype == "score":
+        if not isinstance(criteria, list):
+            rep.error(
+                f"{spot}.criteria",
+                "must be the levels of the scale, in order, from the low end to the high end",
+            )
+            return
+        if not 2 <= len(criteria) <= 10:
+            rep.error(f"{spot}.criteria", f"a scale has between 2 and 10 levels, got {len(criteria)}")
+        for i, level in enumerate(criteria):
+            if not isinstance(level, str) or not level.strip():
+                rep.error(f"{spot}.criteria[{i}]", "each level must say what it means")
+        return
+
+    # noul: 'criteria' only clears up what a yes and a no cover, and a plain
+    # question does not need it
+    if criteria is None:
+        return
+    if not isinstance(criteria, dict):
+        rep.error(f"{spot}.criteria", "must say what 'true' and what 'false' cover")
+        return
+    for name, what in criteria.items():
+        if name not in ("true", "false"):
+            rep.error(f"{spot}.criteria", f"'{name}' is not a field here: only 'true' and 'false' are")
+        elif not isinstance(what, str) or not what.strip():
+            rep.error(f"{spot}.criteria.{name}", "must be a non-empty text")
+
+
+def validate_judge(content, nid, ntype, where, rep):
+    """A node the AI decides with: choice, score or noul.
+
+    The three differ only in what an answer may be — one of the options listed, a
+    level of the scale listed, or a probability — so everything around that is
+    checked here once: a 'state' to judge, and one question per key. Returns the
+    names produced and the texts to run the {{STORAGE: key}} checks over.
+    """
+    produced, prompts = [], []
+
+    state = content.get("state")
+    if not isinstance(state, str) or not state.strip():
+        rep.error(f"{where}.content.state", "the state the AI judges must be a non-empty string")
+    else:
+        # Treated as a prompt so it goes through the same {{STORAGE: key}} checks:
+        # a key nothing produces, or one produced downstream, is the same mistake
+        # here as in a dynamic node.
+        prompts.append(state)
+        if not STORAGE_RE.search(state):
+            rep.warn(
+                where,
+                "the state reads no {{STORAGE: key}}, so the AI judges the same thing for every "
+                "student and the node always takes the same edge",
+            )
+
+    items = content.get("items")
+    if not isinstance(items, list) or not items:
+        rep.error(f"{where}.content.items", "a judgement node needs at least one question")
+        return produced, prompts
+
+    seen = set()
+    for index, item in enumerate(items):
+        spot = f"{where}.content.items[{index}]"
+        required = ["key", "instructions"] if ntype == "noul" else ["key", "instructions", "criteria"]
+        optional = ["criteria"] if ntype == "noul" else []
+        if not check_keys(item, spot, required, optional, rep):
+            continue
+
+        key = item.get("key")
+        if not isinstance(key, str) or not NAME_RE.match(key):
+            rep.error(f"{spot}.key", "must be a name like 'track': lowercase letters, digits and -")
+            continue
+        if key.endswith("-confidence"):
+            rep.error(f"{spot}.key", "cannot end in '-confidence': the node produces that key on its own")
+            continue
+        if key in seen:
+            rep.error(f"{spot}.key", f"'{key}' is used twice in the same node")
+            continue
+        seen.add(key)
+
+        instructions = item.get("instructions")
+        if not isinstance(instructions, str) or not instructions.strip():
+            rep.error(f"{spot}.instructions", "the question the AI answers must be a non-empty string")
+        else:
+            prompts.append(instructions)
+
+        produced.append(key)
+        if ntype != "noul":
+            produced.append(f"{key}-confidence")
+
+        validate_judge_criteria(item.get("criteria"), ntype, spot, rep)
+
+    return produced, prompts
+
+
 def validate_node(node, index, rep, langs, source, section_numbers, ids):
     """Validates one node; returns (id, produced_keys, prompt_texts)."""
     where = f"nodes[{index}]"
@@ -466,6 +588,9 @@ def validate_node(node, index, rep, langs, source, section_numbers, ids):
         if "default" in content and not isinstance(content["default"], bool):
             rep.error(f"{where}.content.default", "must be true or false")
         produced = ["answer"]
+
+    elif ntype in JUDGE_TYPES:
+        produced, prompts = validate_judge(content, nid, ntype, where, rep)
 
     return nid, [f"{nid}.{name}" for name in produced], prompts
 
@@ -589,11 +714,23 @@ def main():
     for nid, out in outgoing.items():
         plain = [i for i, e in enumerate(out) if "when" not in e]
         if not plain and out:
-            rep.warn(
-                f"node {nid}",
-                "every outgoing edge is conditional; a student matching none of them gets stuck — "
-                "add an unconditional fallback edge last",
-            )
+            # For a node the AI decides with this is not a risk but a certainty
+            # waiting to happen: the call can fail, and then the node produces no
+            # key at all. With nothing to match, the player finds no edge and
+            # reads that as the course being over — the student is shown a
+            # finished course at 100%, silently.
+            if types.get(nid) in JUDGE_TYPES:
+                rep.error(
+                    f"node {nid}",
+                    "every outgoing edge is conditional; a judgement the AI could not make leaves "
+                    "the student with nowhere to go — add an unconditional fallback edge last",
+                )
+            else:
+                rep.warn(
+                    f"node {nid}",
+                    "every outgoing edge is conditional; a student matching none of them gets stuck — "
+                    "add an unconditional fallback edge last",
+                )
         if len(plain) > 1:
             rep.warn(f"node {nid}", f"{len(plain)} unconditional edges; only the first can ever be taken")
         if plain and plain[0] < len(out) - 1:
@@ -681,7 +818,7 @@ def main():
         for prompt in prompts:
             used |= {k.strip() for k in STORAGE_RE.findall(prompt or "")}
     for nid in order:
-        if types.get(nid) in ("quiz", "essay", "form", "bool"):
+        if types.get(nid) in ("quiz", "essay", "form", "bool") + JUDGE_TYPES:
             keys = [k for k, owner in produced.items() if owner == nid]
             if keys and not any(k in used for k in keys):
                 rep.warn(

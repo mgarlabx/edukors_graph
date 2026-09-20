@@ -26,6 +26,9 @@
     --t-quiz:#2E7D5B;
     --t-form:#1F6FA8;
     --t-bool:#B03A48;
+    --t-choice:#5B5BA8;
+    --t-score:#8A7A1E;
+    --t-noul:#1F7A8C;
 
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
@@ -265,10 +268,14 @@ const TYPES = {
   "essay":       {label:"Essay",           color:"var(--t-essay)",       short:"essay"},
   "quiz":        {label:"Quiz",            color:"var(--t-quiz)",        short:"quiz"},
   "form":        {label:"Form",            color:"var(--t-form)",        short:"form"},
-  "bool":        {label:"Yes/no question", color:"var(--t-bool)",        short:"yes/no"}
+  "bool":        {label:"Yes/no question", color:"var(--t-bool)",        short:"yes/no"},
+  "choice":      {label:"AI decision",     color:"var(--t-choice)",      short:"choice"},
+  "score":       {label:"AI measure",      color:"var(--t-score)",       short:"score"},
+  "noul":        {label:"AI check",        color:"var(--t-noul)",        short:"noul"}
 };
 const PREFIX = {"static-md":"sm","static-html":"sh","dynamic-md":"dm","dynamic-html":"dh",
-                "essay":"e","quiz":"q","form":"f","bool":"b"};
+                "essay":"e","quiz":"q","form":"f","bool":"b",
+                "choice":"c","score":"s","noul":"n"};
 const OPS = {eq:"=", ne:"≠", gt:">", gte:"≥", lt:"<", lte:"≤",
              contains:"contains", "not-contains":"does not contain"};
 
@@ -311,6 +318,13 @@ function storageKeys(n){
   }
   if(n.type === "form") (n.content && n.content.items || []).forEach(f => out.push(id+"."+f.key));
   if(n.type === "bool") out.push(id+".answer");
+  if(n.type === "choice" || n.type === "score" || n.type === "noul"){
+    // choice and score also say how sure the AI was; a noul is already a probability
+    (n.content && n.content.items || []).forEach(q => {
+      out.push(id+"."+q.key);
+      if(n.type !== "noul") out.push(id+"."+q.key+"-confidence");
+    });
+  }
   return out;
 }
 
@@ -947,6 +961,39 @@ function contentHtml(n){
           '<li><span class="mark' + (def === false ? " ok" : "") + '">no</span><span>' + esc(no) + (def===false?" (preselected)":"") + '</span></li>' +
         '</ul>' +
         (def === undefined ? '<div class="qmeta">No answer is preselected: the student has to choose.</div>' : ""));
+    }
+    case "choice":
+    case "score":
+    case "noul": {
+      const what = n.type === "choice" ? "picks one of the options listed below"
+                 : n.type === "score"  ? "places the student on the scale listed below"
+                 : "answers with the probability that the answer is yes, from 0 to 1";
+      const rows = (c.items || []).map(it => {
+        let answers;
+        if(n.type === "choice"){
+          answers = '<ul class="opts">' + Object.entries(it.criteria || {}).map(([name, desc]) =>
+            '<li><span class="mark">' + esc(name) + '</span><span>' + esc(desc || "") + '</span></li>'
+          ).join("") + '</ul>';
+        }else if(n.type === "score"){
+          answers = '<ul class="opts">' + (it.criteria || []).map((lvl, i) =>
+            '<li><span class="mark">' + i + '</span><span>' + esc(lvl) + '</span></li>'
+          ).join("") + '</ul>';
+        }else{
+          const cr = it.criteria || {};
+          answers = '<ul class="opts">' +
+            '<li><span class="mark">1</span><span>' + esc(cr["true"]  || "yes") + '</span></li>' +
+            '<li><span class="mark">0</span><span>' + esc(cr["false"] || "no")  + '</span></li>' +
+          '</ul>';
+        }
+        return '<div class="qmeta" style="margin-top:14px"><b>' + esc(n.id + "." + it.key) + '</b></div>' +
+               '<div class="prose">' + md(it.instructions || "") + '</div>' + answers;
+      }).join("");
+      return section("Judged by the AI — the student never sees this step",
+        '<div class="qmeta">The AI ' + what + ', and the edges leaving this node read the answer. ' +
+        'One of them must be unconditional: a judgement that could not be made produces no key at all.</div>' +
+        '<div class="qmeta" style="margin-top:12px"><b>What the AI is given to judge</b></div>' +
+        '<div class="code" style="margin-top:6px">' + esc(c.state || "") + '</div>' +
+        rows);
     }
     default:
       return section("Content", '<div class="code">' + esc(JSON.stringify(n.content, null, 2)) + '</div>');

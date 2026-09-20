@@ -13,7 +13,12 @@ SCHEMA = "https://edukors.org/graph/schema/v1/"
 # everything the build generates lives under this one folder of the course
 OUTPUT = "_output"
 
-# id prefix -> node type
+# id prefix -> node type.
+#
+# The order matters: type_for_id() takes the first prefix that matches, so every
+# two-letter prefix has to come before the one-letter prefix it starts with.
+# "sm" before "s" is the live case -- reverse those two and every static-md node
+# in every course starts reading as a score.
 PREFIX_TYPE = [
     ("sm", "static-md"),
     ("sh", "static-html"),
@@ -23,6 +28,9 @@ PREFIX_TYPE = [
     ("q", "quiz"),
     ("f", "form"),
     ("b", "bool"),
+    ("c", "choice"),
+    ("s", "score"),
+    ("n", "noul"),
 ]
 
 # node type -> (content field externalized per language, file name)

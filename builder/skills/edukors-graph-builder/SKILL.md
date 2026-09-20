@@ -185,7 +185,12 @@ python3 <skill-dir>/scripts/build_player.py <slug>-course.json -o <slug>-player.
   no key: it uses the host's `sample` capability when published as an Artifact
   that declares it, and otherwise the AI bridge of claude.ai chat artifacts.
   Opened anywhere else — a local file in a browser, an IDE preview, another
-  harness — those steps offer a retry instead of content and the course still runs.
+  harness — those steps show a note saying so and the course still runs.
+  `choice`, `score` and `noul` nodes never ask a model here. They are invisible
+  to a student, so this copy shows the author a panel instead: the question as
+  written, the options as declared, and the author picks. That is what lets the
+  author walk **every** branch of an adaptive course by opening one file, with
+  no server and no key — and it is the answer to "how do I test this?".
 
 Rebuild both after every change to the JSON, or the author reads a stale graph
 and walks a stale course.
@@ -205,7 +210,9 @@ Where the player's AI steps can run depends on how it is presented:
   way its AI steps run there; the viewer is asked once to allow it, and the calls
   spend the viewer's own Claude usage.
 - **Anywhere else**: deliver the paths, and tell the author in one line that the
-  dynamic steps and essay grading will not generate content in a local preview.
+  dynamic steps and essay grading show a note instead of content in a local
+  preview. The `choice`, `score` and `noul` nodes work everywhere, including a
+  local file: say so, because walking the branches is what the author needs.
 
 ### 7. Report
 

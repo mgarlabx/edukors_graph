@@ -109,6 +109,13 @@ Which field is externalized, and to which file:
 | `quiz` | `content` entire — the activity as a document | `content/<lang>/quiz.md` |
 | `form` | `content` entire — the activity as a document | `content/<lang>/form.md` |
 | `bool` | `content` entire — the activity as a document | `content/<lang>/bool.md` |
+| `choice`, `score`, `noul` | nothing — `content` stays in `node.json` | — |
+
+The judgement nodes are the exception on purpose. Their `state`, `instructions`
+and `criteria` are instructions for the AI, never translated, and the option
+names and levels are compared by the edges — so the JSON *is* the readable form,
+and splitting it across files would only put distance between an option and the
+edge that tests it. The round trip is exact either way.
 
 Three rules behind the table:
 
@@ -286,6 +293,14 @@ builds the map and the player beside it — it locates the edukors-graph-builder
 scripts on its own (pass `--builder-dir` if it cannot). Use `--json-only` to skip
 the HTML while iterating. It exits non-zero on any error; a course that does not build is not
 done.
+
+**Building is not testing.** Tell the author to open `_output/<slug>-player.html`
+and walk the course. Everything works from a double-clicked file except the steps
+the AI writes — `dynamic-md`, `dynamic-html` and the grading of an `essay` — which
+show a note instead of content outside an AI host. The `choice`, `score` and
+`noul` nodes do work there: each shows a panel with its question and the answers
+it allows, and the author picks, which is how every branch of an adaptive course
+gets walked without a server.
 
 **Importing an existing single-file course** — including everything under
 `other/` and `samples/`, which are still flat files:
