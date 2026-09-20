@@ -24,7 +24,6 @@ PREFIX_TYPE = [
     ("sh", "static-html"),
     ("dm", "dynamic-md"),
     ("dh", "dynamic-html"),
-    ("e", "essay"),
     ("q", "quiz"),
     ("f", "form"),
     ("b", "bool"),
@@ -37,13 +36,13 @@ PREFIX_TYPE = [
 LOCALIZED_BODY = {
     "static-md": ("item", "item.md"),
     "static-html": ("item", "item.html"),
-    "essay": ("instructions", "instructions.md"),
 }
 
-# node type -> (content field externalized without language, file name)
-PLAIN_BODY = {
-    "essay": ("prompt", "prompt.md"),
-}
+# node type -> (content field externalized without language, file name).
+# Empty for now: the one field that lived here, an essay's grading prompt, went
+# away with the essay node. The mechanism stays because a judgement's state is the
+# obvious next candidate.
+PLAIN_BODY = {}
 
 # node type -> (content field that is a localized list but holds a single text,
 # externalized to one file above the language folders, file name)

@@ -100,6 +100,39 @@ admin_head($row['name'] ?? 'Student');
     <h3>Feedback</h3>
     <div class="prose"><?= h($n['feedback']) ?></div>
   <?php endif; ?>
+
+  <?php
+    // A judgement, and what came of it. This is the only place an author can
+    // see why a choice, score or noul sent a student the way it did -- and,
+    // when it did not happen, why not.
+    $verdict = ($n['verdict'] ?? null) === null || $n['verdict'] === ''
+        ? null : json_decode((string) $n['verdict'], true);
+    if (is_array($verdict)):
+      $pretty = static fn($value): string => (string) json_encode(
+          $value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+      );
+  ?>
+    <h3>Judgement</h3>
+    <p class="muted" style="font-size:12px;margin:0 0 8px">
+      <?= h((string) ($verdict['model'] ?? 'no model named')) ?>
+      · visit <?= (int) ($verdict['visit'] ?? 1) ?>
+      · <?= empty($verdict['judged']) ? 'not judged' : 'judged' ?>
+    </p>
+
+    <?php if (empty($verdict['judged'])): ?>
+      <p class="empty">
+        No judgement was made, so this step stored nothing and the student left by the
+        unconditional edge<?= isset($verdict['reason']) ? ': ' . h((string) $verdict['reason']) : '.' ?>
+      </p>
+    <?php else: ?>
+      <div class="code"><?= h($pretty($verdict['vars'] ?? [])) ?></div>
+    <?php endif; ?>
+
+    <?php if (!empty($verdict['state'])): ?>
+      <h3>What was judged</h3>
+      <div class="code"><?= h($pretty($verdict['state'])) ?></div>
+    <?php endif; ?>
+  <?php endif; ?>
 </div>
 <?php endforeach; ?>
 

@@ -24,6 +24,9 @@ function edukors_config(?string $path = null): array
             'timeout' => 45, 'per_hour' => 40, 'per_day' => 5000,
             'referer' => '', 'title' => 'Edukors Graph Player',
         ],
+        'judge'    => [
+            'models' => [], 'timeout' => 45, 'strict_model' => true,
+        ],
         'admin'    => ['user' => 'admin', 'hash' => ''],
         'base_url' => '',
         'dev_mode' => false,
@@ -38,6 +41,7 @@ function edukors_config(?string $path = null): array
     $config = [
         'db'       => array_merge($defaults['db'], $fromFile['db'] ?? []),
         'ai'       => array_merge($defaults['ai'], $fromFile['ai'] ?? []),
+        'judge'    => array_merge($defaults['judge'], $fromFile['judge'] ?? []),
         'admin'    => array_merge($defaults['admin'], $fromFile['admin'] ?? []),
         'base_url' => $fromFile['base_url'] ?? $defaults['base_url'],
         'dev_mode' => $fromFile['dev_mode'] ?? $defaults['dev_mode'],

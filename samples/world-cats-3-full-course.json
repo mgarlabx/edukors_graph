@@ -36,8 +36,8 @@
       }
     ],
     "author": "Mauricio Garcia",
-    "version": "1.2.0",
-    "date": "2026-09-17",
+    "version": "2.0.0",
+    "date": "2026-09-20",
     "start": "sm1",
     "sections": [
       {
@@ -92,7 +92,8 @@
         ]
       }
     ],
-    "system-prompt": "You are a friendly natural-history guide in a short course about the cats of the world (family Felidae) for a general, international audience with no biology background. Be warm, concrete and accurate; prefer well-established facts about species, habitats and behaviour, and say 'roughly' when numbers vary between sources. Never invent image URLs. Use metric units. Answer in the student's language."
+    "system-prompt": "You are a friendly natural-history guide in a short course about the cats of the world (family Felidae) for a general, international audience with no biology background. Be warm, concrete and accurate; prefer well-established facts about species, habitats and behaviour, and say 'roughly' when numbers vary between sources. Never invent image URLs. Use metric units. Answer in the student's language.",
+    "judge-model": "jev-1.13.0"
   },
   "nodes": [
     {
@@ -910,8 +911,8 @@
       }
     },
     {
-      "id": "e1",
-      "type": "essay",
+      "id": "f2",
+      "type": "form",
       "section": 3,
       "title": [
         {
@@ -931,43 +932,164 @@
         "instructions": [
           {
             "lang": "en",
-            "text": "## The cat you would adopt\n\nImagine you could \"adopt\" a cat, in a symbolic sense: supporting the conservation of a wild species, or actually taking a domestic cat home. Choose **one** species or breed seen in this course (or another you know well) and write a text of **150 to 250 words** defending your choice.\n\nYour text must answer four questions:\n\n1. **Where it lives** and in what kind of environment (habitat).\n2. **What it eats** and how it hunts.\n3. **Which behaviour** makes it special to you.\n4. **What it would need** to live well, whether in the wild or in your home.\n\nWrite in the first person, as if you were convincing a friend. You will receive a score and a comment; if the score is below 60, you will get some tips and can rewrite."
+            "text": "## The cat you would adopt\n\nImagine you could \"adopt\" a cat, in a symbolic sense: supporting the conservation of a wild species, or actually taking a domestic cat home. Choose **one** species or breed seen in this course (or another you know well) and write a text of **150 to 250 words** defending your choice.\n\nYour text must answer four questions:\n\n1. **Where it lives** and in what kind of environment (habitat).\n2. **What it eats** and how it hunts.\n3. **Which behaviour** makes it special to you.\n4. **What it would need** to live well, whether in the wild or in your home.\n\nWrite in the first person, as if you were convincing a friend. You will receive a comment on what you wrote; if your text still has gaps, you will get some tips and can rewrite it."
           },
           {
             "lang": "pt",
-            "text": "## O felino que você adotaria\n\nImagine que você pudesse \"adotar\" um felino, no sentido simbólico: apoiar a conservação de uma espécie selvagem, ou de fato levar um gato doméstico para casa. Escolha **uma** espécie ou raça vista neste curso (ou outra que você conheça bem) e escreva um texto de **150 a 250 palavras** defendendo a escolha.\n\nO texto precisa responder a quatro perguntas:\n\n1. **Onde ele vive** e em que tipo de ambiente (habitat).\n2. **Do que ele se alimenta** e como caça.\n3. **Que comportamento** o torna especial para você.\n4. **Do que ele precisaria** para viver bem, seja na natureza, seja na sua casa.\n\nEscreva em primeira pessoa, como se estivesse convencendo um amigo. Você receberá uma nota e um comentário; se a nota ficar abaixo de 60, vai ganhar algumas dicas e poderá reescrever."
+            "text": "## O felino que você adotaria\n\nImagine que você pudesse \"adotar\" um felino, no sentido simbólico: apoiar a conservação de uma espécie selvagem, ou de fato levar um gato doméstico para casa. Escolha **uma** espécie ou raça vista neste curso (ou outra que você conheça bem) e escreva um texto de **150 a 250 palavras** defendendo a escolha.\n\nO texto precisa responder a quatro perguntas:\n\n1. **Onde ele vive** e em que tipo de ambiente (habitat).\n2. **Do que ele se alimenta** e como caça.\n3. **Que comportamento** o torna especial para você.\n4. **Do que ele precisaria** para viver bem, seja na natureza, seja na sua casa.\n\nEscreva em primeira pessoa, como se estivesse convencendo um amigo. Você receberá um comentário sobre o que escreveu; se o texto ainda tiver lacunas, vai ganhar algumas dicas e poderá reescrever."
           },
           {
             "lang": "zh",
-            "text": "## 你会领养的猫科动物\n\n想象你可以在象征意义上\"领养\"一种猫科动物：支持某个野生物种的保护，或者真正把一只家猫带回家。从本课程中出现的物种或品种（或你熟悉的其他物种）中选择**一种**，写一篇 **150 到 250 字**的短文为你的选择辩护。\n\n短文需要回答四个问题：\n\n1. **它生活在哪里**，在什么样的环境中（栖息地）。\n2. **它吃什么**，如何狩猎。\n3. **哪种行为**让它对你来说与众不同。\n4. **它需要什么**才能生活得好，无论是在野外还是在你家里。\n\n用第一人称写作，就像在说服一位朋友。你将收到分数和评语；如果分数低于 60，你会得到一些建议并可以重写。"
+            "text": "## 你会领养的猫科动物\n\n想象你可以在象征意义上\"领养\"一种猫科动物：支持某个野生物种的保护，或者真正把一只家猫带回家。从本课程中出现的物种或品种（或你熟悉的其他物种）中选择**一种**，写一篇 **150 到 250 字**的短文为你的选择辩护。\n\n短文需要回答四个问题：\n\n1. **它生活在哪里**，在什么样的环境中（栖息地）。\n2. **它吃什么**，如何狩猎。\n3. **哪种行为**让它对你来说与众不同。\n4. **它需要什么**才能生活得好，无论是在野外还是在你家里。\n\n用第一人称写作，就像在说服一位朋友。你将收到关于所写内容的评语；如果短文仍有欠缺，你会得到一些建议并可以重写。"
           }
         ],
-        "prompt": "Grade this short persuasive text (target 150-250 words) in which a student of a general-audience course on cats of the world argues for one cat species or breed they would 'adopt' (symbolically, for a wild species, or literally, for a domestic cat). Criteria: habitat correctly described (25); diet and hunting behaviour correctly described (25); one specific, accurate behaviour or trait that justifies the choice (25); realistic statement of what the animal needs to thrive (15); clarity and persuasive tone (10). Do not penalise length slightly outside the range, typos, or the choice of a species not covered in the course as long as the facts are right. Penalise factual errors about the species (e.g. a cheetah that roars, a jaguar in Africa). Return JSON: {\"score\": <0-100>, \"feedback\": \"<3-5 sentences addressed to the student: one thing that works, up to two concrete improvements, and a correction of any factual error, in the student's language>\"}."
+        "items": [
+          {
+            "key": "text",
+            "type": "text-area",
+            "required": true,
+            "label": [
+              {
+                "lang": "en",
+                "text": "Your text"
+              },
+              {
+                "lang": "pt",
+                "text": "Seu texto"
+              },
+              {
+                "lang": "zh",
+                "text": "你的短文"
+              }
+            ],
+            "min-words": 150,
+            "max-words": 250
+          }
+        ]
       }
     },
     {
-      "id": "dm2",
+      "id": "s1",
+      "type": "score",
+      "section": 3,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Measuring your text"
+        },
+        {
+          "lang": "pt",
+          "text": "Medindo seu texto"
+        },
+        {
+          "lang": "zh",
+          "text": "评估你的短文"
+        }
+      ],
+      "content": {
+        "state": {
+          "task": "Choose one cat species or breed and write 150 to 250 words arguing for 'adopting' it -- supporting a wild species' conservation, or taking a domestic cat home. The text must cover where it lives, what it eats and how it hunts, one behaviour that makes it special, and what it would need to live well. First person, addressed to a friend.",
+          "answer": "{{STORAGE: f2.text}}"
+        },
+        "confidence": 0.6,
+        "items": [
+          {
+            "key": "habitat",
+            "instructions": "Judge only whether the field answer describes where the chosen cat lives and in what kind of environment, and whether that is factually right. Ignore grammar, length and tone.",
+            "criteria": [
+              "Says nothing about where the animal lives, or places it on the wrong continent",
+              "Names the habitat in general terms, broadly right",
+              "Describes the habitat specifically and accurately, with a detail that fits the species"
+            ],
+            "points": [
+              0,
+              12,
+              25
+            ]
+          },
+          {
+            "key": "diet",
+            "instructions": "Judge only whether the field answer describes what the chosen cat eats and how it hunts, and whether that is factually right. Ignore everything else.",
+            "criteria": [
+              "Says nothing about diet or hunting, or gets them wrong",
+              "Names what it eats, without how it hunts",
+              "Describes both diet and hunting behaviour accurately"
+            ],
+            "points": [
+              0,
+              12,
+              25
+            ]
+          },
+          {
+            "key": "trait",
+            "instructions": "Judge only whether the field answer gives one specific and accurate behaviour or trait that justifies the choice. A generic compliment is not a trait.",
+            "criteria": [
+              "Gives no particular trait, only that the animal is nice or beautiful",
+              "Names a trait, but one that fits almost any cat",
+              "Names a trait specific to the species and true of it, and ties it to the choice"
+            ],
+            "points": [
+              0,
+              12,
+              25
+            ]
+          },
+          {
+            "key": "needs",
+            "instructions": "Judge only whether the field answer states realistically what the animal would need to live well, in the wild or at home.",
+            "criteria": [
+              "Says nothing about what the animal needs, or something unrealistic",
+              "Mentions a need in passing",
+              "States concretely what it needs and why that is hard or easy to provide"
+            ],
+            "points": [
+              0,
+              7,
+              15
+            ]
+          },
+          {
+            "key": "tone",
+            "instructions": "Judge only whether the field answer reads as a clear, first-person argument addressed to a friend. Do not judge the facts, and do not penalise typos.",
+            "criteria": [
+              "Disorganised, or not an argument at all",
+              "Clear enough to follow, but flat",
+              "Clear and genuinely persuasive"
+            ],
+            "points": [
+              0,
+              5,
+              10
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "dm3",
       "type": "dynamic-md",
       "section": 3,
       "title": [
         {
           "lang": "en",
-          "text": "Summary of your journey"
+          "text": "Your feedback"
         },
         {
           "lang": "pt",
-          "text": "Síntese da sua jornada"
+          "text": "Sua devolutiva"
         },
         {
           "lang": "zh",
-          "text": "你的旅程小结"
+          "text": "你的评语"
         }
       ],
       "content": {
+        "from": "s1",
         "prompt": [
           {
             "lang": "en",
-            "text": "Write a personalised closing summary in markdown (250-350 words) for a student who has just finished one pass through a short course on the cats of the world.\n\nInputs:\n- Group the student explored in this pass: {{STORAGE: f1.interest}} (big, small or domestic)\n- Student's country: {{STORAGE: f1.country}}\n- Quiz score: {{STORAGE: q1.percent}}%\n- The student's essay about the cat they would adopt: {{STORAGE: e1.text}}\n- Essay score: {{STORAGE: e1.score}}\n- Grader's feedback on the essay: {{STORAGE: e1.feedback}}\n\nStructure:\n1. A warm two-sentence opening that names the specific cat the student chose in the essay and one detail from their own text.\n2. \"What you now know\": three bullet points tying the group they explored to the course objectives (distinguish big from small cats and where they live; what makes felids efficient hunters; the story of cat domestication), phrased as things they can now do.\n3. \"One thing to take further\": a single concrete suggestion that builds on the essay feedback, such as one accurate fact about the chosen species they did not mention, or a conservation organisation or field guide relevant to the chosen species (only if you are confident it exists).\n4. A closing line inviting them to explore another group of cats if they have not yet.\nDo not include images. Do not repeat the grader's feedback verbatim. Answer in the student's language."
+            "text": "Write 4 to 6 sentences to a student of a general-audience course on the cats of the world, in their language, about the short persuasive text they just wrote on a cat they would 'adopt'. Open by naming the species they chose and one thing that genuinely works in their text. Then give the single most useful improvement, taken from the weakest question of the judgement below, and say concretely what to add or change. Where the judgement is unsure about a question, say so plainly rather than overstating. Warm and specific, never a tally. Give no numbers. Decide nothing: the judgement below is settled, and your job is to put it into words the student can act on."
           }
         ]
       }
@@ -994,15 +1116,42 @@
         "item": [
           {
             "lang": "en",
-            "text": "## Tips to improve your text\n\nYour score came in below 60, and that usually happens for one of three reasons. Read the comment you received, see which one applies to you and go back to rewrite.\n\n### 1. One of the four questions went unanswered\n\nThe text needs to say **where** the cat lives, **what** it eats and how it hunts, **which** behaviour makes it special and **what** it needs. A simple trick: write one short paragraph for each question, in that order. Four paragraphs of 40 to 60 words already add up to the requested length.\n\n### 2. A fact is wrong\n\nThe most common mistakes:\n\n- Placing a cat on the wrong continent. The jaguar exists only in the Americas; the leopard only in Africa and Asia; the tiger only in Asia.\n- Mixing up who roars and who purrs. Lion, tiger, jaguar and leopard roar. Puma, cheetah and all the small cats purr.\n- Calling the cheetah \"the strongest cat\". It is the fastest, but light and fragile: it often loses its prey to hyenas and lions.\n- Describing the domestic cat as an animal that \"needs a pack\". It is solitary by nature; what it needs is territory, hiding places and play that mimics hunting.\n\nIf in doubt, reread the chapter of the group you chose.\n\n### 3. The text does not convince\n\nSwapping \"it is really cool\" for a concrete fact changes everything. Compare:\n\n> *Weak:* \"The serval is amazing and I would love to have one.\"\n>\n> *Strong:* \"The serval lands half of its hunts, leaping two metres to come down on a mouse it never saw, only heard. An animal like that needs open space and tall grass, which is why I would support a savanna reserve, not a cage.\"\n\nThe second example shows habitat, behaviour and need in two sentences.\n\n### Before resubmitting\n\n- Count the words: between 150 and 250.\n- Check the scientific name or the correct common name.\n- Read it aloud: if a sentence does not convince you, it will not convince the reader.\n\nWhen you are ready, move on to rewrite."
+            "text": "## Tips to improve your text\n\nYour text still has a gap or two, and that usually happens for one of three reasons. Read the comment you received, see which one applies to you and go back to rewrite.\n\n### 1. One of the four questions went unanswered\n\nThe text needs to say **where** the cat lives, **what** it eats and how it hunts, **which** behaviour makes it special and **what** it needs. A simple trick: write one short paragraph for each question, in that order. Four paragraphs of 40 to 60 words already add up to the requested length.\n\n### 2. A fact is wrong\n\nThe most common mistakes:\n\n- Placing a cat on the wrong continent. The jaguar exists only in the Americas; the leopard only in Africa and Asia; the tiger only in Asia.\n- Mixing up who roars and who purrs. Lion, tiger, jaguar and leopard roar. Puma, cheetah and all the small cats purr.\n- Calling the cheetah \"the strongest cat\". It is the fastest, but light and fragile: it often loses its prey to hyenas and lions.\n- Describing the domestic cat as an animal that \"needs a pack\". It is solitary by nature; what it needs is territory, hiding places and play that mimics hunting.\n\nIf in doubt, reread the chapter of the group you chose.\n\n### 3. The text does not convince\n\nSwapping \"it is really cool\" for a concrete fact changes everything. Compare:\n\n> *Weak:* \"The serval is amazing and I would love to have one.\"\n>\n> *Strong:* \"The serval lands half of its hunts, leaping two metres to come down on a mouse it never saw, only heard. An animal like that needs open space and tall grass, which is why I would support a savanna reserve, not a cage.\"\n\nThe second example shows habitat, behaviour and need in two sentences.\n\n### Before resubmitting\n\n- Count the words: between 150 and 250.\n- Check the scientific name or the correct common name.\n- Read it aloud: if a sentence does not convince you, it will not convince the reader.\n\nWhen you are ready, move on to rewrite."
           },
           {
             "lang": "pt",
-            "text": "## Dicas para melhorar seu texto\n\nSua nota ficou abaixo de 60, e isso normalmente acontece por um de três motivos. Leia o comentário que você recebeu, veja qual é o seu caso e volte para reescrever.\n\n### 1. Faltou responder a uma das quatro perguntas\n\nO texto precisa dizer **onde** o felino vive, **o que** ele come e como caça, **qual** comportamento o torna especial e **do que** ele precisa. Um truque simples: escreva um parágrafo curto para cada pergunta, nessa ordem. Quatro parágrafos de 40 a 60 palavras já somam o tamanho pedido.\n\n### 2. Um fato está errado\n\nOs erros mais comuns:\n\n- Colocar um felino no continente errado. A onça-pintada só existe nas Américas; o leopardo só na África e na Ásia; o tigre só na Ásia.\n- Confundir quem ruge e quem ronrona. Leão, tigre, onça e leopardo rugem. Puma, guepardo e todos os pequenos felinos ronronam.\n- Chamar o guepardo de \"o felino mais forte\". Ele é o mais rápido, mas leve e frágil: muitas vezes perde a presa para hienas e leões.\n- Descrever o gato doméstico como um animal que \"precisa de um bando\". Ele é solitário por natureza; o que precisa é de território, esconderijos e brincadeira que imite a caça.\n\nSe tiver dúvida, releia o capítulo do grupo que você escolheu.\n\n### 3. O texto não convence\n\nTrocar \"ele é muito legal\" por um fato concreto muda tudo. Compare:\n\n> *Fraco:* \"O serval é incrível e eu adoraria ter um.\"\n>\n> *Forte:* \"O serval acerta metade das caçadas, saltando dois metros para cair em cima de um rato que ele nem viu, só ouviu. Um animal assim precisa de espaço aberto e capim alto, e por isso eu apoiaria uma reserva na savana, não uma gaiola.\"\n\nO segundo exemplo mostra habitat, comportamento e necessidade em duas frases.\n\n### Antes de reenviar\n\n- Conte as palavras: entre 150 e 250.\n- Confira o nome científico ou o nome comum correto.\n- Leia em voz alta: se uma frase não convence você, não vai convencer o leitor.\n\nQuando estiver pronto, avance para reescrever."
+            "text": "## Dicas para melhorar seu texto\n\nSeu texto ainda tem uma lacuna ou outra, e isso normalmente acontece por um de três motivos. Leia o comentário que você recebeu, veja qual é o seu caso e volte para reescrever.\n\n### 1. Faltou responder a uma das quatro perguntas\n\nO texto precisa dizer **onde** o felino vive, **o que** ele come e como caça, **qual** comportamento o torna especial e **do que** ele precisa. Um truque simples: escreva um parágrafo curto para cada pergunta, nessa ordem. Quatro parágrafos de 40 a 60 palavras já somam o tamanho pedido.\n\n### 2. Um fato está errado\n\nOs erros mais comuns:\n\n- Colocar um felino no continente errado. A onça-pintada só existe nas Américas; o leopardo só na África e na Ásia; o tigre só na Ásia.\n- Confundir quem ruge e quem ronrona. Leão, tigre, onça e leopardo rugem. Puma, guepardo e todos os pequenos felinos ronronam.\n- Chamar o guepardo de \"o felino mais forte\". Ele é o mais rápido, mas leve e frágil: muitas vezes perde a presa para hienas e leões.\n- Descrever o gato doméstico como um animal que \"precisa de um bando\". Ele é solitário por natureza; o que precisa é de território, esconderijos e brincadeira que imite a caça.\n\nSe tiver dúvida, releia o capítulo do grupo que você escolheu.\n\n### 3. O texto não convence\n\nTrocar \"ele é muito legal\" por um fato concreto muda tudo. Compare:\n\n> *Fraco:* \"O serval é incrível e eu adoraria ter um.\"\n>\n> *Forte:* \"O serval acerta metade das caçadas, saltando dois metros para cair em cima de um rato que ele nem viu, só ouviu. Um animal assim precisa de espaço aberto e capim alto, e por isso eu apoiaria uma reserva na savana, não uma gaiola.\"\n\nO segundo exemplo mostra habitat, comportamento e necessidade em duas frases.\n\n### Antes de reenviar\n\n- Conte as palavras: entre 150 e 250.\n- Confira o nome científico ou o nome comum correto.\n- Leia em voz alta: se uma frase não convence você, não vai convencer o leitor.\n\nQuando estiver pronto, avance para reescrever."
           },
           {
             "lang": "zh",
-            "text": "## 改进短文的建议\n\n你的分数低于 60，这通常出于以下三个原因之一。阅读你收到的评语，看看哪一条适用于你，然后返回重写。\n\n### 1. 四个问题中有一个没有回答\n\n短文需要说明猫科动物**生活在哪里**、**吃什么**以及如何狩猎、**哪种行为**让它与众不同，以及**它需要什么**。一个简单的技巧：按这个顺序为每个问题写一小段。四段各 40 到 60 字，加起来就达到了要求的篇幅。\n\n### 2. 有一个事实错了\n\n最常见的错误：\n\n- 把猫科动物放错了大陆。美洲豹只存在于美洲；花豹只在非洲和亚洲；老虎只在亚洲。\n- 混淆谁会吼叫、谁会呼噜。狮子、老虎、美洲豹和花豹会吼叫。美洲狮、猎豹和所有小型猫科动物会呼噜。\n- 称猎豹为\"最强壮的猫科动物\"。它是最快的，但体轻而脆弱：经常把猎物输给鬣狗和狮子。\n- 把家猫描述为\"需要群体\"的动物。它天性独居；它需要的是领地、藏身之处，以及模拟狩猎的游戏。\n\n如有疑问，请重读你所选类群的章节。\n\n### 3. 短文缺乏说服力\n\n把\"它真的很酷\"换成一个具体的事实，一切都会改变。比较一下：\n\n> *弱：*\"薮猫太棒了，我很想养一只。\"\n>\n> *强：*\"薮猫一半的狩猎都能成功，它跃起两米，扑向一只它从未看见、只是听见的老鼠。这样的动物需要开阔的空间和高草，所以我会支持一个草原保护区，而不是一个笼子。\"\n\n第二个例子用两句话展示了栖息地、行为和需求。\n\n### 重新提交前\n\n- 数一数字数：在 150 到 250 之间。\n- 核对学名或正确的俗名。\n- 大声朗读：如果一句话不能说服你，它也不能说服读者。\n\n准备好后，前进去重写。"
+            "text": "## 改进短文的建议\n\n你的短文还有一两处欠缺，这通常出于以下三个原因之一。阅读你收到的评语，看看哪一条适用于你，然后返回重写。\n\n### 1. 四个问题中有一个没有回答\n\n短文需要说明猫科动物**生活在哪里**、**吃什么**以及如何狩猎、**哪种行为**让它与众不同，以及**它需要什么**。一个简单的技巧：按这个顺序为每个问题写一小段。四段各 40 到 60 字，加起来就达到了要求的篇幅。\n\n### 2. 有一个事实错了\n\n最常见的错误：\n\n- 把猫科动物放错了大陆。美洲豹只存在于美洲；花豹只在非洲和亚洲；老虎只在亚洲。\n- 混淆谁会吼叫、谁会呼噜。狮子、老虎、美洲豹和花豹会吼叫。美洲狮、猎豹和所有小型猫科动物会呼噜。\n- 称猎豹为\"最强壮的猫科动物\"。它是最快的，但体轻而脆弱：经常把猎物输给鬣狗和狮子。\n- 把家猫描述为\"需要群体\"的动物。它天性独居；它需要的是领地、藏身之处，以及模拟狩猎的游戏。\n\n如有疑问，请重读你所选类群的章节。\n\n### 3. 短文缺乏说服力\n\n把\"它真的很酷\"换成一个具体的事实，一切都会改变。比较一下：\n\n> *弱：*\"薮猫太棒了，我很想养一只。\"\n>\n> *强：*\"薮猫一半的狩猎都能成功，它跃起两米，扑向一只它从未看见、只是听见的老鼠。这样的动物需要开阔的空间和高草，所以我会支持一个草原保护区，而不是一个笼子。\"\n\n第二个例子用两句话展示了栖息地、行为和需求。\n\n### 重新提交前\n\n- 数一数字数：在 150 到 250 之间。\n- 核对学名或正确的俗名。\n- 大声朗读：如果一句话不能说服你，它也不能说服读者。\n\n准备好后，前进去重写。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dm2",
+      "type": "dynamic-md",
+      "section": 3,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Summary of your journey"
+        },
+        {
+          "lang": "pt",
+          "text": "Síntese da sua jornada"
+        },
+        {
+          "lang": "zh",
+          "text": "你的旅程小结"
+        }
+      ],
+      "content": {
+        "prompt": [
+          {
+            "lang": "en",
+            "text": "Write a personalised closing summary in markdown (250-350 words) for a student who has just finished one pass through a short course on the cats of the world.\n\nInputs:\n- Group the student explored in this pass: {{STORAGE: f1.interest}} (big, small or domestic)\n- Student's country: {{STORAGE: f1.country}}\n- Quiz score: {{STORAGE: q1.percent}}%\n- The student's text about the cat they would adopt: {{STORAGE: f2.text}}\n- How that text came out of 100: {{STORAGE: s1.percent}}\n- Where it was weakest, as levels on their own scales: habitat {{STORAGE: s1.habitat}}, diet {{STORAGE: s1.diet}}, trait {{STORAGE: s1.trait}}, needs {{STORAGE: s1.needs}}, tone {{STORAGE: s1.tone}} (each runs 0 to 2)\n\nStructure:\n1. A warm two-sentence opening that names the specific cat the student chose and one detail from their own text.\n2. \"What you now know\": three bullet points tying the group they explored to the course objectives (distinguish big from small cats and where they live; what makes felids efficient hunters; the story of cat domestication), phrased as things they can now do.\n3. \"One thing to take further\": a single concrete suggestion that builds on the weakest of the levels above, such as one accurate fact about the chosen species they did not mention, or a conservation organisation or field guide relevant to the chosen species (only if you are confident it exists).\n4. A closing line inviting them to explore another group of cats if they have not yet.\nDo not include images. Do not repeat the comment they already read. Answer in the student's language."
           }
         ]
       }
@@ -1169,7 +1318,7 @@
     },
     {
       "from": "b1",
-      "to": "e1"
+      "to": "f2"
     },
     {
       "from": "dm1",
@@ -1177,28 +1326,36 @@
     },
     {
       "from": "dh1",
-      "to": "e1"
+      "to": "f2"
     },
     {
-      "from": "e1",
-      "to": "dm2",
+      "from": "f2",
+      "to": "s1"
+    },
+    {
+      "from": "s1",
+      "to": "dm3",
       "when": {
-        "key": "e1.score",
+        "key": "s1.percent",
         "operator": "gte",
         "value": 60
       }
     },
     {
-      "from": "e1",
+      "from": "s1",
       "to": "sm4"
+    },
+    {
+      "from": "dm3",
+      "to": "dm2"
+    },
+    {
+      "from": "sm4",
+      "to": "f2"
     },
     {
       "from": "dm2",
       "to": "b2"
-    },
-    {
-      "from": "sm4",
-      "to": "e1"
     },
     {
       "from": "b2",

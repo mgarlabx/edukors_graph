@@ -103,8 +103,6 @@ Which field is externalized, and to which file:
 |-----------|-------------------------------|------|
 | `static-md` | `content.item` | `content/<lang>/item.md` |
 | `static-html` | `content.item` | `content/<lang>/item.html` |
-| `essay` | `content.instructions` | `content/<lang>/instructions.md` |
-| `essay` | `content.prompt` (plain string, not localized) | `content/prompt.md` |
 | `dynamic-md`, `dynamic-html` | `content.prompt` (one text, not translated) | `content/prompt.md` |
 | `quiz` | `content` entire — the activity as a document | `content/<lang>/quiz.md` |
 | `form` | `content` entire — the activity as a document | `content/<lang>/form.md` |
@@ -125,11 +123,10 @@ Three rules behind the table:
   long prose — 100 to 300 words of headings, lists and `{{STORAGE: key}}`
   references — which is exactly the text a JSON string destroys: one endless line
   of `\n` and escaped quotes, unreadable and undiffable. Prompts live in files.
-- **Non-localized text sits above the language folders.** Both prompts of the
-  format are addressed to the model, not to the student: the essay grading prompt
-  and the prompt of a `dynamic-*` node, which tells the model to answer in the
-  student's language and is therefore never translated. Both are
-  `content/prompt.md`, beside the `<lang>/` folders rather than inside one — a
+- **Non-localized text sits above the language folders.** A `dynamic-*` prompt is
+  addressed to the model, not to the student: it tells the model to answer in the
+  student's language and is therefore never translated. It is `content/prompt.md`,
+  beside the `<lang>/` folders rather than inside one — a
   `content/<lang>/prompt.md` would be a folder wrapping a single file forever.
 - **An activity is a document, not a field.** A quiz, a form and a bool are not
   prose with a structure around it — they *are* the structure, and it only means
@@ -138,12 +135,12 @@ Three rules behind the table:
   can never read one through in any single language; a 4-question quiz in three
   languages is 443 lines nobody proofreads. So their whole `content` leaves
   `node.json` and becomes one document per language — 43 readable lines each.
-  Their syntax is below.
+  Their syntax is below. A form written as a writing task carries two more things
+  in that document: the assignment above the fields, and the word limits in the
+  field heading — `## 1. text (text-area, required, 150-250 words)`.
 
-The two prompts differ in one detail, because the schema does. The essay's is a
-plain string, so `content/prompt.md` is the whole of it. A `dynamic-*` prompt is
-a localized list holding a single entry, so the build has to give that entry a
-language: **`content/prompt.md` is English**, and a prompt written in another
+A `dynamic-*` prompt is a localized list holding a single entry, so the build has
+to give that entry a language: **`content/prompt.md` is English**, and a prompt written in another
 language is `content/prompt.<lang>.md` — `content/prompt.pt-BR.md` builds
 `[{ "lang": "pt-BR", "text": … }]`. Prefer plain `prompt.md`: the schema itself
 recommends writing prompts in English and instructing the model to answer in the
@@ -296,11 +293,12 @@ done.
 
 **Building is not testing.** Tell the author to open `_output/<slug>-player.html`
 and walk the course. Everything works from a double-clicked file except the steps
-the AI writes — `dynamic-md`, `dynamic-html` and the grading of an `essay` — which
-show a note instead of content outside an AI host. The `choice`, `score` and
-`noul` nodes do work there: each shows a panel with its question and the answers
-it allows, and the author picks, which is how every branch of an adaptive course
-gets walked without a server.
+the AI writes — `dynamic-md` and `dynamic-html` — which show a note instead of
+content outside an AI host. The `choice`, `score` and `noul` nodes do work there:
+each shows a panel with its question and the answers it allows, and the author
+picks a level and a confidence, which is how every branch of an adaptive course
+gets walked without a server. A `dynamic-md` node with `from` then writes its
+feedback out of that pick, so the author can see what a given level produces.
 
 **Importing an existing single-file course** — including everything under
 `other/` and `samples/`, which are still flat files:

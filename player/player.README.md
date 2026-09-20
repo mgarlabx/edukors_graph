@@ -11,7 +11,7 @@ This server is the other half. It takes the same player, unchanged, and gives it
 | What it adds        | Why a deployment needs it                                                                                                                                      |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **LTI**       | Students arrive from Moodle, Canvas or Blackboard, already identified.                                                                                         |
-| **Inference** | The dynamic steps and the essay grading run here, with this server's own key, from prompts the browser never sees.                                             |
+| **Inference** | The dynamic steps and the judgements run here, with this server's own key, from prompts and rubrics the browser never sees.                                     |
 | **Progress**  | Where a student is, what they answered, what the AI wrote for them and what feedback they got, all in MySQL, so any device resumes where the last one stopped. |
 | **Download**  | One HTML file the student can keep and run with no network.                                                                                                    |
 | **Catalogue** | A public front page listing the published courses, each openable as a map, as a course to take anonymously, or as the file it is written in.                     |
@@ -41,32 +41,37 @@ That is possible because the player was already written to ask a *host* for the 
 
 ### Why the prompts are not in the page
 
-If the course were served as written, every prompt — including the hidden grading prompt of each essay — would sit in the page source for any student to read, and the model call would carry text of the browser's choosing.
+If the course were served as written, every prompt would sit in the page source for any student to read, and the model call would carry text of the browser's choosing. A judge node is worse than that: its `criteria` are the rubric a teacher wrote, its `points` are what each level is worth, and its `state` says in plain words what is about to be judged.
 
-So the course is served with its prompts replaced by a marker naming the node (`Course::withoutPrompts` in [src/course.php](src/course.php)):
+So the course is served with those taken out (`Course::withoutPrompts` in [src/course.php](src/course.php)):
 
-| in the database             | in the browser   |
-| --------------------------- | ---------------- |
-| the prompt of `dm1`       | `#edukors:dm1` |
-| the grading prompt of `e1` | `#edukors:e1`  |
-| `info.system-prompt`      | removed        |
+| in the database                                                  | in the browser   |
+| ---------------------------------------------------------------- | ---------------- |
+| the prompt of `dm1`                                            | `#edukors:dm1` |
+| the `state`, `instructions`, `criteria` and `points` of `c1` | gone, only each question's `key` is left |
+| `info.system-prompt`                                           | removed        |
 
-The bridge reads the node id out of the marker and sends `{"node":"dm1"}` — or, for an essay, `{"node":"e1","text":"…"}`. **There is no prompt in the page to send.** `api/ai.php` then insists on all of this before it calls anything:
+The bridge reads the node id out of the marker and sends `{"node":"dm1"}`, or `{"node":"c1"}`. **There is no prompt in the page to send.** `api/ai.php` then insists on all of this before it calls anything:
 
 1. there is a session, opened by an LTI launch;
 2. the node exists in the course this student is in, and is of the right type;
 3. it is the step the student is actually on, so nobody can have the whole course written at once;
-4. a dynamic step already written is returned from the database, with no second call;
-5. an essay is at most 20,000 characters;
-6. the student is under their hourly limit and the server under its daily one;
-7. the prompt is built here, from the stored course, with `{{STORAGE: key}}` filled in from the student's own saved answers;
-8. the model, the token limit and the temperature come from `config.php` and from nowhere else.
+4. a dynamic step already written is returned from the database, with no second call, and so is a judgement already made on this visit;
+5. the student is under their hourly limit and the server under its daily one;
+6. the prompt is built here, from the stored course, with `{{STORAGE: key}}` filled in from the student's own saved answers;
+7. the model, the token limit and the temperature come from `config.php` and from nowhere else.
+
+A judge node can give all of that up because the answer it gets back is not a prompt's worth of text but the storage keys themselves, already worked out here — `{"judged":true,"vars":{"c1.track":"standard", …}}`. The browser asks "judge c1" and is told what came of it. It never learns what the question was.
+
+One thing does stay visible, and cannot be hidden: the **names** of the options a `choice` can produce, wherever an edge tests one. The player routes in the browser, so it needs its own edges, and an edge reads `{"key":"c1.track","operator":"eq","value":"remedial"}`. A student who reads the source learns that a track called `remedial` exists — not what puts them on it, which is in the criteria and stays here. This is the same limit as the quiz answers, below: closing it would mean deciding the path on the server, which is a different design.
+
+That also fixes where those keys come from. `api/progress.php` takes the student's answers on trust, because the only thing spoiling them spoils is their own progress — but a judgement is a mark and a route, so `progress_save()` drops every `<judge-id>.*` key the browser sends and writes back the ones in `node_state`. A browser that awards itself a better grade is not listened to.
 
 That is about the **page a student is given**. The catalogue publishes something else: the course JSON as it was imported, prompts and all — see below. The two are not in conflict, they answer different questions. A prompt in the page is a prompt the browser can edit and send back as its own; a prompt in a published document is the author's work, read by whoever the author published it to. If a server holds courses whose prompts should not be public, that server should not publish its catalogue — [public/catalog/](public/catalog/) is the only thing here that opens without a launch, and it is a folder that can simply be deleted.
 
 ## Installing
 
-1. **Database.** Create one, then apply the seven tables to it:
+1. **Database.** Create one, then apply the eight tables to it:
 
    ```
    mysql -u root -e "CREATE DATABASE edukors_graphs DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
@@ -75,6 +80,8 @@ That is about the **page a student is given**. The catalogue publishes something
 
    `schema.sql` creates no database of its own, because on shared hosting you do not get to name one — the control panel hands you something like `u123456789_courses`.
 2. **Configuration.** Copy `private/config.sample.php` to `private/config.php` and fill it in: the database, the OpenRouter key and model, an admin password hash, and `base_url`.
+
+   If your courses judge — if any of them has a `choice`, `score` or `noul` node — fill in `judge.models` as well. A course names the model that answers its judgements in `info.judge-model`, as an exact version, and that map is where this server says which of its own models stands for that name. A course naming one with no line there is refused at import, and its judgements do not happen at run time. See [Judgements](#judgements).
 
    For the password, run this and paste what it prints:
 
@@ -238,6 +245,38 @@ The catalogue has no CSS of the admin's and no session of anyone's; [public/asse
 - every change copied back to `api/progress.php`, debounced, and flushed before any model call and on `pagehide`;
 - a download link in the player's own bar.
 
+## Judgements
+
+A `choice`, `score` or `noul` node is answered by the AI rather than by the student, who never sees it. The preview player the builder ships cannot answer one — it has no key and no server — so it shows the author a panel and lets them answer as the model would. Here the model actually answers.
+
+**What it is asked.** All the questions of a node go in one call. The node's `state` is resolved against the student's own work and sent as material, the questions follow with their labels, and the reply must be JSON: a whole-percent distribution per question, over the labels that question allows and adding up to exactly 100. Whole percents rather than fractions so that "adds up to one" is an exact equality with nothing to argue about. `info.system-prompt` is **not** sent — the schema is explicit that a course's own instructions do not reach these nodes — and neither is the sentence about the student's language that every generated step carries, since what is wanted back is the author's label names, not prose.
+
+**What is derived from it.** [src/ai.php](src/ai.php) turns the distribution into the storage keys the schema names, and `JudgeView.collect` in the player does the same from what an author picked in the preview. The two are a pair, like `Course::holds` and `Course.holds`: change one and change the other, or a course branches one way on a laptop and another way here.
+
+The one number the model is not asked for is `-confidence`, because it is not the same question as "which label". It is derived:
+
+| type     | `-confidence`                                                                       |
+| -------- | ------------------------------------------------------------------------------------- |
+| `choice` | chance-corrected winner mass, `(K·p − 1) / (K − 1)` over K options                  |
+| `score`  | the weight sitting at the level actually stored, `p[floor] + p[ceil]`                 |
+| `noul`   | none — the probability it returns is already the measure of how sure the model is    |
+
+The `choice` formula is the exact inverse of the preview player's `spreadOne`, so a floor an author set by moving that panel's slider means the same number on both sides. The `score` one asks the only question that matters about a stored expectation: how much of the belief is actually at the number about to be stored. A split between neighbouring levels is not a defect on an ordered scale — the schema says 1.43 on a scale of three is an ordinary answer — so it costs nothing; a split between the two ends averages out to a level the model thinks impossible, and is refused.
+
+**Nothing is ever repaired.** A reply that will not parse, does not add up to 100, names a label the author never wrote, answers a question twice or leaves one out, or leaves two options exactly level, is retried once — as a repair turn showing the model its own reply and the specific fault, since asking again at temperature 0 returns the same answer — and then the node counts as not judged. Renormalising a distribution would move the level, and the level is what chooses the student's path: a path chosen by arithmetic this server invented is not a judgement.
+
+**A model that is not the one asked for does not count.** OpenRouter serves one name from several providers, and `ai.php` has always conceded that what answered is not always what was asked for. For a generated step that is a quality question; for a judgement it is a correctness one, because the thresholds on the edges and the floors on the nodes were tuned against one version. The route is pinned, the model that answered is compared with the one asked for, and a mismatch is refused. Turn that off with `judge.strict_model` if you must.
+
+**Before trusting a model with it**, try it on a real node:
+
+```
+php tools/judge-probe.php course.json c1
+```
+
+It makes one real call and says whether the slug comes back as the slug that was asked for (a slug that does not round-trip makes `strict_model` refuse every judgement of every course, quietly), whether the model obeys the JSON contract, what keys the judgement would store and which edge the student would leave by. It writes nothing — no progress, no `node_state`, no `ai_call` row.
+
+**What this server is honest about.** `info.judge-model` names a `jev` version, and this server answers with whatever OpenRouter model `judge.models` maps that name to. So the course declares what it was tuned against and the server declares what actually answered — the two are kept separate rather than quietly conflated, `ai_call.model` logs the second, and an unmapped name is refused rather than silently answered by the generation model. A general chat model also reports high confidence on almost everything, which is worth knowing before leaning on a floor: watch the `-confidence` values on the student pages of a real cohort before trusting one.
+
 ## The offline copy
 
 `public/download.php` is the PHP equivalent of the skill's `build_player.py`: it splices the course into the same `<script id="edukors-player-boot">` block and hands back one self-contained file.
@@ -249,6 +288,8 @@ For the steps they have not reached, there is no model to ask, so a short script
 > This step is written by artificial intelligence and does not work in the offline copy of the course. Go on to the next step.
 
 It answers *successfully* rather than with an error on purpose: the player then shows the note as the step's content, and the student moves on — instead of a failure with a retry button that could never succeed. The prompts are not in the downloaded file either.
+
+A judge node in an offline copy needs no note and gets none. The stub answers it with that same prose, which is not the JSON a judgement is, so the node counts as not judged and the student leaves by its unconditional edge — the path the course already had to have for a judgement that could not be made. The branching still happens; it just takes the fallback every time. The rubric is not in the file either.
 
 Everything else — reading, prebuilt HTML, quizzes, forms, yes/no questions, the branching — works with no network at all.
 
@@ -266,10 +307,10 @@ Eight tables, in `sql/schema.sql`. The course JSON is stored whole, in `course.d
 | `lti_launch`   | the state and nonce of a login in flight, for ten minutes                   |
 | `student`      | one row per person, identified by platform and `sub`                      |
 | `progress`     | where each student is, plus the state object mirrored from the player       |
-| `node_state`   | what each step produced: the AI's text, the answer, the score, the feedback |
+| `node_state`   | what each step produced: the AI's text, the answer, the verdict of a judgement, the score, the feedback |
 | `ai_call`      | every call to the model — which model answered, the tokens and what it cost — for the rate limit and for the bill |
 
-`progress.state` and `node_state` have different jobs. `state` is the literal mirror of what the player keeps in `localStorage`, and it is what makes a course resumable on another device. `node_state` is the server's own record: `api/ai.php` writes a generated step there *before* the student sees it, which is what freezes the content and what stops a page reload from paying twice.
+`progress.state` and `node_state` have different jobs. `state` is the literal mirror of what the player keeps in `localStorage`, and it is what makes a course resumable on another device. `node_state` is the server's own record: `api/ai.php` writes a generated step there *before* the student sees it, which is what freezes the content and what stops a page reload from paying twice. A judgement is frozen the same way but per visit, so a reload gets the judgement already paid for while coming back to the node later is judged afresh — which is what the schema asks for.
 
 ## Importing and validation
 
@@ -287,8 +328,9 @@ Categories are managed at `/admin/categories.php` — a name and a number each, 
 
 - **KaTeX.** The player fetches KaTeX 0.18.6 from `cdnjs.cloudflare.com`, with an integrity hash, the first time a step contains LaTeX. Under a strict CSP in the LMS, either allow that origin or host KaTeX yourself. Without it the LaTeX source stays readable; nothing breaks.
 - **Two tabs at once.** The state is mirrored last-write-wins, and every launch reseeds the browser from the database. Two tabs open on the same course at the same time is a known case, not a handled one.
-- **The quiz answers are in the page.** The player runs in the browser, so `options[].correct` and the authored feedback are in the source, as they are in any client-side player. The prompts are not. Closing the answers as well would mean rendering the steps on the server, which is a different design.
-- **When the model fails**, the player shows a notice with "Try again" and lets the student carry on. An ungraded essay writes no `<id>.score`, so an edge testing that score does not hold and the student takes the fallback — a path the course already knows how to handle.
+- **The quiz answers are in the page.** The player runs in the browser, so `options[].correct` and the authored feedback are in the source, as they are in any client-side player. So are the option names a `choice` node can produce, wherever an edge tests one. The prompts are not, and neither is any rubric, state or points value. Closing the answers as well would mean rendering the steps on the server, which is a different design.
+- **When the model fails on a step it writes**, the player shows a notice with "Try again" and lets the student carry on.
+- **When it fails on a judgement**, there is no notice, because the student is not supposed to be looking at that step at all. Nothing is stored, no condition on the node's keys holds, and the student leaves by the unconditional edge every judge node is required to have. The same happens when the answer comes back under the node's confidence floor, or malformed, or from a model other than the one the course names. `node_state.verdict` keeps the reason, and the admin shows it on the student's page.
 - **`dev_mode`** in `config.php` opens `course.php?dev=<course-id>` with a stand-in student and no LMS. It is for working on the server. Never turn it on where students can reach it.
 
 ## The files
@@ -309,7 +351,7 @@ player/
 │  ├─ json_page.php                       the foldable JSON page, for the catalogue and the admin
 │  ├─ preview.php                         the admin's run of a course, AI steps included
 │  ├─ progress.php                        where a student is, and what they produced
-│  ├─ ai.php                              prompts, guards, OpenRouter
+│  ├─ ai.php                              prompts, judgements, guards, OpenRouter
 │  ├─ lti.php  jwt.php                    receiving a launch
 │  └─ dev.php                             the stand-in student
 ├─ public/                     ← the web root
@@ -323,6 +365,7 @@ player/
 └─ tools/
    ├─ import.php               php tools/import.php course.json --publish
    ├─ admin-password.php       php tools/admin-password.php
+   ├─ judge-probe.php          php tools/judge-probe.php course.json c1
    └─ deploy.sh                ./tools/deploy.sh /path/to/site/graphs
 ```
 

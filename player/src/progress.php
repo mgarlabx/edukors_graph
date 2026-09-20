@@ -125,7 +125,11 @@ function progress_save(array $progressRow, Course $course, array $state): array
         'isLanguageChosen' => (bool) ($state['isLanguageChosen'] ?? false),
         'currentId'        => $currentId,
         'history'          => $history,
-        'vars'             => is_array($state['vars'] ?? null) ? $state['vars'] : [],
+        'vars'             => progress_own_vars(
+            is_array($state['vars'] ?? null) ? $state['vars'] : [],
+            $course,
+            (int) $progressRow['id']
+        ),
         'answers'          => is_array($state['answers'] ?? null) ? $state['answers'] : [],
     ];
     $stored = $clean;
@@ -158,8 +162,70 @@ function progress_save(array $progressRow, Course $course, array $state): array
 }
 
 /**
+ * The vars a student is allowed to write down, with the ones they are not
+ * replaced by what this server decided.
+ *
+ * The rest of the mirror is the student's own work, trusted for content because
+ * the only thing spoiling it spoils is their own progress. A judgement is not
+ * like that: it is a mark, and it is the route through the course. Both were
+ * decided here, by ai_judge(), so every key belonging to a judge node is
+ * dropped and written back from node_state. A browser that sends itself a
+ * better grade is simply not listened to.
+ */
+function progress_own_vars(array $vars, Course $course, int $progressId): array
+{
+    $judges = $course->judgeIds();
+    if ($judges === []) {
+        return $vars;
+    }
+    $judges = array_fill_keys($judges, true);
+
+    $mine = [];
+    foreach ($vars as $key => $value) {
+        $node = is_string($key) ? explode('.', $key, 2)[0] : '';
+        if (!isset($judges[$node])) {
+            $mine[$key] = $value;
+        }
+    }
+
+    foreach (progress_verdict_vars($progressId, array_keys($judges)) as $key => $value) {
+        $mine[$key] = $value;
+    }
+
+    return $mine;
+}
+
+/**
+ * The keys every judgement of a course produced, as this server wrote them
+ * down. One query, because a save happens on every step.
+ */
+function progress_verdict_vars(int $progressId, array $nodeIds): array
+{
+    if ($nodeIds === []) {
+        return [];
+    }
+    $holes = implode(', ', array_fill(0, count($nodeIds), '?'));
+    $rows  = db_all(
+        "SELECT verdict FROM node_state
+         WHERE progress_id = ? AND node_id IN ($holes) AND verdict IS NOT NULL",
+        array_merge([$progressId], array_values($nodeIds))
+    );
+
+    $vars = [];
+    foreach ($rows as $row) {
+        $decoded = json_decode((string) $row['verdict'], true);
+        if (is_array($decoded) && is_array($decoded['vars'] ?? null)) {
+            foreach ($decoded['vars'] as $key => $value) {
+                $vars[$key] = $value;
+            }
+        }
+    }
+    return $vars;
+}
+
+/**
  * Writes the answers of the mirror into node_state, one row per node, so the
- * admin can read a student's essay or quiz without unpacking a JSON blob.
+ * admin can read a student's writing or quiz without unpacking a JSON blob.
  */
 function progress_sync_nodes(int $progressId, Course $course, array $state): void
 {
@@ -184,9 +250,14 @@ function progress_sync_nodes(int $progressId, Course $course, array $state): voi
         }
         $type = (string) $course->nodeType($nodeId);
 
-        // A dynamic node's answer is the generated text, which api/ai.php has
-        // already stored. Leave that column alone: the server owns it.
-        if ($type === 'dynamic-md' || $type === 'dynamic-html') {
+        // A dynamic node's answer is the generated text, and a judge node's is
+        // the verdict, both of which api/ai.php has already stored. Leave those
+        // rows alone except for the count of visits: the server owns them, and
+        // what the browser holds is a copy.
+        if ($type === 'dynamic-md' || $type === 'dynamic-html' || in_array($type, Course::JUDGE_TYPES, true)) {
+            node_state_write($progressId, $nodeId, $type, [
+                'visits' => max(1, (int) ($visits[$nodeId] ?? 1)),
+            ]);
             continue;
         }
 

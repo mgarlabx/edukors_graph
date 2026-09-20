@@ -27,9 +27,9 @@
   //
   // The player sends the prompt it has. Its prompts were replaced by a marker
   // naming the node (see Course::withoutPrompts in PHP), so what arrives here
-  // is "#edukors:dm1", and for an essay the student's text after the separator
-  // the schema prescribes. We forward the node id and the text -- never a
-  // prompt, because there is no prompt in this page to forward.
+  // is "#edukors:dm1" for a step the AI writes, or "#edukors:c1" for one it
+  // judges. We forward the node id and nothing else -- there is no prompt in
+  // this page to forward.
 
   var nativeFetch = window.fetch.bind(window);
 
@@ -49,16 +49,12 @@
       prompt = String(message.content || '');
     } catch (e) { /* falls through to the error below */ }
 
-    var marker = /#edukors:((?:dm|dh|e)[0-9]+)/.exec(prompt);
+    var marker = /#edukors:((?:dm|dh|c|s|n)[0-9]+)/.exec(prompt);
     if (!marker) {
       return jsonResponse({ error: { message: 'unknown request' } }, 400);
     }
 
     var request = { node: marker[1] };
-    var split = prompt.indexOf('--- STUDENT TEXT ---');
-    if (split > -1) {
-      request.text = prompt.slice(split + '--- STUDENT TEXT ---'.length).replace(/^\n/, '');
-    }
 
     // The player asks for a step as soon as it renders it, which is sooner
     // than the save below would have gone out. api/ai.php only writes the step

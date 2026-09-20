@@ -2,10 +2,10 @@
 
 The authoritative contract is `../assets/course.schema.json`. This file is the
 working version: what to write, what each field is for, and where courses break.
-How the frontend runs a course — the answer an essay grading prompt must ask
-for, the order options are shown in, what happens when an edge leads back to a
-visited node, how `{{STORAGE: key}}` is filled in, how HTML is sandboxed, and
-which texts accept markdown — is defined in the field descriptions of the
+How the frontend runs a course — what a judgement stores and what it stores when
+it did not happen, the order options are shown in, what happens when an edge leads
+back to a visited node, how `{{STORAGE: key}}` is filled in, how HTML is sandboxed,
+and which texts accept markdown — is defined in the field descriptions of the
 schema. Read them there.
 
 - [Shape of the file](#shape-of-the-file)
@@ -46,7 +46,8 @@ the format: unknown properties are rejected, so an invented field like
 | `date` | yes | `YYYY-MM-DD` |
 | `start` | yes | id of the entry node; the only entry point |
 | `sections` | no | `[{ "number": 1, "title": [...] }]` — names for the node groups |
-| `system-prompt` | no | English; sent as system prompt on every AI call of the course |
+| `system-prompt` | no | English; sent as system prompt on every call that *generates* content. Judgement nodes take none |
+| `judge-model` | when the course judges | The exact version of the model behind `choice`/`score`/`noul`, e.g. `jev-1.13.0`. Never an alias |
 
 `system-prompt` is where audience, tone and global rules live, so each dynamic
 node only carries what is specific to it. End it with the language instruction:
@@ -84,21 +85,23 @@ The id prefix must match the type:
 |------|--------|------------------|
 | `static-md` | `sm` | `item` (localized markdown) |
 | `static-html` | `sh` | `item` (localized HTML, rendered sandboxed) |
-| `dynamic-md` | `dm` | `prompt` (localized; normally English only) |
-| `dynamic-html` | `dh` | `prompt` (localized; normally English only) |
-| `essay` | `e` | `instructions` (localized), `prompt` (plain English string) |
+| `dynamic-md` | `dm` | `prompt` (localized; normally English only), optional `from` |
+| `dynamic-html` | `dh` | `prompt` (localized; normally English only), optional `from` |
 | `quiz` | `q` | `items` — list of questions |
-| `form` | `f` | `items` — list of fields |
+| `form` | `f` | `items` — list of fields, plus optional `instructions` (localized) |
 | `bool` | `b` | `question`, optional `yes-label`, `no-label`, `default` |
-| `choice` | `c` | `state`, `items` — the AI picks one of the options listed |
-| `score` | `s` | `state`, `items` — the AI places the student on a scale |
+| `choice` | `c` | `state`, `items`, optional `confidence` — the AI picks one of the options listed |
+| `score` | `s` | `state`, `items`, optional `confidence` — the AI places the student on a scale |
 | `noul` | `n` | `state`, `items` — the AI gives the probability of a yes |
+
+There is no `essay`. A text written by the student is a `form` with a `text-area`,
+judged by a `score` node — one judgement, restricted to the scale its author wrote,
+instead of a grade parsed back out of prose.
 
 The last three are the only nodes the student never sees: they are passed
 through while the AI judges what the student has produced, and the edges leaving
 them read the answer. Their `state`, `instructions` and `criteria` are
-instructions for the AI, never shown, so they are plain strings with no version
-per language — like the grading `prompt` of an essay.
+instructions for the AI, never shown, so they carry no version per language.
 
 ### static-md
 
@@ -135,21 +138,33 @@ anything the student already produced:
 Write these prompts like a brief: role, input, required output shape, length,
 language. A vague prompt produces vague teaching.
 
-### essay
+### dynamic-md written from a judgement
 
-The student writes; the AI grades. `instructions` is what the student sees;
-`prompt` is the hidden grading instruction, a single English string.
+A `dynamic-md` (or `dynamic-html`) node with `from` is the node that turns a
+judgement into something the student can read:
 
 ```json
 {
-  "id": "e1", "type": "essay", "section": 3,
-  "title": [{ "lang": "pt", "text": "Explique com suas palavras" }],
+  "id": "dm2", "type": "dynamic-md", "section": 3,
+  "title": [{ "lang": "pt", "text": "Sua devolutiva" }],
   "content": {
-    "instructions": [{ "lang": "pt", "text": "Em 150-250 palavras, explique..." }],
-    "prompt": "Grade this student text about equivalent fractions. Criteria: correct definition (40), valid example (40), clarity (20). Return JSON: {\"score\": <0-100>, \"feedback\": \"<2-4 sentences, addressed to the student, in the student's language>\"}."
+    "from": "s1",
+    "prompt": [{ "lang": "en", "text": "Write 3 to 5 sentences to the student, in their language: one thing that works, up to two concrete improvements. Explain in plain words the level they reached. Do not give a number and do not decide anything: the level is settled." }]
   }
 }
 ```
+
+With `from`, the AI is handed the judgement rendered in full after the prompt —
+each question, the level reached with the text of its criterion, the weight on
+each level, the points and the confidence. So the writer knows what `1.43` means
+**without the rubric being written a second time**.
+
+The prompt says *how to write*. It must not judge again: the level is settled, and
+a feedback arguing with the number is the one thing this arrangement prevents. The
+validator warns when the prompt says "grade", "score", "judge" or "evaluate".
+
+The node is only reachable through its judgement, so the judge's unconditional
+edge must lead somewhere else — the validator refuses a course where it does not.
 
 ### quiz
 
@@ -186,7 +201,31 @@ in one slot, per quiz and across the whole course.
 ### form
 
 Fields of type `text-line`, `text-area`, `radio`, `check`, `select`. Choice types
-require `options` (≥ 2); text types must not have them.
+require `options` (≥ 2); text types must not have them. The optional
+`instructions` is a block of markdown above the fields; a field `label` is a
+single line, so anything longer belongs there.
+
+A **writing task** is a form with `instructions` and one `text-area`.
+`min-words`/`max-words` make a length a rule rather than a request — the player
+counts as the student types and does not let them move on outside the range:
+
+```json
+{
+  "id": "f2", "type": "form", "section": 3,
+  "title": [{ "lang": "pt", "text": "Explique com suas palavras" }],
+  "content": {
+    "instructions": [{ "lang": "pt", "text": "## Explique com suas palavras\n\nEm **150 a 250 palavras**, explique a um colega como somar 1/3 e 1/6.\n\nVocê receberá um comentário sobre o que escreveu antes de seguir." }],
+    "items": [
+      { "key": "text", "type": "text-area", "required": true,
+        "label": [{ "lang": "pt", "text": "Seu texto" }],
+        "min-words": 150, "max-words": 250 }
+    ]
+  }
+}
+```
+
+Nothing has been judged here: the form only collects. A `score` node judges
+`f2.text` next, and a node with `from` writes the comment.
 
 ```json
 {
@@ -224,20 +263,25 @@ version?".
 
 ### choice / score / noul
 
-The three nodes the AI decides with. All carry the same two fields: a `state`,
-built with `{{STORAGE: key}}`, which is everything the AI gets to judge, and
-`items`, one question per key. All the questions of a node are judged together,
-in one call, over the same state.
+The three nodes the AI decides with. All carry a `state` — an object of named
+fields, each written out or built with `{{STORAGE: key}}` — and `items`, one
+question per key. `choice` and `score` also take an optional `confidence`. All the
+questions of a node are judged together, in one call, over the same state, by the
+model named in `info.judge-model`.
 
 ```json
 {
   "id": "c1", "type": "choice",
   "title": [{ "lang": "pt", "text": "Escolher a trilha" }],
   "content": {
-    "state": "What the student wrote:\n{{STORAGE: e1.text}}",
+    "state": {
+      "task": "Explain in your own words why equivalent fractions name the same number.",
+      "answer": "{{STORAGE: f2.text}}"
+    },
+    "confidence": 0.75,
     "items": [{
       "key": "track",
-      "instructions": "Which track does this student need next?",
+      "instructions": "Which track does this student need next, judging the field answer?",
       "criteria": {
         "remedial": "Confuses the basic concepts",
         "standard": "Has the essentials",
@@ -249,6 +293,25 @@ in one call, over the same state.
 }
 ```
 
+Two habits decide whether a judgement is any good:
+
+- **Give the state the task, not only the answer.** A judgement that sees only
+  what the student wrote cannot tell whether they wrote what was asked, and a
+  criterion like "does not merely copy the source" is unjudgeable without the
+  source. Name the fields for what they hold; `instructions` points at them.
+- **Say what not to judge.** A question that excludes nothing weighs everything:
+  *"Judge the evidence in the field answer. Do not judge grammar or length."*
+
+Never put a mark already given into a state — another judgement's level, or
+`q1.percent`. The AI anchors on it instead of judging, and the validator warns.
+
+`confidence` is the least the AI must be sure for the judgement to count. Below
+it, **the whole node counts as not judged**: nothing is stored, no edge testing
+its keys holds, and the student takes the unconditional edge. Declaring it once
+on the node beats repeating a `-confidence` comparison in every edge. Around
+`0.75` where the judgement carries a grade; leave it out where every branch is
+cheap to get wrong.
+
 `criteria` is what an answer may be, and it is the one part that differs:
 
 - **choice** — a map of option name to what it covers. The names are compared by
@@ -256,9 +319,28 @@ in one call, over the same state.
   (`^[a-z][a-z0-9-]*$`), 2 to 255 of them. Add an `unclear` option: the AI must
   answer with one of these and has nowhere else to put a case the list forgot.
 - **score** — the levels of the scale, in order, low end first, 2 to 10 of them.
-  The level stored is **fractional**: `1.43` on a scale of three is ordinary.
-  Compare with `gte` and `lt`, never `eq`.
-- **noul** — optional, and only says what `true` and `false` cover.
+  Describe situations, not degrees. The level stored is **fractional**: `1.43` on
+  a scale of three is ordinary. Compare with `gte` and `lt`, never `eq`.
+- **noul** — optional, and only says what `true` and `false` cover. A noul takes
+  no `confidence`: the probability already is one.
+
+A `score` question may also carry **`points`**, one number per level, in the same
+order. The question then stores `<id>.<key>-points`, the expected value — each
+level's points weighted by its probability — and the node stores `<id>.total` and
+`<id>.percent`:
+
+```json
+{ "key": "evidence",
+  "instructions": "Judge how well the field answer backs its claims. Ignore grammar.",
+  "criteria": ["No evidence given", "Claims backed by one example",
+               "Claims backed by several examples, weighed against each other"],
+  "points": [0, 100, 200] }
+```
+
+`0×0.00 + 100×0.57 + 200×0.43 = 143`. Five questions worth 200 each give a grade
+out of 1000, exactly as a human rubric would. **This is what a grade is in this
+format: a number worked out from the judgement, never a second opinion asked of
+the AI.** Omit `points` on a question that only decides where the student goes.
 
 Every node like this needs an **unconditional edge**. A judgement the AI could
 not make produces no key, nothing holds, and without that edge the player finds
@@ -267,24 +349,30 @@ that omits it.
 
 ## Storage keys
 
-Seven node types store data, and the key is always `<node-id>.<name>`:
+Eight node types store data, and the key is always `<node-id>.<name>`:
 
 | Node | Keys produced |
 |------|---------------|
-| essay `e1` | `e1.text`, `e1.score` (0–100), `e1.feedback` |
+| dynamic-md `dm1` | `dm1.text` — the content the AI generated, kept, so a later judgement can read the challenge this student was given |
+| dynamic-html `dh1` | `dh1.text` — the same |
 | quiz `q1` | `q1.score`, `q1.total`, `q1.percent` (0–100), plus `q1.<key>` per keyed question |
-| form `f1` | one per field: `f1.goal`, `f1.pain`… (`check` fields store a list) |
+| form `f1` | one per field: `f1.goal`, `f1.text`… (`check` fields store a list) |
 | bool `b1` | `b1.answer` — `true` / `false` |
-| choice `c1` | per question: `c1.track` (the option picked), `c1.track-confidence` (0–1) |
-| score `s1` | per question: `s1.evidence` (level, fractional), `s1.evidence-confidence` (0–1) |
+| choice `c1` | per question: `c1.track` (the option picked), `c1.track-confidence` (0–1), `c1.track-probabilities` (option → probability) |
+| score `s1` | per question: `s1.evidence` (level, fractional), `s1.evidence-confidence` (0–1), `s1.evidence-probabilities` (level → probability), `s1.evidence-legend` (level → its text). With `points`: `s1.evidence-points`, and for the node `s1.total` and `s1.percent` (0–100) |
 | noul `n1` | per question: `n1.ready` — the probability of a yes, 0–1. No confidence key: the probability already is one |
 
-Mind the scales. `e1.score` and `q1.percent` run 0–100. A score node runs over
-the levels of its own question — 0 to 2 on a scale of three. A noul and every
-`-confidence` key run 0–1.
+Mind the scales. `q1.percent` and `s1.percent` run 0–100. A score node's **level**
+runs over the levels of its own question — 0 to 2 on a scale of three. A noul and
+every `-confidence` key run 0–1. Comparing a level against 60 is the habit an
+essay grade left behind; the edge simply never fires, and the validator warns.
+
+`-probabilities` and `-legend` hold maps, not single values, so edges do not
+compare them. They are there for the node that writes the feedback, which gets
+them rendered.
 
 They have exactly two uses: `{{STORAGE: key}}` inside prompts (dynamic nodes and
-essay grading), and `when` on edges. `dynamic-*` nodes produce nothing.
+the `state`/`instructions` of a judgement), and `when` on edges.
 
 ## Edges and conditions
 
@@ -305,7 +393,7 @@ Combine with `and` / `or`, each taking a list of ≥ 2 conditions, nestable:
 
 ```json
 "when": { "or": [
-  { "key": "e1.score", "operator": "gte", "value": 60 },
+  { "key": "s1.method", "operator": "gte", "value": 2 },
   { "key": "f1.goal", "operator": "eq", "value": "curiosity" }
 ] }
 ```
@@ -316,8 +404,9 @@ condition placed *before* the node that produces its key is dead weight.
 
 ## A complete miniature course
 
-Six nodes, two sections, one adaptive branch and one fork. Use it as the shape
-template; a real course has more content per node.
+Eight nodes, two sections, one adaptive branch and the graded chain
+`form → score → dynamic-md`. Use it as the shape template; a real course has more
+content per node.
 
 ```json
 {
@@ -332,6 +421,7 @@ template; a real course has more content per node.
     "version": "1.0.0",
     "date": "2026-09-15",
     "start": "sm1",
+    "judge-model": "jev-1.13.0",
     "sections": [
       { "number": 1, "title": [{ "lang": "pt", "text": "Chegada" }] },
       { "number": 2, "title": [{ "lang": "pt", "text": "Fundamentos" }] }
@@ -374,11 +464,44 @@ template; a real course has more content per node.
       "title": [{ "lang": "pt", "text": "Exemplos para o seu contexto" }],
       "content": { "prompt": [{ "lang": "en", "text": "Explain fraction addition with three examples suited to a student whose reason for studying is: {{STORAGE: f1.goal}}. Return markdown, 300 words, ending with one practice question. Answer in the student's language." }] } },
 
-    { "id": "e1", "type": "essay", "section": 2,
+    { "id": "f2", "type": "form", "section": 2,
       "title": [{ "lang": "pt", "text": "Explique com suas palavras" }],
       "content": {
-        "instructions": [{ "lang": "pt", "text": "Em 150 palavras, explique como somar 1/3 e 1/6 para um colega." }],
-        "prompt": "Grade this student explanation of adding fractions with different denominators. Criteria: correct method (50), clarity of explanation (30), valid example (20). Return JSON: {\"score\": <0-100>, \"feedback\": \"<2-4 sentences addressed to the student, in the student's language>\"}." } }
+        "instructions": [{ "lang": "pt", "text": "## Explique com suas palavras\n\nEm **80 a 150 palavras**, explique a um colega como somar 1/3 e 1/6. Mostre o passo de igualar os denominadores.\n\nVocê receberá um comentário antes de seguir." }],
+        "items": [
+          { "key": "text", "type": "text-area", "required": true,
+            "label": [{ "lang": "pt", "text": "Seu texto" }],
+            "min-words": 80, "max-words": 150 }
+        ] } },
+
+    { "id": "s1", "type": "score", "section": 2,
+      "title": [{ "lang": "pt", "text": "Medir a explicação" }],
+      "content": {
+        "state": {
+          "task": "Explain to a classmate how to add 1/3 and 1/6, showing the step of equalising the denominators.",
+          "answer": "{{STORAGE: f2.text}}"
+        },
+        "confidence": 0.75,
+        "items": [
+          { "key": "method",
+            "instructions": "Judge whether the field answer gets the method right: equalise the denominators, then add the numerators. Do not judge grammar, length or tone.",
+            "criteria": [
+              "Adds numerators and denominators straight across, or gives no method",
+              "Names the common denominator but does not carry the method through",
+              "Carries the method through correctly, with the arithmetic right"
+            ],
+            "points": [0, 50, 100] }
+        ] } },
+
+    { "id": "dm2", "type": "dynamic-md", "section": 2,
+      "title": [{ "lang": "pt", "text": "Sua devolutiva" }],
+      "content": {
+        "from": "s1",
+        "prompt": [{ "lang": "en", "text": "Write 3 to 4 sentences to the student, in their language: one thing that works, then the single most useful next step. Explain in plain words the level they reached. Do not give a number and do not decide anything: the level is settled." }] } },
+
+    { "id": "sm3", "type": "static-md", "section": 2,
+      "title": [{ "lang": "pt", "text": "Fechamento" }],
+      "content": { "item": [{ "lang": "pt", "text": "## O que você levou daqui\n\n..." }] } }
   ],
   "edges": [
     { "from": "sm1", "to": "f1" },
@@ -386,7 +509,11 @@ template; a real course has more content per node.
     { "from": "q1", "to": "dm1", "when": { "key": "q1.percent", "operator": "gte", "value": 70 } },
     { "from": "q1", "to": "sm2" },
     { "from": "sm2", "to": "dm1" },
-    { "from": "dm1", "to": "e1" }
+    { "from": "dm1", "to": "f2" },
+    { "from": "f2", "to": "s1" },
+    { "from": "s1", "to": "dm2", "when": { "key": "s1.method", "operator": "gte", "value": 1 } },
+    { "from": "s1", "to": "sm3" },
+    { "from": "dm2", "to": "sm3" }
   ]
 }
 ```
@@ -405,3 +532,9 @@ template; a real course has more content per node.
 | quiz always scores wrong | zero or two options marked `correct: true` |
 | `{{STORAGE: f1.goal}}` renders empty | field key is `objetivo`, not `goal`, or the form is downstream |
 | condition compares the label | `value` is the stored identifier; never compare to the displayed text |
+| a score branch never fires | compared the level against 60; a level runs 0 to `levels-1`. Give the question `points` and test `<id>.percent` |
+| `points` rejected | one number per level, in the same order — 6 levels need 6 points |
+| feedback contradicts the grade | the prompt of a node with `from` told the AI to grade; it must say how to write, never what to decide |
+| fallback leads to the feedback node | the judge's unconditional edge is the path taken when there was no judgement, so it cannot go where a judgement is required |
+| judgement anchored on a mark | the `state` read another judgement's level or `q1.percent`; give it the work and the task, not a verdict |
+| `judge-model` rejected | it is an alias like `jev-latest`; name the version, `jev-1.13.0` |

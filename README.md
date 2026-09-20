@@ -2,7 +2,7 @@
 
 # Edukors Graph
 
-### Courses that branch, adapt and meet every student where they are.
+### Courses that branch, adapt and meet every student where they are, empowered by Large Language Models (LLM) and System One Models (SOM).
 
 An open standard and the tools around it for building **learning graphs**: courses described as **nodes** (what the student sees) and **edges** (where they go next).
 
@@ -73,7 +73,7 @@ The original concept of an adaptive course is to determine the flow, or sequence
 
 ## **How does Edukors Graph relate to artificial intelligence?**
 
-AI tools such as assistants, IDEs and coding harnesses can be used to generate courses under the rules specified by Edukors Graph. For example, teachers can use AI assistants such as ChatGPT, Claude, Gemini, DeepSeek and others to generate courses from the Edukors Graph specifications. Teachers can also use more advanced tools such as Claude Code, Codex, Antigravity, VS Code, Cursor, OpenCode and others. These tools let the teacher decide the quality and the cost of the model (LLM) they want to use, which opens the door to frontier models and the most powerful harnesses for developing courses of a high standard.
+AI tools such as assistants, IDEs and coding harnesses can be used to generate courses under the rules specified by Edukors Graph. For example, teachers can use AI assistants such as ChatGPT, Claude, Gemini, DeepSeek and others to generate courses from the Edukors Graph specifications. Teachers can also use more advanced tools such as Claude Code, Codex, Antigravity, VS Code, Cursor, OpenCode and others. These tools let the teacher decide the quality and the cost of the model (LLM and SOM) they want to use, which opens the door to frontier models and the most powerful harnesses for developing courses of a high standard.
 
 ## **What is the human role in generating courses with Edukors Graph?**
 
@@ -130,19 +130,20 @@ There are eleven node types. Node ids carry their type as a prefix (`sm1`, `q1`,
 | ---------------- | ----------------------------------------------------------------------------------- | :----------: |
 | `static-md`    | Markdown written in advance, shown as written.                                      |      No      |
 | `static-html`  | HTML built in advance, rendered in a sandbox.                                       |      No      |
-| `dynamic-md`   | A prompt the AI runs during the course; the markdown it returns is shown.           |      No      |
-| `dynamic-html` | A prompt the AI runs during the course; the HTML it returns is shown, in a sandbox. |      No      |
-| `essay`        | The student writes a text and the AI grades it.                                     |     Yes     |
+| `dynamic-md`   | A prompt the AI runs during the course; the markdown it returns is shown.           |     Yes     |
+| `dynamic-html` | A prompt the AI runs during the course; the HTML it returns is shown, in a sandbox. |     Yes     |
 | `quiz`         | A set of multiple-choice questions.                                                 |     Yes     |
-| `form`         | A form the student fills in.                                                        |     Yes     |
+| `form`         | A form the student fills in — including a writing task.                             |     Yes     |
 | `bool`         | A yes/no question, usually asked to choose between two paths.                       |     Yes     |
 | `choice`       | The AI picks one of the options the author listed, and never anything else.          |     Yes     |
 | `score`        | The AI places the student on a scale of levels the author wrote.                     |     Yes     |
 | `noul`         | The AI answers a yes/no question with the probability that the answer is yes.        |     Yes     |
 
-The last three are the only nodes the student never sees, and the only ones answered by the AI rather than by the student. They are the same three shapes as a `form` with `radio`, a quiz score and a `bool`, judged from what the student has already produced: a course can read an essay and decide, from the options its author wrote, whether the student needs the remedial track, the standard one or the advanced one.
+The last three are the only nodes the student never sees, and the only ones answered by the AI rather than by the student. They are the same three shapes as a `form` with `radio`, a quiz score and a `bool`, judged from what the student has already produced: a course can read what a student wrote and decide, from the options its author wrote, whether they need the remedial track, the standard one or the advanced one.
 
-Activities store what the student produced, and judgements what the AI decided, under keys named `<node-id>.<name>` — `q1.percent`, `f1.goal`, `e1.score`, `b1.answer`, `c1.track`, `s1.evidence`, `n1.ready`. Those keys drive the two adaptive mechanisms of the standard. In **edges**, a `when` condition decides the path; edges leaving a node are tried from top to bottom, the first one that holds is taken, and an edge without `when` is the fallback:
+There is no essay node. A text the student writes is a `form` with a `text-area`; a `score` node judges it against the scale its author wrote, with `points` per level turning that judgement into a grade; and a `dynamic-md` node with `from` writes the comment out of that same judgement. One judgement, one source of truth: the number that routes the student and the number the feedback explains cannot disagree.
+
+Activities store what the student produced, and judgements what the AI decided, under keys named `<node-id>.<name>` — `q1.percent`, `f1.text`, `dm1.text`, `b1.answer`, `c1.track`, `s1.evidence`, `s1.percent`, `n1.ready`. Those keys drive the two adaptive mechanisms of the standard. In **edges**, a `when` condition decides the path; edges leaving a node are tried from top to bottom, the first one that holds is taken, and an edge without `when` is the fallback:
 
 ```json
 "edges": [
@@ -179,7 +180,7 @@ See the [builder.README](builder/builder.README.md) for details.
 The **player** is the server that delivers courses to students. It is a reference implementation in plain PHP (8.1 or later, no framework, no Composer dependency) with MySQL. It takes the standalone player the builder ships, unchanged, and adds around it what a real deployment needs:
 
 - **LTI 1.3**: students arrive from Moodle, Canvas or Blackboard, already identified. The integration is one-way, with no grade passback.
-- **Inference**: dynamic nodes and essay grading run on the server, through [OpenRouter](https://openrouter.ai), with the server's own key and any model it names. The prompts of a course never reach the browser, and every call is checked against where the student actually is, with an hourly limit per student and a daily limit for the whole server.
+- **Inference**: dynamic nodes and judgements both run on the server, through [OpenRouter](https://openrouter.ai), with the server's own key and any model it names. The prompts of a course never reach the browser — nor the rubric, the points or the options of a `choice`, `score` or `noul` node, which the browser is simply told the result of. Every call is checked against where the student actually is, with an hourly limit per student and a daily limit for the whole server.
 - **Progress**: where each student is, what they answered and what the AI wrote for them, stored in MySQL, so any device resumes where the last one stopped.
 - **Offline copy**: one self-contained HTML file the student can download and run with no network.
 - **Admin**: courses and their versions, students, LMS platforms and a log of AI calls.
@@ -195,8 +196,8 @@ The [samples](samples) folder holds three courses that tell the same story, **Ca
 | Sample                  | What it shows                                                                                         |
 | ----------------------- | ----------------------------------------------------------------------------------------------------- |
 | `world-cats-1-mini`   | The smallest valid course: five static nodes in a straight line.                                      |
-| `world-cats-2-simple` | A quiz that decides the path, an AI-written reinforcement step and an AI-graded essay.                |
-| `world-cats-3-full`   | All eight node types, three languages, a form that routes, student choices and cycles with a way out. |
+| `world-cats-2-short`  | A quiz that decides the path, an AI-written reinforcement step, and a writing task judged against a rubric. |
+| `world-cats-3-full`   | Nine node types, three languages, a form that routes, a graded delivery with a rewrite loop, student choices and cycles with a way out. |
 
 Each sample comes as the three files the builder produces. See the [samples.README](samples/samples.README.md) for details.
 

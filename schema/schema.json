@@ -33,7 +33,7 @@
     },
     "edges": {
       "type": "array",
-      "description": "Directed links between nodes. They define the sequence of the course. The edges leaving a node are evaluated from top to bottom, and the first one whose 'when' holds is the path taken, which is what makes the graph adaptive; an edge without 'when' always holds, so it works as the fallback and should come last. A condition on a key the student has not produced yet never holds, so an edge can safely test a node that may not have been answered. An edge may lead back to a node the student has already gone through, which is how a course sends a student to study again and retake an activity. Coming back to a node is a new visit: essay, quiz, form and bool nodes are answered again, and choice, score and noul nodes are judged again, so that in either case the new answers overwrite the keys produced before, while dynamic-md and dynamic-html nodes keep showing the content already generated for the student. Every such cycle needs an edge out of it whose condition the student can eventually meet, or the student never leaves it. A choice, score or noul node decides nothing by itself: it only produces keys, and the edges leaving it are what read them. One of those edges must be unconditional, because the call that produces the keys can fail, and because a judgement can land anywhere in its range; without it a student can reach the node and have nowhere to go.",
+      "description": "Directed links between nodes. They define the sequence of the course. The edges leaving a node are evaluated from top to bottom, and the first one whose 'when' holds is the path taken, which is what makes the graph adaptive; an edge without 'when' always holds, so it works as the fallback and should come last. A condition on a key the student has not produced yet never holds, so an edge can safely test a node that may not have been answered. An edge may lead back to a node the student has already gone through, which is how a course sends a student to study again and retake an activity. Coming back to a node is a new visit: quiz, form and bool nodes are answered again, and choice, score and noul nodes are judged again, so that in either case the new answers overwrite the keys produced before, while dynamic-md and dynamic-html nodes keep showing the content already generated for the student. Every such cycle needs an edge out of it whose condition the student can eventually meet, or the student never leaves it. A choice, score or noul node decides nothing by itself: it only produces keys, and the edges leaving it are what read them. One of those edges must be unconditional, because a judgement that did not happen produces no key at all, and because a judgement that did happen can land anywhere in its range; without it a student can reach the node and have nowhere to go. That unconditional edge must not lead to a dynamic node written from this judgement, since there would be no judgement for it to write from.",
       "items": {
         "$ref": "#/$defs/edge"
       }
@@ -109,7 +109,7 @@
         },
         "start": {
           "type": "string",
-          "pattern": "^(sm|sh|dm|dh|e|q|f|b)[0-9]+$",
+          "pattern": "^(sm|sh|dm|dh|q|f|b)[0-9]+$",
           "description": "id of the node the course starts at. It is the only entry point: every other node is reached by following edges from here. A choice, score or noul node cannot be the start, which is why their prefixes are not accepted here: they judge what the student has produced, and at the start there is nothing to judge.",
           "examples": [
             "sm1"
@@ -125,9 +125,17 @@
         "system-prompt": {
           "type": "string",
           "minLength": 1,
-          "description": "Course-wide instructions for the AI, sent as the system prompt of every AI call of the course: the 'prompt' of dynamic-md and dynamic-html nodes, and the grading 'prompt' of essay nodes, which are sent as the user message. Use it for tone, audience and rules that apply everywhere, so each node only carries what is specific to it. It is sent as written: {{STORAGE: key}} is not resolved here, only in the prompts of the nodes. It is recommended to write prompts in English and to instruct the AI to answer in the student's language. Optional.",
+          "description": "Course-wide instructions for the AI, sent as the system prompt of every call that generates content: the 'prompt' of dynamic-md and dynamic-html nodes, which is sent as the user message. Use it for tone, audience and rules that apply everywhere, so each node only carries what is specific to it. It is sent as written: {{STORAGE: key}} is not resolved here, only in the prompts of the nodes. It does not reach the choice, score and noul nodes, which take no system prompt: what they are given is their own 'state' and questions, and nothing else. It is recommended to write prompts in English and to instruct the AI to answer in the student's language. Optional.",
           "examples": [
             "You are tutoring first-year undergraduates. Be concise, use plain language, and always give a worked example."
+          ]
+        },
+        "judge-model": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The exact version of the model that answers the choice, score and noul nodes, such as 'jev-1.13.0'. Never an alias like 'jev-latest': the thresholds in the edges, the points on the levels and the confidence floors were all tuned against one version of one model, and an alias moves under them without notice. Required when the course has a choice, score or noul node, which the validator checks.",
+          "examples": [
+            "jev-1.13.0"
           ]
         }
       }
@@ -202,7 +210,6 @@
         "static-html",
         "dynamic-md",
         "dynamic-html",
-        "essay",
         "quiz",
         "form",
         "bool",
@@ -213,11 +220,10 @@
       "x-enumDescriptions": {
         "static-md": "Markdown content written in advance and shown to the student as written.",
         "static-html": "Web content built in advance and shown to the student as built.",
-        "dynamic-md": "A prompt the AI runs during the course; the markdown it returns is shown to the student.",
-        "dynamic-html": "A prompt the AI runs during the course; the web content it returns is shown to the student.",
-        "essay": "An activity where the student writes a text and the AI grades it.",
+        "dynamic-md": "A prompt the AI runs during the course; the markdown it returns is shown to the student. With 'from' it is the node that writes the feedback of a judgement.",
+        "dynamic-html": "A prompt the AI runs during the course; the web content it returns is shown to the student. With 'from' it is the node that writes the feedback of a judgement.",
         "quiz": "A set of objective questions the student answers.",
-        "form": "A form the student fills in.",
+        "form": "A form the student fills in. With 'instructions' and a 'text-area' field it is also how a writing task is set, to be judged by a score node.",
         "bool": "A yes/no question the student answers; the answer is stored and is typically used to branch the course into a longer or a shorter path.",
         "choice": "A question the AI answers by picking one of the options the author listed, and never anything outside that list. The answer is stored and read by the edges leaving the node, which is how the course sends the student down one track rather than another.",
         "score": "A question the AI answers by placing the student on a scale of levels the author wrote, from the lowest to the highest. The level reached is stored and read by the edges leaving the node.",
@@ -226,7 +232,7 @@
     },
     "node": {
       "type": "object",
-      "description": "A single node of the course. Most nodes are something the student sees. The choice, score and noul nodes are not: the student passes through them without stopping, while the AI judges what they have produced so far, the answer is stored, and the course carries on along the first edge whose condition that answer satisfies.",
+      "description": "A single node of the course. Most nodes are something the student sees. The choice, score and noul nodes are not: the student passes through them without stopping, while the AI judges what they have produced so far, the answer is stored, and the course carries on along the first edge whose condition that answer satisfies. A judgement that did not happen, because the call failed or because it came back under the node's confidence floor, stores nothing at all, so no condition on its keys holds and the student takes the unconditional edge. Nothing in this format ever stores a made-up judgement: a grade and the feedback written from it are both worked out from the same answer, and an invented number would become a confident, false account of the student's own work.",
       "required": [
         "id",
         "type",
@@ -237,14 +243,13 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^(sm|sh|dm|dh|e|q|f|b|c|s|n)[0-9]+$",
-          "description": "Identifier of the node, unique within the course. The prefix must match the type: sm (static-md), sh (static-html), dm (dynamic-md), dh (dynamic-html), e (essay), q (quiz), f (form), b (bool), c (choice), s (score), n (noul). The nodes that store data carry a one-letter prefix, those that only show content carry two.",
+          "pattern": "^(sm|sh|dm|dh|q|f|b|c|s|n)[0-9]+$",
+          "description": "Identifier of the node, unique within the course. The prefix must match the type: sm (static-md), sh (static-html), dm (dynamic-md), dh (dynamic-html), q (quiz), f (form), b (bool), c (choice), s (score), n (noul). The nodes that only show content written in advance carry a two-letter prefix; every other node stores data under keys of its own.",
           "examples": [
             "sm1",
             "sh2",
             "dm3",
             "dh4",
-            "e5",
             "q6",
             "f7",
             "b8",
@@ -356,28 +361,6 @@
               },
               "content": {
                 "$ref": "#/$defs/dynamicHtmlContent"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "type": {
-                "const": "essay"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "id": {
-                "pattern": "^e[0-9]+$"
-              },
-              "content": {
-                "$ref": "#/$defs/essayContent"
               }
             }
           }
@@ -546,7 +529,7 @@
     },
     "dynamicMdContent": {
       "type": "object",
-      "description": "A prompt the AI runs to generate markdown during the course. It usually exists in a single language, and the answer is generated in the student's language. The generated result must be saved in the record that tracks the student's progress, so that the node always shows the same content whenever the student comes back to it. It does not produce keys of its own: only essay, quiz, form and bool nodes do.",
+      "description": "A prompt the AI runs to generate markdown during the course. It usually exists in a single language, and the answer is generated in the student's language. The generated result must be saved in the record that tracks the student's progress, so that the node always shows the same content whenever the student comes back to it. It produces one key, '<id>.text', holding that generated content: a node with id 'dm1' therefore produces 'dm1.text'. That key is what lets a later judgement read a challenge written for this student, so that the AI judging the answer sees the same task the student saw. Because the content is generated once and kept, the key does not change when the student comes back.",
       "required": [
         "prompt"
       ],
@@ -554,13 +537,16 @@
       "properties": {
         "prompt": {
           "$ref": "#/$defs/localizedTextList",
-          "description": "The prompt, in markdown. It is recommended to write prompts in English and to instruct the AI to answer in the student's language. It can reference saved data with {{STORAGE: key}}, using a key produced by an essay, quiz, form or bool node, such as {{STORAGE: f1.goal}}. The spaces around the key are optional, but 'STORAGE' must be followed directly by the colon. Before the prompt is sent, a key the student has not produced yet is replaced by an empty text, and a list of answers (a 'check' field) by its values separated by ', '."
+          "description": "The prompt, in markdown. It is recommended to write prompts in English and to instruct the AI to answer in the student's language. It can reference saved data with {{STORAGE: key}}, using a key produced by a dynamic-md, dynamic-html, quiz, form, bool, choice, score or noul node, such as {{STORAGE: f1.goal}}. The spaces around the key are optional, but 'STORAGE' must be followed directly by the colon. Before the prompt is sent, a key the student has not produced yet is replaced by an empty text, and a list of answers (a 'check' field) by its values separated by ', '."
+        },
+        "from": {
+          "$ref": "#/$defs/feedbackFrom"
         }
       }
     },
     "dynamicHtmlContent": {
       "type": "object",
-      "description": "A prompt the AI runs to generate web content during the course. It usually exists in a single language, and the answer is generated in the student's language. The generated result must be saved in the record that tracks the student's progress, so that the node always shows the same content whenever the student comes back to it. It does not produce keys of its own: only essay, quiz, form and bool nodes do. Because this markup is written by the AI at run time and never reviewed by the author, the frontend must render it in a sandboxed iframe, without access to the session of the student.",
+      "description": "A prompt the AI runs to generate web content during the course. It usually exists in a single language, and the answer is generated in the student's language. The generated result must be saved in the record that tracks the student's progress, so that the node always shows the same content whenever the student comes back to it. It produces one key, '<id>.text', holding that generated markup, on the same terms as a dynamic-md node. Because this markup is written by the AI at run time and never reviewed by the author, the frontend must render it in a sandboxed iframe, without access to the session of the student.",
       "required": [
         "prompt"
       ],
@@ -568,29 +554,20 @@
       "properties": {
         "prompt": {
           "$ref": "#/$defs/localizedTextList",
-          "description": "The prompt describing the HTML to build. It is recommended to write prompts in English and to instruct the AI to answer in the student's language. It can reference saved data with {{STORAGE: key}}, using a key produced by an essay, quiz, form or bool node, such as {{STORAGE: f1.goal}}, resolved as described for the prompt of dynamic-md nodes. The HTML returned is rendered like the item of a static-html node."
+          "description": "The prompt describing the HTML to build. It is recommended to write prompts in English and to instruct the AI to answer in the student's language. It can reference saved data with {{STORAGE: key}}, using a key produced by a dynamic-md, dynamic-html, quiz, form, bool, choice, score or noul node, such as {{STORAGE: f1.goal}}, resolved as described for the prompt of dynamic-md nodes. The HTML returned is rendered like the item of a static-html node."
+        },
+        "from": {
+          "$ref": "#/$defs/feedbackFrom"
         }
       }
     },
-    "essayContent": {
-      "type": "object",
-      "description": "An activity where the student writes a text and the AI grades it. It produces three keys in the record that tracks the student's progress, where <id> is the id of the node: '<id>.text' (what the student wrote), '<id>.score' (the grade given by the AI, from 0 to 100) and '<id>.feedback' (the comment written by the AI). A node with id 'e1' therefore produces 'e1.text', 'e1.score' and 'e1.feedback'. They can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges.",
-      "required": [
-        "instructions",
-        "prompt"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "instructions": {
-          "$ref": "#/$defs/localizedTextList",
-          "description": "Instructions shown to the student, in markdown."
-        },
-        "prompt": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Hidden prompt the AI uses to grade the text submitted by the student. The text of the student is appended to it, after a line reading '--- STUDENT TEXT ---', and the whole is sent as the user message. It is recommended to write prompts in English and to instruct the AI to write the feedback in the student's language. The prompt must ask the AI to answer with a JSON object of the form {\"score\": <number from 0 to 100>, \"feedback\": \"<comment addressed to the student>\"}. The frontend reads that object from the answer, ignoring any text or code fence around it, rounds the score and keeps it between 0 and 100, and stores it in '<id>.score' and the comment in '<id>.feedback'. When no such object can be read, there is no grade and the whole answer is used as the feedback. It can reference {{STORAGE: key}}, resolved as described for the prompt of dynamic-md nodes."
-        }
-      }
+    "feedbackFrom": {
+      "type": "string",
+      "pattern": "^(c|s|n)[0-9]+$",
+      "description": "The id of the judgement node this content is written from. When set, the AI receives, after the prompt, the 'state' that node judged and the judgement itself, rendered in full: for each question its instructions, the level or option reached with the text of its criterion, its points when there are any, its confidence and the whole distribution. The prompt then only says how to write -- audience, length, tone, what to praise and what to correct -- and must not judge again: the level is settled, and a feedback that argues with it is the one thing this arrangement exists to prevent. The node is only reached when that judgement exists, so a course where the unconditional edge of the judge leads here is refused: there would be nothing to write from. {{STORAGE: key}} still works in the prompt for anything else. Optional.",
+      "examples": [
+        "s1"
+      ]
     },
     "quizContent": {
       "type": "object",
@@ -698,12 +675,24 @@
     },
     "formContent": {
       "type": "object",
-      "description": "A form filled in by the student. Each field produces one key in the record that tracks the student's progress, named '<id>.<key of the field>', where <id> is the id of the node: a field named 'goal' in the node 'f1' produces 'f1.goal'. It holds the text the student typed, or the 'value' of the option picked; a 'check' field holds the list of the values picked. They can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges.",
+      "description": "A form filled in by the student. Each field produces one key in the record that tracks the student's progress, named '<id>.<key of the field>', where <id> is the id of the node: a field named 'goal' in the node 'f1' produces 'f1.goal'. It holds the text the student typed, or the 'value' of the option picked; a 'check' field holds the list of the values picked. They can be used in the prompt of dynamic-md and dynamic-html nodes and in the 'state' of a judgement with {{STORAGE: key}}, and in the 'when' of the edges. A form with 'instructions' and a single 'text-area' field is how a writing task is set: the student writes, and a score node judges what they wrote.",
       "required": [
         "items"
       ],
       "additionalProperties": false,
       "properties": {
+        "instructions": {
+          "$ref": "#/$defs/localizedTextList",
+          "description": "Text shown above the fields, in markdown. For a writing task this is the assignment: what to write, how long it should be, what will be judged and what happens next. The 'label' of a field is a single line, so this is where the paragraphs, the lists and the worked example go. Optional.",
+          "examples": [
+            [
+              {
+                "lang": "en",
+                "text": "## The cat you would adopt\n\nPick one cat species or breed and argue for adopting it, in **150 to 250 words**. Describe its habitat, what it eats and one trait that justifies your choice.\n\nYou will get a comment on what you wrote before moving on."
+              }
+            ]
+          ]
+        },
         "items": {
           "type": "array",
           "minItems": 1,
@@ -767,6 +756,16 @@
           "items": {
             "$ref": "#/$defs/formOption"
           }
+        },
+        "min-words": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The fewest words the answer may have. The frontend counts the words as the student types and does not let them move on below it. Use it on a writing task to make the length in the instructions a rule rather than a request, and leave it out where a short answer is legitimate. Only on 'text-line' and 'text-area'. Optional."
+        },
+        "max-words": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The most words the answer may have, counted and enforced like 'min-words'. When both are given, this one must be the larger, which the validator checks. Only on 'text-line' and 'text-area'. Optional."
         }
       },
       "allOf": [
@@ -788,7 +787,21 @@
           "then": {
             "required": [
               "options"
-            ]
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "min-words"
+                  ]
+                },
+                {
+                  "required": [
+                    "max-words"
+                  ]
+                }
+              ]
+            }
           }
         },
         {
@@ -866,37 +879,73 @@
       }
     },
     "judgeState": {
-      "type": "string",
-      "minLength": 1,
-      "description": "What the AI is given to judge, written by the author. Like the grading prompt of an essay it is never shown to the student, and so it has no version per language. It embeds saved data with {{STORAGE: key}}, using a key produced by an essay, quiz, form, bool, choice, score or noul node, such as {{STORAGE: e1.text}}. The spaces around the key are optional, but 'STORAGE' must be followed directly by the colon. Before the call is made, a key the student has not produced yet is replaced by an empty text, and a list of answers (a 'check' field) by its values separated by ', '. Write only what the judgement needs: what is named here is what the AI sees, and nothing else is sent.",
+      "type": "object",
+      "minProperties": 1,
+      "description": "What the AI is given to judge, written by the author as named fields. It is never shown to the student, and so it has no version per language. Each field is a piece of the case: a text written here as it stands, or saved data embedded with {{STORAGE: key}}, using a key produced by a dynamic-md, dynamic-html, quiz, form, bool, choice, score or noul node, such as {{STORAGE: f1.text}}. The spaces around the key are optional, but 'STORAGE' must be followed directly by the colon. Before the call is made, a key the student has not produced yet is replaced by an empty text, and a list of answers (a 'check' field) by its values separated by ', '. Name the fields for what they hold, because the 'instructions' point at them by name, and give the AI the task as well as the answer: a judgement that sees only what the student wrote cannot tell whether they wrote what was asked. Write only what the judgement needs: what is named here is what the AI sees, and nothing else is sent.",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "type": [
+          "string",
+          "array"
+        ],
+        "items": {
+          "type": "string"
+        }
+      },
       "examples": [
-        "What the student wrote:\n{{STORAGE: e1.text}}"
+        {
+          "task": "Argue for one cat species or breed you would adopt, in 150 to 250 words, covering habitat, diet and one trait that justifies the choice.",
+          "answer": "{{STORAGE: f1.text}}"
+        }
       ]
     },
     "judgeKey": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]*$",
-      "description": "Name of the question, unique within the node. Together with the id of the node it forms the key of the answer in the record that tracks the student's progress: a question named 'track' in the node 'c1' answers to 'c1.track'. It cannot end in '-confidence', which is the suffix the node produces on its own.",
+      "description": "Name of the question, unique within the node. Together with the id of the node it forms the key of the answer in the record that tracks the student's progress: a question named 'track' in the node 'c1' answers to 'c1.track'. It cannot end in '-confidence', '-probabilities', '-legend' or '-points', which are the suffixes the node produces on its own, and it cannot be 'total' or 'percent', which a score node produces for the whole of it.",
       "examples": [
         "track",
         "evidence",
         "ready-for-the-next-part"
       ],
       "not": {
-        "pattern": "-confidence$"
+        "anyOf": [
+          {
+            "pattern": "-(confidence|probabilities|legend|points)$"
+          },
+          {
+            "enum": [
+              "total",
+              "percent"
+            ]
+          }
+        ]
       }
     },
     "judgeInstructions": {
       "type": "string",
       "minLength": 1,
-      "description": "The question the AI answers, written as one clear and specific question about the 'state'. It is never shown to the student and has no version per language; it is recommended to write it in English. Ask one thing: a question that tries to weigh several things at once is better split into several questions of its own, combined afterwards in the 'when' of the edges with 'and' or 'or'. It can reference saved data with {{STORAGE: key}}, resolved as described for 'state'.",
+      "description": "The question the AI answers, written as one clear and specific question about the 'state'. It is never shown to the student and has no version per language; it is recommended to write it in English. Name the field of the 'state' it judges, so that the AI knows which part of the case the question is about, and say what it should leave aside, because a question that does not exclude anything tends to weigh everything: 'Judge the evidence in the field answer. Do not judge grammar or spelling.' Ask one thing: a question that tries to weigh several things at once is better split into several questions of its own, combined afterwards in the 'when' of the edges with 'and' or 'or'. It can reference saved data with {{STORAGE: key}}, resolved as described for 'state'.",
       "examples": [
-        "Which track does this student need next?"
+        "Which track does this student need next?",
+        "Judge how well the field answer backs its claims with evidence. Do not judge grammar, length or tone."
+      ]
+    },
+    "judgeConfidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0,
+      "description": "The least confidence the judgement must reach to count. When any question of the node comes back below it, the whole node is treated as not judged: nothing is stored, no edge testing its keys holds, the student takes the unconditional edge, and a dynamic node written from this judgement is never reached. Declaring it once here is what keeps the rule in one place instead of repeated as a '-confidence' comparison in every edge leaving the node. Around 0.75 is a sensible floor where the judgement carries a grade or sends the student down a track that is expensive to get wrong; leave it out when every branch is cheap to get wrong, and the judgement then always counts. Optional.",
+      "examples": [
+        0.75
       ]
     },
     "choiceContent": {
       "type": "object",
-      "description": "One or more questions the AI answers by picking an option from a list the author wrote. Each question produces two keys in the record that tracks the student's progress, where <id> is the id of the node and <key> the name of the question: '<id>.<key>' (the name of the option picked) and '<id>.<key>-confidence' (how sure the AI is, from 0 to 1). A question named 'track' in the node 'c1' therefore produces 'c1.track' and 'c1.track-confidence'. They can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges, which is their main use. The answer is always one of the options listed and never anything else, so edges covering every option cover every answer the AI can give; the unconditional edge is what catches a call that failed.",
+      "description": "One or more questions the AI answers by picking an option from a list the author wrote. Each question produces three keys in the record that tracks the student's progress, where <id> is the id of the node and <key> the name of the question: '<id>.<key>' (the name of the option picked), '<id>.<key>-confidence' (how sure the AI is, from 0 to 1) and '<id>.<key>-probabilities' (how the AI spread its answer over the options: a map of the name of each option to its probability, the whole adding up to 1). A question named 'track' in the node 'c1' therefore produces 'c1.track', 'c1.track-confidence' and 'c1.track-probabilities'. The first two can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges, which is their main use; the third is a map, so it is there for a node that writes from this judgement rather than for a comparison. The answer is always one of the options listed and never anything else, so edges covering every option cover every answer the AI can give; the unconditional edge is what catches a judgement that did not happen. A judgement that did not happen stores nothing at all: no key of this node is written, and it never stores a middle value, a default or a guess.",
       "required": [
         "state",
         "items"
@@ -905,6 +954,9 @@
       "properties": {
         "state": {
           "$ref": "#/$defs/judgeState"
+        },
+        "confidence": {
+          "$ref": "#/$defs/judgeConfidence"
         },
         "items": {
           "type": "array",
@@ -959,7 +1011,7 @@
     },
     "scoreContent": {
       "type": "object",
-      "description": "One or more questions the AI answers by placing the student on a scale of levels the author wrote. Each question produces two keys in the record that tracks the student's progress, where <id> is the id of the node and <key> the name of the question: '<id>.<key>' (the level reached) and '<id>.<key>-confidence' (how sure the AI is, from 0 to 1). A question named 'evidence' in the node 's1' therefore produces 's1.evidence' and 's1.evidence-confidence'. They can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges, which is their main use. The level runs from 0, the first level listed, to one less than the number of levels, and it is not a whole number: it is the average of the levels the AI weighed, so 1.43 on a scale of three levels is an ordinary answer meaning 'between the second and the third, nearer the second'. Compare it with gt, gte, lt and lte rather than with eq. It is not a percentage: '<id>.score' of an essay and '<id>.percent' of a quiz run from 0 to 100, while this one runs over the levels of its own question.",
+      "description": "One or more questions the AI answers by placing the student on a scale of levels the author wrote. Each question produces four keys in the record that tracks the student's progress, where <id> is the id of the node and <key> the name of the question: '<id>.<key>' (the level reached), '<id>.<key>-confidence' (how sure the AI is, from 0 to 1), '<id>.<key>-probabilities' (the probability of each level, keyed by level number, the whole adding up to 1) and '<id>.<key>-legend' (each level number mapped back to the text of its criterion). A question named 'evidence' in the node 's1' therefore produces 's1.evidence', 's1.evidence-confidence', 's1.evidence-probabilities' and 's1.evidence-legend'. A question that carries 'points' produces '<id>.<key>-points' as well, and the node then produces '<id>.total' and '<id>.percent' for the whole of it. The level and the confidence are what the 'when' of the edges compares and what a prompt embeds with {{STORAGE: key}}; the probabilities and the legend are maps, so they are there for a node that writes from this judgement, which receives them rendered rather than as a key to compare. The level runs from 0, the first level listed, to one less than the number of levels, and it is not a whole number: it is each level number weighted by its probability, so 1.43 on a scale of three levels is an ordinary answer meaning 'between the second and the third, nearer the second'. Compare it with gt, gte, lt and lte rather than with eq. It is not a percentage: '<id>.percent' of a quiz and of a score node with points run from 0 to 100, while this one runs over the levels of its own question. A judgement that did not happen stores nothing at all: no key of this node is written, and it never stores a middle value, a default or a guess.",
       "required": [
         "state",
         "items"
@@ -968,6 +1020,9 @@
       "properties": {
         "state": {
           "$ref": "#/$defs/judgeState"
+        },
+        "confidence": {
+          "$ref": "#/$defs/judgeConfidence"
         },
         "items": {
           "type": "array",
@@ -1011,12 +1066,32 @@
               "Claims backed by several examples, weighed against each other"
             ]
           ]
+        },
+        "points": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 10,
+          "description": "How many points each level is worth, in the same order as 'criteria' and with the same number of entries, which the validator checks. When it is there the question also produces '<id>.<key>-points': each level's points weighted by its probability, so a question worth 0, 100 and 200 points answered with 0.57 on level 1 and 0.43 on level 2 gives 143. The node then produces '<id>.total', the sum of the '-points' of every question that carries points, and '<id>.percent', that sum over the highest it could have been, from 0 to 100. This is what a grade is in this format: a number worked out from the judgement, never a second opinion asked of the AI. Omit it on a question that only decides where the student goes next. Optional.",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "examples": [
+            [
+              0,
+              40,
+              80,
+              120,
+              160,
+              200
+            ]
+          ]
         }
       }
     },
     "noulContent": {
       "type": "object",
-      "description": "One or more yes/no questions the AI answers with the probability that the answer is yes. Each question produces one key in the record that tracks the student's progress, '<id>.<key>', holding a number from 0 to 1: a question named 'ready' in the node 'n1' therefore produces 'n1.ready'. It can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges, which is its main use. Unlike choice and score it produces no '-confidence' key, because the probability is itself the measure of how sure the AI is: near 1 is yes, near 0 is no, and near 0.5 means it cannot tell. The edges compare it against a threshold the author picks: 0.5 when both answers are equally easy to act on, higher when acting on a wrong yes costs more, lower when missing a true yes costs more.",
+      "description": "One or more yes/no questions the AI answers with the probability that the answer is yes. Each question produces one key in the record that tracks the student's progress, '<id>.<key>', holding a number from 0 to 1: a question named 'ready' in the node 'n1' therefore produces 'n1.ready'. It can be used in the prompt of dynamic-md and dynamic-html nodes with {{STORAGE: key}} and in the 'when' of the edges, which is its main use. Unlike choice and score it produces no '-confidence' key and takes no 'confidence' floor, because the probability is itself the measure of how sure the AI is: near 1 is yes, near 0 is no, and near 0.5 means it cannot tell, so a floor here would be a second reading of the same number. The edges compare it against a threshold the author picks: 0.5 when both answers are equally easy to act on, higher when acting on a wrong yes costs more, lower when missing a true yes costs more. A judgement that did not happen stores nothing at all: no key of this node is written, and it never stores a middle value, a default or a guess.",
       "required": [
         "state",
         "items"
@@ -1126,16 +1201,16 @@
         "key": {
           "type": "string",
           "minLength": 1,
-          "description": "Key of the value to test, written as '<node-id>.<name>': one of the keys produced by an essay, quiz, form, bool, choice, score or noul node. It is the same key used in {{STORAGE: key}}.",
-          "pattern": "^(e|q|f|b|c|s|n)[0-9]+\\.[a-z][a-z0-9-]*$",
+          "description": "Key of the value to test, written as '<node-id>.<name>': one of the keys produced by a dynamic-md, dynamic-html, quiz, form, bool, choice, score or noul node. It is the same key used in {{STORAGE: key}}. The '-probabilities' and '-legend' keys of a judgement are maps rather than single values, so they are not compared here; use the level, the option or the confidence instead.",
+          "pattern": "^(dm|dh|q|f|b|c|s|n)[0-9]+\\.[a-z][a-z0-9-]*$",
           "examples": [
             "q1.percent",
-            "e1.score",
             "f1.goal",
             "b1.answer",
             "c1.track",
             "c1.track-confidence",
             "s1.evidence",
+            "s1.percent",
             "n1.ready"
           ]
         },

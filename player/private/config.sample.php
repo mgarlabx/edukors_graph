@@ -45,6 +45,29 @@ return [
         'title'       => 'Edukors Graph Player',
     ],
 
+    // Judgements: the choice, score and noul nodes.
+    //
+    // A course names the model that answers them in `info.judge-model`, as an
+    // exact version and never an alias, because the thresholds in its edges, the
+    // points on its levels and its confidence floors were all tuned against one
+    // version of one model. This map is where a server says which slug answers
+    // each of those names.
+    //
+    // A course whose judge-model has no line here is refused at import, and at
+    // run time its judgements do not happen: the student takes the unconditional
+    // edge. It is never quietly answered by `ai.model` -- a judgement from an
+    // unknown model is exactly the thing the exact version exists to prevent.
+    'judge' => [
+        'models' => [
+            // 'jev-1.13.0' => 'openai/gpt-5.6-luna',
+        ],
+        'timeout'      => 45,
+        // Refuse a judgement that came back from a slug other than the one asked
+        // for. OpenRouter serves one name from several providers, and a route
+        // that moves under a tuned floor is the alias the schema forbids.
+        'strict_model' => true,
+    ],
+
     // The admin pages -- EDUKORS_ADMIN_USER, EDUKORS_ADMIN_HASH
     'admin' => [
         'user' => 'admin',

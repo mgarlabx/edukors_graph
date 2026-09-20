@@ -1,6 +1,6 @@
 ---
 name: edukors-graph-builder
-description: AUTHORING + GENERATION authority for Edukors courses. Covers (a) creating a course from scratch (info, nodes and edges from an idea, syllabus or brief) and (b) consolidating an exploded course (info/, nodes/, edges/) edited by hand. Either way it writes three files to the course's `_output/` folder, named after the course slug: the course JSON (valid against course.schema.json), the map HTML (course graph) and the player HTML (playable course). This skill owns the format (node types, edges, conditions, prompts, quality bar); the companion skill edukors-graph-editor defines the exploded folder layout. Use it whenever someone wants to create, design, extend, restructure, consolidate, build or rebuild a course, learning path, training module or adaptive track, or regenerate the JSON, map or player; also when they mention course.schema.json, Edukors, course nodes/edges, static-md/dynamic-md nodes or a course graph, even if they only say "make me a course about X".
+description: AUTHORING + GENERATION authority for Edukors courses. Covers (a) creating a course from scratch (info, nodes and edges from an idea, syllabus or brief) and (b) consolidating an exploded course (info/, nodes/, edges/) edited by hand. Either way it writes three files to the course's `_output/` folder, named after the course slug: the course JSON (valid against course.schema.json), the map HTML (course graph) and the player HTML (playable course). This skill owns the format (node types, edges, conditions, prompts, quality bar); the companion skill edukors-graph-editor defines the exploded folder layout. Use it whenever someone wants to create, design, extend, restructure, consolidate, build or rebuild a course, learning path, training module or adaptive track, or regenerate the JSON, map or player; also when they mention course.schema.json, Edukors, course nodes/edges, static-md/dynamic-md nodes, a grading rubric, an AI judgement of a student text, or a course graph, even if they only say "make me a course about X".
 ---
 
 # Edukors Graph Builder
@@ -38,12 +38,13 @@ Work and think in English — prompts stored inside the course are written in
 English too, because that is what the runtime AI reads best. But **every text the
 author or the student will read is written in the author's language**: the
 conversation, the summary, node titles, markdown bodies, quiz questions, form
-labels, essay instructions. If the author writes to you in Portuguese, the course
+labels and form instructions. If the author writes to you in Portuguese, the course
 is authored in Portuguese (`source-language: "pt"`) and you answer in Portuguese.
 
-The one exception: `info.system-prompt`, `dynamic-*` prompts and the essay grading
-`prompt` are written in English and end with an instruction such as *"Answer in the
-student's language."*
+The one exception is everything addressed to a model: `info.system-prompt` and
+`dynamic-*` prompts are written in English and end with *"Answer in the student's
+language."*; the `state`, `instructions` and `criteria` of a judgement are written
+in English and carry no version per language, because no student ever sees them.
 
 ## Workflow
 
@@ -110,7 +111,10 @@ Allocation that works well for a course of N nodes in S sections:
 - `sm1` is always the entry point: welcome, objectives, how the course works.
 - If content or challenge is dynamic, the **second** node is the form `f1` that
   captures goals, pains and context. Everything dynamic downstream reads it.
-- Per section: 2–4 content nodes, then one activity (quiz, essay or bool).
+- Per section: 2–4 content nodes, then one activity (quiz, bool, or a written
+  delivery). **A written delivery costs three nodes, not one**: a `form` with the
+  assignment and a `text-area`, a `score` that judges it, and a `dynamic-md` with
+  `from` that writes the comment. Budget for that when you size the course.
 - Each section's last activity is where branching happens, if the course adapts.
 - Leave the last node as a closing node (summary, final delivery, or next steps).
 
@@ -126,7 +130,14 @@ challenge-based, dynamic personalization, images, and the adaptive-graph shapes.
 Non-negotiables while writing:
 
 - ids carry their type: `sm` static-md, `sh` static-html, `dm` dynamic-md,
-  `dh` dynamic-html, `e` essay, `q` quiz, `f` form, `b` bool.
+  `dh` dynamic-html, `q` quiz, `f` form, `b` bool, `c` choice, `s` score, `n` noul.
+- a course with any judgement node names its model exactly in `info.judge-model`
+  (`jev-1.13.0`, never `jev-latest`): thresholds and points are tuned per version.
+- every `choice`, `score` and `noul` node ends with an unconditional edge, and that
+  edge never leads to a node with `from` pointing back at it — that path is the one
+  taken when there was no judgement, so there would be nothing to write from.
+- a level from a `score` runs 0 to `levels-1`, not 0–100. To grade out of 100, give
+  the question `points` and branch on `<id>.percent`.
 - every localized field is a list of `{lang, text}` covering `source-language`
   **and** every entry of `other-languages`.
 - edges leaving a node are ordered: conditions first, the unconditional fallback
@@ -179,20 +190,27 @@ python3 <skill-dir>/scripts/build_player.py <slug>-course.json -o <slug>-player.
   type, keeps progress in the browser, and lets any finished step be revisited.
   Formulas are typeset with KaTeX, fetched from cdnjs the first time a step has
   one; without network they stay as the LaTeX source.
-  Its interface follows the course language. `dynamic-md`, `dynamic-html` and the
-  grading of `essay` nodes ask the model of the host the file runs in, with
-  `{{STORAGE: key}}` resolved from what the student produced. The player needs
+  Its interface follows the course language. `dynamic-md` and `dynamic-html` nodes
+  ask the model of the host the file runs in, with `{{STORAGE: key}}` resolved
+  from what the student produced. The player needs
   no key: it uses the host's `sample` capability when published as an Artifact
   that declares it, and otherwise the AI bridge of claude.ai chat artifacts.
   Opened anywhere else — a local file in a browser, an IDE preview, another
   harness — those steps show a note saying so and the course still runs.
   `choice`, `score` and `noul` nodes never ask a model here. They are invisible
   to a student, so this copy shows the author a panel instead: the question as
-  written, the options as declared, and the author picks. That is what lets the
-  author walk **every** branch of an adaptive course by opening one file, with
-  no server and no key — and it is the answer to "how do I test this?".
+  written, the scale as declared, and the author picks a level and a confidence.
+  That is what lets the author walk **every** branch of an adaptive course by
+  opening one file, with no server and no key — and it is the answer to "how do I
+  test this?". A node with `from` then writes its feedback from that pick, so the
+  author sees what a given level actually produces.
+  Outside the author's copy the player asks its host for the judgement, as a
+  dynamic node asks for its text; the player server answers that, and nowhere
+  else does. Where nothing answers, no judgement is made and none is invented:
+  the node stores nothing and the student leaves by the unconditional edge. A
+  judgement under the node's `confidence` counts the same way.
   The panel also has a **Download the request** button, which saves the call the
-  node would make — `state`, `model` and `questions`, with every
+  node would make — `model`, `state` and `questions`, with every
   `{{STORAGE: key}}` already replaced by what the student produced — as
   `<node-id>-systemone.json`, to paste into the TypeSafe playground
   (https://console.typesafe.ai/playground). That turns the author's pick from a
@@ -216,8 +234,7 @@ Where the player's AI steps can run depends on how it is presented:
   way its AI steps run there; the viewer is asked once to allow it, and the calls
   spend the viewer's own Claude usage.
 - **Anywhere else**: deliver the paths, and tell the author in one line that the
-  dynamic steps and essay grading show a note instead of content in a local
-  preview. The `choice`, `score` and `noul` nodes work everywhere, including a
+  dynamic steps show a note instead of content in a local preview. The `choice`, `score` and `noul` nodes work everywhere, including a
   local file: say so, because walking the branches is what the author needs.
 
 ### 7. Report
@@ -238,6 +255,11 @@ Before presenting, check that:
 - **Activities produce something the course uses.** A quiz whose score no edge and
   no prompt ever reads is decoration; either branch on it or give its questions
   `key`s and use them.
+- **Every grade comes from a judgement.** No node shows the student a number that
+  did not come out of `points` on a `score` question. A second opinion asked of a
+  model in prose is exactly what this format removed.
+- **No feedback argues with its grade.** Read each `from` prompt: it says how to
+  write, never what to decide.
 - **The quizzes cannot be guessed by position.** Read the correct slot of each
   question; if it is the same letter throughout, the quiz was never shuffled.
 - **Every branch reunites.** Adaptive paths must come back to the main line (or
@@ -247,7 +269,8 @@ Before presenting, check that:
   incomprehensible to you, it will be worse for the author.
 - **The course plays.** The player opens on the welcome screen, the first step
   carries real content, and every activity can be answered and left. A step that
-  cannot be completed is a broken node, not a detail.
+  cannot be completed is a broken node, not a detail. Where a delivery has word
+  limits, check that a text inside the range is accepted and one outside it is not.
 
 ## Editing an existing course
 

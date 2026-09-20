@@ -42,10 +42,24 @@ FENCE = re.compile(r"^ {0,3}(```|~~~)")
 CONTINUATION_INDENT = "      "
 RESERVED_KEYS = ("score", "total", "percent")
 FIELD_TYPES = ("text-line", "text-area", "radio", "check", "select")
+WORDS_BOTH = re.compile(r"^(\d+)\s*-\s*(\d+)\s+words$")
+WORDS_MIN = re.compile(r"^min\s+(\d+)\s+words$")
+WORDS_MAX = re.compile(r"^max\s+(\d+)\s+words$")
 WITH_OPTIONS = ("radio", "check", "select")
 
 
 # ---------------------------------------------------------------- rendering
+
+class _Fields(list):
+    """The fields of a form, carrying the text written above them.
+
+    The instructions are prose, not structure, so they ride alongside rather than
+    as a record: every language writes its own, and none of them has to agree with
+    another the way a field does.
+    """
+
+    instructions = ""
+
 
 def _indent_block(text):
     """Every line but the first of an option label, indented under it."""
@@ -93,14 +107,32 @@ def render_quiz(items, lang):
     return "\n".join(lines)
 
 
-def render_form(items, lang):
+def _words_attribute(field):
+    """The word limits as they are written in a field heading, or nothing."""
+    low, high = field.get("min-words"), field.get("max-words")
+    if low is not None and high is not None:
+        return "%d-%d words" % (low, high)
+    if low is not None:
+        return "min %d words" % low
+    if high is not None:
+        return "max %d words" % high
+    return None
+
+
+def render_form(content, lang):
+    items = content.get("items") or []
     lines = []
+    if content.get("instructions"):
+        lines.extend(_text_of(content["instructions"], lang).split("\n"))
     for number, field in enumerate(items, 1):
         if lines:
             lines.append("")
         attributes = [field["type"]]
         if "required" in field:
             attributes.append("required" if field["required"] else "optional")
+        words = _words_attribute(field)
+        if words:
+            attributes.append(words)
         lines.extend(["## %d. %s (%s)" % (number, field["key"], ", ".join(attributes)), ""])
         lines.extend(_text_of(field["label"], lang).split("\n"))
         if field.get("options"):
@@ -283,10 +315,20 @@ def parse_quiz(text):
 
 
 def parse_form(text):
-    """Read a form.md. Returns (fields, errors)."""
+    """Read a form.md. Returns (fields, errors).
+
+    Anything above the first field heading is the assignment, which a writing task
+    needs and a plain form does without.
+    """
     reader = _Reader(text)
-    fields = []
-    if not _start_of_items(reader, FIELD_HEADING, "field, '## 1. <key> (<type>)'"):
+    fields = _Fields()
+    reader.skip_blank()
+    fields.instructions = reader.read_text_until(FIELD_HEADING, HEADING)
+    reader.skip_blank()
+    if not reader.structural(FIELD_HEADING):
+        reader.error("no field heading, '## 1. <key> (<type>)'"
+                     + (" -- everything above was read as the instructions"
+                        if fields.instructions else ""), 0)
         return fields, reader.errors
 
     while reader.at < len(reader.lines):
@@ -308,15 +350,24 @@ def parse_form(text):
         if field_type not in FIELD_TYPES:
             reader.error("'%s' is not a field type; use one of %s"
                          % (field_type, ", ".join(FIELD_TYPES)))
-        required = None
+        required, words = None, (None, None)
         for attribute in attributes[1:]:
             if attribute == "required":
                 required = True
             elif attribute == "optional":
                 required = False
+            elif WORDS_BOTH.match(attribute):
+                pair = WORDS_BOTH.match(attribute)
+                words = (int(pair.group(1)), int(pair.group(2)))
+            elif WORDS_MIN.match(attribute):
+                words = (int(WORDS_MIN.match(attribute).group(1)), None)
+            elif WORDS_MAX.match(attribute):
+                words = (None, int(WORDS_MAX.match(attribute).group(1)))
             else:
-                reader.error("'%s' is not a field attribute; use 'required' or 'optional'"
-                             % attribute)
+                reader.error("'%s' is not a field attribute; use 'required', 'optional' "
+                             "or a length such as '150-250 words'" % attribute)
+        if words != (None, None) and field_type not in ("text-line", "text-area"):
+            reader.error("a %s field counts no words" % field_type)
         reader.at += 1
 
         label = reader.read_text_until(OPTION, FIELD_HEADING, HEADING)
@@ -330,6 +381,7 @@ def parse_form(text):
         _check_ids(reader, options, at, "option")
         reader.skip_blank()
         fields.append({"key": key, "type": field_type, "required": required, "label": label,
+                       "min-words": words[0], "max-words": words[1],
                        "options": [{"value": option["value"], "label": option["label"]}
                                    for option in options]})
     return fields, reader.errors
@@ -371,6 +423,7 @@ def quiz_shape(question):
 
 def form_shape(field):
     return (field["key"], field["type"], field["required"],
+            field["min-words"], field["max-words"],
             tuple(option["value"] for option in field["options"]))
 
 
@@ -410,6 +463,9 @@ def assemble_form(per_lang, langs):
         if field["required"] is not None:
             item["required"] = field["required"]
         item["label"] = _localized(per_lang, langs, position, lambda f: f["label"])
+        for bound in ("min-words", "max-words"):
+            if field[bound] is not None:
+                item[bound] = field[bound]
         if field["options"]:
             item["options"] = [
                 {"value": option["value"],
@@ -417,7 +473,11 @@ def assemble_form(per_lang, langs):
                                      lambda f, i=index: f["options"][i]["label"])}
                 for index, option in enumerate(field["options"])]
         items.append(item)
-    return {"items": items}
+    written = [lang for lang in langs if getattr(per_lang[lang], "instructions", "").strip()]
+    if not written:
+        return {"items": items}
+    return {"instructions": [{"lang": lang, "text": per_lang[lang].instructions}
+                             for lang in written], "items": items}
 
 
 def assemble_bool(per_lang, langs):
@@ -438,7 +498,7 @@ DOCUMENTS = {
                           "is feedback"},
     "form": {"file": "form.md", "render": render_form, "parse": parse_form,
              "shape": form_shape, "assemble": assemble_form, "item": "field",
-             "structure": "key, type, required/optional and option ids"},
+             "structure": "key, type, required/optional, any word limits and option ids"},
     "bool": {"file": "bool.md", "render": render_bool, "parse": parse_bool,
              "shape": bool_shape, "assemble": assemble_bool, "item": "question",
              "structure": "which answer is preselected and whether the answers are "
@@ -449,6 +509,6 @@ DOCUMENTS = {
 def render(node_type, content, lang):
     """The document of one language, from the content of a node."""
     document = DOCUMENTS[node_type]
-    if node_type == "bool":
+    if node_type in ("bool", "form"):
         return document["render"](content, lang)
     return document["render"](content.get("items") or [], lang)

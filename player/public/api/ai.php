@@ -4,13 +4,19 @@
  *
  * It accepts exactly one shape:
  *
- *     { "node": "dm1" }              a step the AI writes
- *     { "node": "e1", "text": "…" }  an essay to grade
+ *     { "node": "dm1" }   a step the AI writes
+ *     { "node": "c1" }    a judgement the AI makes
  *
  * There is no field here that carries a prompt, and no field that names a
  * model. Both come from the course in the database and from config.php.
  * Everything the caller can choose is checked against the course and against
  * where the student actually is.
+ *
+ * The two answer differently. A written step comes back as its text. A
+ * judgement comes back as the storage keys it produced, already derived here --
+ * which is what lets a judge node reach the browser with its state, its
+ * instructions and its criteria removed, since the browser has nothing left to
+ * compute from them.
  */
 
 declare(strict_types=1);
@@ -43,7 +49,7 @@ if ($student === null) {
 
 $body   = edukors_json_body();
 $nodeId = $body['node'] ?? null;
-if (!is_string($nodeId) || preg_match('/^(dm|dh|e)[0-9]+$/', $nodeId) !== 1) {
+if (!is_string($nodeId) || preg_match('/^(dm|dh|c|s|n)[0-9]+$/', $nodeId) !== 1) {
     edukors_json_error('bad request', 400);
 }
 
@@ -81,15 +87,17 @@ if ((string) $progress['current_node'] !== $nodeId) {
 try {
     $type = (string) $course->nodeType($nodeId);
 
-    if ($type === 'essay') {
-        $text  = $body['text'] ?? '';
-        $grade = ai_grade($progress, $course, $nodeId, is_string($text) ? $text : '');
-        // The player reads a grade back out of the text of the answer, so the
-        // score and the feedback go back the way it expects to find them.
-        $answer = json_encode(
-            ['score' => $grade['score'], 'feedback' => $grade['feedback']],
-            JSON_UNESCAPED_UNICODE
-        );
+    if (in_array($type, Course::JUDGE_TYPES, true)) {
+        $judged = ai_judge($progress, $course, $nodeId);
+        // A judgement that did not happen is answered, not refused: the course
+        // is required to carry an unconditional edge out of every judge node
+        // precisely so the student has somewhere to go. An error here would
+        // show them a retry button on a step they are not supposed to see.
+        $answer = json_encode([
+            'judged' => $judged['judged'],
+            'vars'   => (object) ai_judge_maps($judged['vars']),
+            'reason' => $judged['reason'],
+        ], JSON_UNESCAPED_UNICODE);
     } else {
         $answer = ai_generate($progress, $course, $nodeId);
     }

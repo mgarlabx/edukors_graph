@@ -13,6 +13,13 @@ declare(strict_types=1);
 
 final class Course
 {
+    /**
+     * The node types the AI decides with, rather than the student. They are the
+     * only ones a student never stops at, and the only ones whose storage keys
+     * this server writes on its own authority.
+     */
+    public const JUDGE_TYPES = ['choice', 'score', 'noul'];
+
     private array $doc;
     private array $info;
     /** @var array<string,array> id => node */
@@ -102,6 +109,24 @@ final class Course
     {
         $node = $this->node($id);
         return $node === null ? null : (string) ($node['type'] ?? '');
+    }
+
+    /** Is this one of the nodes the AI decides? */
+    public function isJudge(string $id): bool
+    {
+        return in_array((string) $this->nodeType($id), self::JUDGE_TYPES, true);
+    }
+
+    /** The ids of every node the AI decides, in no particular order. */
+    public function judgeIds(): array
+    {
+        $ids = [];
+        foreach ($this->nodes as $id => $node) {
+            if (in_array((string) ($node['type'] ?? ''), self::JUDGE_TYPES, true)) {
+                $ids[] = (string) $id;
+            }
+        }
+        return $ids;
     }
 
     /** Every edge leaving a node, in the order they appear in the file. */
@@ -317,14 +342,22 @@ final class Course
     }
 
     /**
-     * The course as the browser may see it: every prompt replaced by a marker
-     * that names the node it belongs to.
+     * The course as the browser may see it: nothing a student could read that
+     * the course does not mean to show them.
      *
-     * This is what keeps a generic inference from being exposed. The player
-     * sends the marker where it would have sent a prompt; public/api/ai.php
-     * reads the node id out of it and builds the real prompt here, on the
-     * server, from the course stored in the database. A student who reads the
-     * page source finds no prompt to borrow.
+     * Two kinds of thing are taken out. A prompt is replaced by a marker naming
+     * its node: the player sends the marker where it would have sent a prompt,
+     * and public/api/ai.php builds the real one here, on the server, from the
+     * course in the database. A judge node loses more than that -- its state,
+     * and every question's instructions, criteria and points -- because the
+     * rubric a teacher wrote and the marks they hung on it are the answer key
+     * of the step, and a `choice` node's criteria are literally the list of
+     * decisions the course can make about a student.
+     *
+     * Taking all of it out is only possible because api/ai.php answers a
+     * judgement with the storage keys already derived, so the browser has
+     * nothing left to work them out from. It asks "judge c1" and is told what
+     * came of it.
      */
     public function withoutPrompts(): array
     {
@@ -335,13 +368,26 @@ final class Course
         foreach ($doc['nodes'] ?? [] as $index => $node) {
             $type = (string) ($node['type'] ?? '');
             $id   = (string) ($node['id'] ?? '');
+
             if ($type === 'dynamic-md' || $type === 'dynamic-html') {
                 $doc['nodes'][$index]['content']['prompt'] = [
                     ['lang' => $language, 'text' => self::marker($id)],
                 ];
-            } elseif ($type === 'essay') {
-                // An essay's grading prompt is a plain string, not a list.
-                $doc['nodes'][$index]['content']['prompt'] = self::marker($id);
+                continue;
+            }
+
+            if (in_array($type, ['choice', 'score', 'noul'], true)) {
+                unset(
+                    $doc['nodes'][$index]['content']['state'],
+                    $doc['nodes'][$index]['content']['confidence']
+                );
+                foreach ($node['content']['items'] ?? [] as $slot => $item) {
+                    // Only the key survives, because the key is the one part of
+                    // a question the browser has any use for: it is half the
+                    // name of the storage keys the answer comes back under.
+                    $doc['nodes'][$index]['content']['items'][$slot]
+                        = ['key' => (string) ($item['key'] ?? '')];
+                }
             }
         }
 
@@ -352,15 +398,6 @@ final class Course
     public static function marker(string $nodeId): string
     {
         return '#edukors:' . $nodeId;
-    }
-
-    /** The node id inside a marker, or null when there is none. */
-    public static function nodeIdFromMarker(string $text): ?string
-    {
-        if (preg_match('/#edukors:((?:sm|sh|dm|dh|e|q|f|b)[0-9]+)/', $text, $match) === 1) {
-            return $match[1];
-        }
-        return null;
     }
 
     /**

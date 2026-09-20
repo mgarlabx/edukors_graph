@@ -131,6 +131,10 @@ CREATE TABLE IF NOT EXISTS node_state (
   generated_text MEDIUMTEXT NULL,                  -- frozen output of dynamic-md / dynamic-html
                                                    -- ('generated' alone is a reserved word in MySQL)
   answer      MEDIUMTEXT   NULL,                   -- JSON: the raw answer of the student
+  verdict     MEDIUMTEXT   NULL,                   -- JSON: a judgement of a choice/score/noul node --
+                                                   -- the resolved state, the raw reply, the derived
+                                                   -- distributions, and why it did not happen when it
+                                                   -- did not. `error` on ai_call is too small for this.
   score       SMALLINT     NULL,
   feedback    MEDIUMTEXT   NULL,
   visits      INT UNSIGNED NOT NULL DEFAULT 1,
@@ -145,7 +149,10 @@ CREATE TABLE IF NOT EXISTS ai_call (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   progress_id INT UNSIGNED NULL,
   node_id     VARCHAR(16)  NOT NULL,
-  kind        ENUM('generate','grade') NOT NULL,
+  -- 'grade' was the essay node, which the schema no longer has. It stays in the
+  -- enum because this table is the bill: rows written before it went away are
+  -- history, and history is not migrated.
+  kind        ENUM('generate','grade','judge') NOT NULL,
   model       VARCHAR(80)  NOT NULL,
   tokens_in   INT UNSIGNED NULL,
   tokens_out  INT UNSIGNED NULL,

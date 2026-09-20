@@ -6,18 +6,21 @@ screen, then one step at a time, with the graph deciding what comes next. No
 server, no upload step. The player serves that one course — it has no way to open
 another, so rebuild it whenever the JSON changes.
 
-Steps written by the AI (dynamic-md, dynamic-html) and the grading of essay
-nodes ask the model of the host the file runs in: the `sample` capability of an
+Steps written by the AI (dynamic-md, dynamic-html) ask the model of the host the
+file runs in: the `sample` capability of an
 Artifact that declares it (e.g. published from Claude Code), or the AI bridge of
 a claude.ai chat artifact. Opened anywhere else, those steps show a note saying
 so; every other node type works offline.
 
 The nodes the AI decides with (choice, score, noul) never ask a model here. They
 are invisible to a student, so the file this script writes marks itself as the
-author's copy and shows a panel instead: the question as written, the options as
-declared, and the author picks. That is what lets every branch of an adaptive
+author's copy and shows a panel instead: the question as written, the scale as
+declared, and the author picks a level and a confidence. A dynamic node with
+`from` then writes its feedback from that pick, so the author sees what a given
+level actually produces. Outside the author's copy no judgement is made and none
+is invented: the node stores nothing and the student takes the fallback edge. That is what lets every branch of an adaptive
 course be walked by opening one file, with no server and no key. The panel also
-downloads the request the node would have sent -- state, model and questions,
+downloads the request the node would have sent -- model, state and questions,
 with {{STORAGE: key}} resolved from what the student produced -- as JSON, to
 paste into https://console.typesafe.ai/playground and see the real answer.
 

@@ -18,15 +18,15 @@ Each sample is delivered as the three files the builder produces:
 
 The HTML files carry the course itself, so they open directly in a browser with no server and no build step.
 
-Two things do need a network. The images come from [Wikimedia Commons](https://commons.wikimedia.org) and are referenced by URL — in the JSON and in the built HTML alike — so a sample shown offline keeps its text and loses its photographs. And the dynamic steps and the essay grading need an AI host: they only run when the player is opened inside an AI assistant, published as an Artifact with the `sample` capability, or served by the [player](../player/player.README.md).
+Two things do need a network. The images come from [Wikimedia Commons](https://commons.wikimedia.org) and are referenced by URL — in the JSON and in the built HTML alike — so a sample shown offline keeps its text and loses its photographs. And the dynamic steps need an AI host: they only run when the player is opened inside an AI assistant, published as an Artifact with the `sample` capability, or served by the [player](../player/player.README.md).
 
 ## Overview
 
 | Sample                          | Nodes | Edges | Sections | Languages  | Node types                           |     Adaptive     |
 | ------------------------------- | :---: | :---: | :------: | ---------- | ------------------------------------ | :--------------: |
 | [world-cats-1-mini](#1-mini)     |   5   |   4   |    1    | en         | `static-md`, `static-html`       |        No        |
-| [world-cats-2-simple](#2-simple) |   7   |   7   |    2    | en         | +`quiz`, `dynamic-md`, `essay` |    One branch    |
-| [world-cats-3-full](#3-full)     |  14  |  19  |    3    | en, pt, zh | all eight types                      | Yes, with cycles |
+| [world-cats-2-short](#2-short)   |   9   |  10   |    2    | en         | +`quiz`, `dynamic-md`, `form`, `score` |    One branch    |
+| [world-cats-3-full](#3-full)     |  16  |  21  |    3    | en, pt, zh | nine of the ten types                | Yes, with cycles |
 
 ## 1. Mini
 
@@ -45,27 +45,30 @@ What it shows:
 
 Files: [course](world-cats-1-mini-course.json) · [map](world-cats-1-mini-map.html) · [player](world-cats-1-mini-player.html)
 
-## 2. Simple
+## 2. Short
 
-`world-cats-2-simple` — a compact, almost linear version with a quiz, adaptive reinforcement and an assessed essay.
+`world-cats-2-short` — a compact, almost linear version with a quiz, adaptive reinforcement and a writing task judged against a rubric.
 
 ```mermaid
 flowchart LR
     sm1[sm1 Welcome] --> sh1[sh1 Big cats] --> sm3[sm3 Domestic cats] --> q1{{q1 Check}}
-    q1 -->|q1.percent ≥ 70| e1[e1 Essay]
+    q1 -->|q1.percent ≥ 70| f1[f1 Write]
     q1 -->|otherwise| dm1[dm1 Reinforcement]
-    dm1 --> e1
-    e1 --> sm5[sm5 Closing]
+    dm1 --> f1
+    f1 --> s1{{s1 Judge}}
+    s1 -->|judged| dm2[dm2 Feedback]
+    s1 -->|no judgement| sm5[sm5 Closing]
+    dm2 --> sm5
 ```
 
 What it shows:
 
 - A course-wide `system-prompt` that sets the AI's role for every dynamic step.
 - A `quiz` whose result (`q1.percent`) decides the path: students who score 70% or more skip ahead, the others get a `dynamic-md` reinforcement that the AI writes from their own answers (`{{STORAGE: q1.percent}}`, `{{STORAGE: q1.habitat}}` and other quiz keys).
-- An `essay` graded by the AI, which stores `e1.text`, `e1.score` and `e1.feedback`.
-- Edge order: the conditional edge comes first and the unconditional one works as the fallback.
+- **The graded chain** `form → score → dynamic-md`: `f1` collects the text (with `min-words`/`max-words` enforced), `s1` judges it on five criteria with `points`, and `dm2` writes the comment `from: s1`. The grade is `s1.percent`, worked out from the judgement rather than asked of a model a second time.
+- Edge order: the conditional edge comes first and the unconditional one works as the fallback. On `s1` that fallback goes to the closing node, never to `dm2` — it is the path taken when there was no judgement to write from.
 
-Files: [course](world-cats-2-simple-course.json) · [map](world-cats-2-simple-map.html) · [player](world-cats-2-simple-player.html)
+Files: [course](world-cats-2-short-course.json) · [map](world-cats-2-short-map.html) · [player](world-cats-2-short-player.html)
 
 ## 3. Full
 
@@ -96,12 +99,12 @@ flowchart LR
 
 What it shows:
 
-- **All eight node types**: `static-md`, `static-html`, `dynamic-md`, `dynamic-html`, `essay`, `quiz`, `form` and `bool`.
+- **Nine of the ten node types**: `static-md`, `static-html`, `dynamic-md`, `dynamic-html`, `quiz`, `form`, `bool` and `score` (only `choice` and `noul` are missing).
 - **Multilingual content**: student-facing texts in English, Portuguese and Chinese (`source-language` plus `other-languages`).
 - **A form that routes**: `f1.interest` sends the student straight to the group of cats they chose.
 - **Personalisation through storage**: dynamic nodes use `{{STORAGE: key}}` to write reinforcement, a visual portrait and a journey summary for each student.
 - **Choices by the student**: `bool` nodes turn yes/no answers into forks.
-- **Cycles with a way out**: a low essay score leads to tips and back to the essay, and the student may loop back to the profile to explore another group before closing.
+- **Cycles with a way out**: a text scoring under 60 on `s1.percent` leads to tips and back to the form, and the student may loop back to the profile to explore another group before closing. The threshold lives in the edge and nowhere else.
 
 Files: [course](world-cats-3-full-course.json) · [map](world-cats-3-full-map.html) · [player](world-cats-3-full-player.html)
 

@@ -13,12 +13,12 @@
     "description": [
       {
         "lang": "en",
-        "text": "A compact, almost linear version: big cats, domestic cats, a quiz with adaptive reinforcement and an assessed essay."
+        "text": "A compact, almost linear version: big cats, domestic cats, a quiz with adaptive reinforcement and a writing task judged against a rubric."
       }
     ],
     "author": "Mauricio Garcia",
-    "version": "1.1.0",
-    "date": "2026-09-17",
+    "version": "2.0.0",
+    "date": "2026-09-20",
     "start": "sm1",
     "sections": [
       {
@@ -40,7 +40,8 @@
         ]
       }
     ],
-    "system-prompt": "You are a friendly natural-history guide in a short course about the cats of the world (family Felidae) for a general, international audience with no biology background. Be warm, concrete and accurate; prefer well-established facts about species, habitats and behaviour, and say 'roughly' when numbers vary between sources. Never invent image URLs. Use metric units. Answer in the student's language."
+    "system-prompt": "You are a friendly natural-history guide in a short course about the cats of the world (family Felidae) for a general, international audience with no biology background. Be warm, concrete and accurate; prefer well-established facts about species, habitats and behaviour, and say 'roughly' when numbers vary between sources. Never invent image URLs. Use metric units. Answer in the student's language.",
+    "judge-model": "jev-1.13.0"
   },
   "nodes": [
     {
@@ -344,8 +345,8 @@
       }
     },
     {
-      "id": "e1",
-      "type": "essay",
+      "id": "f1",
+      "type": "form",
       "section": 2,
       "title": [
         {
@@ -357,10 +358,24 @@
         "instructions": [
           {
             "lang": "en",
-            "text": "## The cat you would adopt\n\nImagine you could \"adopt\" a cat, in a symbolic sense: supporting the conservation of a wild species, or actually taking a domestic cat home. Choose **one** species or breed seen in this course (or another you know well) and write a text of **150 to 250 words** defending your choice.\n\nYour text must answer four questions:\n\n1. **Where it lives** and in what kind of environment (habitat).\n2. **What it eats** and how it hunts.\n3. **Which behaviour** makes it special to you.\n4. **What it would need** to live well, whether in the wild or in your home.\n\nWrite in the first person, as if you were convincing a friend. You will receive a score and a comment with suggestions."
+            "text": "## The cat you would adopt\n\nImagine you could \"adopt\" a cat, in a symbolic sense: supporting the conservation of a wild species, or actually taking a domestic cat home. Choose **one** species or breed seen in this course (or another you know well) and write a text of **150 to 250 words** defending your choice.\n\nYour text must answer four questions:\n\n1. **Where it lives** and in what kind of environment (habitat).\n2. **What it eats** and how it hunts.\n3. **Which behaviour** makes it special to you.\n4. **What it would need** to live well, whether in the wild or in your home.\n\nWrite in the first person, as if you were convincing a friend. You will receive a comment on what you wrote before finishing."
           }
         ],
-        "prompt": "Grade this short persuasive text (target 150-250 words) in which a student of a general-audience course on cats of the world argues for one cat species or breed they would 'adopt' (symbolically, for a wild species, or literally, for a domestic cat). Criteria: habitat correctly described (25); diet and hunting behaviour correctly described (25); one specific, accurate behaviour or trait that justifies the choice (25); realistic statement of what the animal needs to thrive (15); clarity and persuasive tone (10). Do not penalise length slightly outside the range, typos, or the choice of a species not covered in the course as long as the facts are right. Penalise factual errors about the species (e.g. a cheetah that roars, a jaguar in Africa). Return JSON: {\"score\": <0-100>, \"feedback\": \"<3-5 sentences addressed to the student: one thing that works, up to two concrete improvements, and a correction of any factual error, in the student's language>\"}."
+        "items": [
+          {
+            "key": "text",
+            "type": "text-area",
+            "required": true,
+            "label": [
+              {
+                "lang": "en",
+                "text": "Your text"
+              }
+            ],
+            "min-words": 150,
+            "max-words": 250
+          }
+        ]
       }
     },
     {
@@ -378,6 +393,116 @@
           {
             "lang": "en",
             "text": "The student just took a 4-question quiz about cats of the world and scored below 70%. Write a short, encouraging remediation in markdown (250-350 words).\n\nInputs:\n- Quiz score: {{STORAGE: q1.percent}}%\n- Their answer to \"which cat lives in Central Asian mountains and cannot roar\": {{STORAGE: q1.habitat}} (correct: snow-leopard)\n- Their answer to \"ancestor of the domestic cat\": {{STORAGE: q1.ancestor}} (correct: african-wildcat)\n- Their answer to \"only social cat\": {{STORAGE: q1.social}} (correct: lion)\n- Their answer to \"fastest land animal\": {{STORAGE: q1.speed}} (correct: cheetah)\n\nStructure: one sentence acknowledging what they got right; then, for each question they missed, a short paragraph that explains the correct answer and why their choice was a tempting mistake (do not lecture on questions they answered correctly); close with a memorable one-line mnemonic for each missed fact. Do not include images. Answer in the student's language."
+          }
+        ]
+      }
+    },
+    {
+      "id": "s1",
+      "type": "score",
+      "section": 2,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Measuring your text"
+        }
+      ],
+      "content": {
+        "state": {
+          "task": "Choose one cat species or breed and write 150 to 250 words arguing for 'adopting' it -- supporting a wild species' conservation, or taking a domestic cat home. The text must cover where it lives, what it eats and how it hunts, one behaviour that makes it special, and what it would need to live well. First person, addressed to a friend.",
+          "answer": "{{STORAGE: f1.text}}"
+        },
+        "confidence": 0.6,
+        "items": [
+          {
+            "key": "habitat",
+            "instructions": "Judge only whether the field answer describes where the chosen cat lives and in what kind of environment, and whether that is factually right. Ignore grammar, length and tone.",
+            "criteria": [
+              "Says nothing about where the animal lives, or places it on the wrong continent",
+              "Names the habitat in general terms, broadly right",
+              "Describes the habitat specifically and accurately, with a detail that fits the species"
+            ],
+            "points": [
+              0,
+              12,
+              25
+            ]
+          },
+          {
+            "key": "diet",
+            "instructions": "Judge only whether the field answer describes what the chosen cat eats and how it hunts, and whether that is factually right. Ignore everything else.",
+            "criteria": [
+              "Says nothing about diet or hunting, or gets them wrong",
+              "Names what it eats, without how it hunts",
+              "Describes both diet and hunting behaviour accurately"
+            ],
+            "points": [
+              0,
+              12,
+              25
+            ]
+          },
+          {
+            "key": "trait",
+            "instructions": "Judge only whether the field answer gives one specific and accurate behaviour or trait that justifies the choice. A generic compliment is not a trait.",
+            "criteria": [
+              "Gives no particular trait, only that the animal is nice or beautiful",
+              "Names a trait, but one that fits almost any cat",
+              "Names a trait specific to the species and true of it, and ties it to the choice"
+            ],
+            "points": [
+              0,
+              12,
+              25
+            ]
+          },
+          {
+            "key": "needs",
+            "instructions": "Judge only whether the field answer states realistically what the animal would need to live well, in the wild or at home.",
+            "criteria": [
+              "Says nothing about what the animal needs, or something unrealistic",
+              "Mentions a need in passing",
+              "States concretely what it needs and why that is hard or easy to provide"
+            ],
+            "points": [
+              0,
+              7,
+              15
+            ]
+          },
+          {
+            "key": "tone",
+            "instructions": "Judge only whether the field answer reads as a clear, first-person argument addressed to a friend. Do not judge the facts, and do not penalise typos.",
+            "criteria": [
+              "Disorganised, or not an argument at all",
+              "Clear enough to follow, but flat",
+              "Clear and genuinely persuasive"
+            ],
+            "points": [
+              0,
+              5,
+              10
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "dm2",
+      "type": "dynamic-md",
+      "section": 2,
+      "title": [
+        {
+          "lang": "en",
+          "text": "Your feedback"
+        }
+      ],
+      "content": {
+        "from": "s1",
+        "prompt": [
+          {
+            "lang": "en",
+            "text": "Write 4 to 6 sentences to a student of a general-audience course on the cats of the world, in their language, about the short persuasive text they just wrote on a cat they would 'adopt'. Open by naming the species they chose and one thing that genuinely works in their text. Then give the single most useful improvement, taken from the weakest question of the judgement below, and say concretely what to add or change. Where the judgement is unsure about a question, say so plainly rather than overstating. Warm and specific, never a tally. Give no numbers. Decide nothing: the judgement below is settled, and your job is to put it into words the student can act on."
           }
         ]
       }
@@ -417,7 +542,7 @@
     },
     {
       "from": "q1",
-      "to": "e1",
+      "to": "f1",
       "when": {
         "key": "q1.percent",
         "operator": "gte",
@@ -429,12 +554,29 @@
       "to": "dm1"
     },
     {
-      "from": "e1",
-      "to": "sm5"
+      "from": "f1",
+      "to": "s1"
     },
     {
       "from": "dm1",
-      "to": "e1"
+      "to": "f1"
+    },
+    {
+      "from": "s1",
+      "to": "dm2",
+      "when": {
+        "key": "s1.percent",
+        "operator": "gte",
+        "value": 0
+      }
+    },
+    {
+      "from": "s1",
+      "to": "sm5"
+    },
+    {
+      "from": "dm2",
+      "to": "sm5"
     }
   ]
 }

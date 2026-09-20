@@ -12,7 +12,7 @@ $row = preview_require_api();
 
 $body   = edukors_json_body();
 $nodeId = $body['node'] ?? null;
-if (!is_string($nodeId) || preg_match('/^(dm|dh|e)[0-9]+$/', $nodeId) !== 1) {
+if (!is_string($nodeId) || preg_match('/^(dm|dh|c|s|n)[0-9]+$/', $nodeId) !== 1) {
     edukors_json_error('bad request', 400);
 }
 
@@ -30,13 +30,16 @@ $vars  = is_array($state['vars']) ? $state['vars'] : [];
 session_write_close();
 
 try {
-    if ($course->nodeType($nodeId) === 'essay') {
-        $text   = $body['text'] ?? '';
-        $grade  = ai_grade_text($course, $nodeId, is_string($text) ? $text : '', $lang, $vars, null);
-        $answer = json_encode(
-            ['score' => $grade['score'], 'feedback' => $grade['feedback']],
-            JSON_UNESCAPED_UNICODE
-        );
+    if (in_array((string) $course->nodeType($nodeId), Course::JUDGE_TYPES, true)) {
+        // Judged for real, with nothing kept. An author trying a course wants
+        // to see which way their own rubric actually sends a student, which is
+        // the one thing the preview player's panel cannot tell them.
+        $judged = ai_judge_node($course, $nodeId, $vars, null);
+        $answer = json_encode([
+            'judged' => $judged['judged'],
+            'vars'   => (object) ai_judge_maps($judged['vars']),
+            'reason' => $judged['reason'],
+        ], JSON_UNESCAPED_UNICODE);
     } else {
         $answer = ai_write_step($course, $nodeId, $lang, $vars, null);
     }

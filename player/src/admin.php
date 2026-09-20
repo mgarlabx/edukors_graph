@@ -191,8 +191,7 @@ function admin_type_colour(string $type): string
     $colours = [
         'static-md' => '#4A6E8A', 'static-html' => '#3F7F76',
         'dynamic-md' => '#7A4FB0', 'dynamic-html' => '#A24897',
-        'essay' => '#B4641E', 'quiz' => '#2E7D5B',
-        'form' => '#1F6FA8', 'bool' => '#B03A48',
+        'quiz' => '#2E7D5B', 'form' => '#1F6FA8', 'bool' => '#B03A48',
         'choice' => '#5B5BA8', 'score' => '#8A7A1E', 'noul' => '#1F7A8C',
     ];
     return $colours[$type] ?? '#7A8B98';

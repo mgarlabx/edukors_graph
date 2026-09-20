@@ -80,15 +80,17 @@ An existing single-file course is brought into the layout with `split_course.py`
   | `dm` | dynamic markdown |
   | `dh` | dynamic HTML |
   | `q` | quiz |
-  | `e` | essay |
   | `f` | form |
   | `b` | boolean question |
+  | `c` | choice (judged by the AI) |
+  | `s` | score (judged by the AI) |
+  | `n` | noul (judged by the AI) |
 
   A node folder is named exactly as its node id, and the build refuses a prefix that disagrees with the type inside.
 
-- **Languages.** Every text a student reads is written in the author's language, and lives in `content/<lang>/`, one folder per language the course declares — a missing language is a missing translation and the build refuses it. Prompts sent to the AI (`system-prompt`, dynamic node prompts and essay grading prompts) are written in English, tell the model to answer in the student's language, and sit above the language folders as `content/prompt.md`.
+- **Languages.** Every text a student reads is written in the author's language, and lives in `content/<lang>/`, one folder per language the course declares — a missing language is a missing translation and the build refuses it. Prompts sent to the AI (`system-prompt` and dynamic node prompts) are written in English, tell the model to answer in the student's language, and sit above the language folders as `content/prompt.md`. The `state`, `instructions` and `criteria` of a judgement are written in English too, and stay in `node.json`: no student ever sees them.
 - **Edges.** One file per source node, `edges/<from-node-id>.json`, holding the edges that leave it in evaluation order: edges with conditions first, the unconditional fallback last. A condition may only test a storage key that an earlier node produces.
-- **Activities.** A quiz, a form and a bool are whole documents, not fields: each one is `content/<lang>/{quiz,form,bool}.md`, readable end to end in one language. The structure (keys, option ids, types, which option is correct) belongs to the source language, and the build refuses a translation that reshapes it.
+- **Activities.** A quiz, a form and a bool are whole documents, not fields: each one is `content/<lang>/{quiz,form,bool}.md`, readable end to end in one language. A form written as a writing task carries its assignment above the fields and the word limits in the field heading. The structure (keys, option ids, types, which option is correct) belongs to the source language, and the build refuses a translation that reshapes it.
 - **Quizzes.** The position of the correct option changes from question to question.
 - **Content.** Content nodes carry real teaching material, usually 150–500 words each, not just headings.
 - **Adaptive branches.** Alternative paths must rejoin the main path or reach a proper ending.
@@ -180,8 +182,8 @@ It exits with code `1` if it finds any error. `build_course.py` additionally enf
 
 The preview player carries no API key. It asks the host the file is running in for a model, and only two hosts answer: a claude.ai chat artifact, and an Artifact published with the `sample` capability, for example from Claude Code. In the second case the viewer is asked for permission once, and the calls spend the viewer's own Claude usage.
 
-Anywhere else — a local file in a browser, an IDE preview, another harness — the dynamic steps and the essay grading show a retry button instead of content, and every other node type still works.
+Anywhere else — a local file in a browser, an IDE preview, another harness — the dynamic steps show a retry button instead of content, and every other node type still works.
 
-The `choice`, `score` and `noul` nodes ask no model anywhere, not even inside a host that answers: the preview player shows the author the question as written and lets them pick, which is what makes every branch walkable from one file. To see how the model would have answered instead of guessing, that same panel has **Download the request**: it writes the [System One](https://docs.typesafe.ai/api) call this node would make — `state` (with every `{{STORAGE: key}}` already replaced by what the student produced), `model` and `questions` — as `<node-id>-systemone.json`, to paste into the [TypeSafe playground](https://console.typesafe.ai/playground). The answer that comes back is what the author then picks in the panel.
+The `choice`, `score` and `noul` nodes ask no model in the preview player, not even inside a host that answers: it shows the author the question as written and lets them pick a level and a confidence, which is what makes every branch walkable from one file. A dynamic node with `from` then writes its feedback from that pick. Outside the preview the player asks its host for the judgement, the same way a dynamic node asks for its text — the [player](../player) server answers that request, and nowhere else does. Where nothing answers, no judgement is made and none is invented: the node stores nothing and the student takes the unconditional edge, which is also what happens when a judgement falls under the node's `confidence`. To see how the model would have answered instead of guessing, that same panel has **Download the request**: it writes the [System One](https://docs.typesafe.ai/api) call this node would make — `state` (with every `{{STORAGE: key}}` already replaced by what the student produced), `model` and `questions` — as `<node-id>-systemone.json` — the model named in `info.judge-model` — to paste into the [TypeSafe playground](https://console.typesafe.ai/playground). The answer that comes back is what the author then picks in the panel.
 
 The preview player also keeps progress only in the browser where the file is open, and connects to no LMS. For both of those, use the full player in [player](../player).

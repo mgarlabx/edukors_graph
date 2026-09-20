@@ -10,6 +10,7 @@ one decision; combine them.
 - [Static vs dynamic content](#static-vs-dynamic-content)
 - [Images](#images)
 - [Linear path vs adaptive graph](#linear-path-vs-adaptive-graph)
+- [Grading with a rubric](#grading-with-a-rubric)
 - [Writing prompts that hold up](#writing-prompts-that-hold-up)
 
 ## Sizing: nodes and sections
@@ -51,16 +52,18 @@ of contents.
 Sequential exposition: concepts in didactic order, each building on the last.
 
 ```
-sm1 welcome ─ sm2 concept ─ sm3 concept ─ q1 check ─ sm4 concept ─ … ─ e1 closing essay
+sm1 welcome ─ sm2 concept ─ sm3 concept ─ q1 check ─ sm4 concept ─ … ─ f2/s1/dm1 closing delivery
 ```
 
 Per section: introduce the concept, show it working, then check it. The check is
-usually a `quiz` (fast, branchable) and once or twice an `essay` (slower, richer).
+usually a `quiz` (fast, branchable) and once or twice a written delivery (slower,
+richer) — see [Grading with a rubric](#grading-with-a-rubric), which costs three
+nodes, not one.
 
 A traditional course still benefits from one or two `bool` forks — "want the
 formal proof?" — which cost two nodes and make the course feel less like a book.
 
-Close with an essay or a summary node that ties the objectives back together.
+Close with a written delivery or a summary node that ties the objectives back together.
 
 ## Challenge-based courses
 
@@ -77,11 +80,11 @@ deliverable to the artifacts that are text: the spec, the schema, the code.
 
 ```
 sm1 briefing (the challenge, the deliverable, how it is graded)
- ├ sm2 sm3  theory needed for part 1
- ├ e1       deliver part 1
- ├ sm4 sm5  theory needed for part 2
- ├ e2       deliver part 2
- └ e3       final assembled delivery
+ ├ sm2 sm3        theory needed for part 1
+ ├ f1 s1 dm1      deliver part 1, judge it, comment on it
+ ├ sm4 sm5        theory needed for part 2
+ ├ f2 s2 dm2      deliver part 2, judged against its own criteria
+ └ f3 s3 dm3      final assembled delivery
 ```
 
 The briefing node states the challenge, the audience of the product, the format,
@@ -89,24 +92,38 @@ the length, and the criteria — the student should be able to picture the finis
 artifact from node one.
 
 **Delivery in parts or at the end** (author's choice):
-- *In parts*: one `essay` per stage, each graded on its own criteria. The student
-  gets feedback while there is still time to use it. Preferred default.
+- *In parts*: one `form → score → dynamic-md` chain per stage, each judged on its
+  own criteria. The student gets feedback while there is still time to use it.
+  Preferred default. Budget three nodes per delivery.
 - *At the end*: intermediate nodes are content and planning only; a single final
-  `essay` carries the grading. Simpler graph, weaker feedback loop.
+  chain carries the grading. Simpler graph, weaker feedback loop.
 
-**Grading prompt** — every delivery `essay` needs one. Make it specific to the
-stage: the criteria with weights, what excellent looks like, what to ignore:
+**Grading rubric** — every delivery needs one, on its `score` node. One question
+per criterion, each with its own scale and its own `points`, so the weights live
+in numbers rather than inside a paragraph:
 
+```json
+{ "state": { "task": "Part 1 of a consulting report: state the problem and its scope.",
+             "answer": "{{STORAGE: f1.text}}" },
+  "confidence": 0.75,
+  "items": [
+    { "key": "problem",
+      "instructions": "Judge how clearly the field answer bounds the problem. Do not judge register or length.",
+      "criteria": ["No problem stated, or too broad to act on",
+                   "A problem, but its edges are left open",
+                   "A problem with its scope and exclusions stated"],
+      "points": [0, 15, 30] },
+    { "key": "stakeholders",
+      "instructions": "Judge whether the field answer identifies who is affected. Judge only that.",
+      "criteria": ["Names none", "Names them", "Names them and what each one wants"],
+      "points": [0, 12, 25] }
+  ] }
 ```
-Grade this <part 1: problem statement and scope> of a <consulting report> written by
-a <second-year business student>. Criteria: problem clearly bounded (30), stakeholders
-identified (25), assumptions stated (25), professional register (20).
-The theory covered so far is <X, Y>; do not penalise omission of topics not yet taught.
-Return JSON: {"score": <0-100>, "feedback": "<3-5 sentences: one thing that works,
-two concrete improvements, addressed to the student, in the student's language>"}.
-```
 
-Use the intermediate scores to branch: a low score on part 1 routes the student
+Say in the `instructions` what *not* to weigh — topics not yet taught, typos,
+length. `s1.percent` is then the grade for the stage, and `s1.total` the points.
+
+Use the intermediate results to branch: a low `s1.problem` routes the student
 through a remediation node before part 2.
 
 **Static vs generated challenge**:
@@ -138,7 +155,8 @@ review — if nothing personalises it, write it as `static-md` instead.
 Sources of personalisation:
 - **Form** (`f1`, near the start): goals, prior experience, context, pains.
 - **Assessment gaps**: `q1.percent` for level, `q1.<key>` for the specific miss,
-  `e1.score` / `e1.feedback` for qualitative gaps.
+  `s1.<key>` for a judged dimension. A node with `from` is the purpose-built way
+  to write from a judgement.
 
 Mixed courses are the norm: static backbone, dynamic examples and remediation.
 
@@ -203,14 +221,15 @@ Combine when a decision depends on two things:
 
 *Judged by the AI* — the branch the student did not declare. A `bool` forks on
 what the student says about themselves and a quiz on what they got right; a
-`choice` forks on what the AI reads in what they wrote. Use it after an `essay`
-or a `form` with free text, where the answer that matters is not a number:
+`choice` forks on what the AI reads in what they wrote. Use it after a `form`
+with free text, where the answer that matters is not a number:
 
 ```json
 { "id": "c1", "type": "choice",
   "title": [{ "lang": "pt", "text": "Escolher a trilha" }],
   "content": {
-    "state": "What the student wrote:\n{{STORAGE: e1.text}}",
+    "state": { "task": "Explain in your own words why this works.",
+               "answer": "{{STORAGE: f1.text}}" },
     "items": [{ "key": "track",
       "instructions": "Which track does this student need next?",
       "criteria": { "remedial": "Confuses the basic concepts",
@@ -247,6 +266,58 @@ Three rules for any adaptive graph:
 
 The map draws edges that lead back to an earlier node dashed red.
 
+## Grading with a rubric
+
+There is no essay node. Anything the student writes and the course judges is three
+nodes, and each does one thing:
+
+```
+f1  form         the assignment and a text-area  ->  f1.text
+s1  score        the rubric: one question per criterion  ->  s1.<key>, s1.percent
+dm1 dynamic-md   from: s1  ->  the comment the student reads
+```
+
+One judgement, one source of truth. The number that routes the student and the
+number the feedback explains are the same number, so they cannot disagree. That is
+the whole reason for the shape: two graders over one text will differ, and the
+student ends up reading one verdict while the graph acts on another.
+
+**The form** carries `instructions` — the assignment, in markdown, in the
+student's language — and one `text-area`. Put the length in `min-words`/
+`max-words` when it is a rule, and only in the prose when it is a wish.
+
+**The score** carries the rubric:
+
+- One question per dimension. Two dimensions in one question lower the confidence
+  and give you nothing to branch on separately.
+- `criteria` describes **situations, not degrees**. "Names one example" tells the
+  AI where the line is; "good use of evidence" does not.
+- Keep the step between levels even: the answer is a weighted average over them.
+- `points` only where there is a grade to give. A question that merely decides the
+  next node needs none.
+- `confidence` around `0.75` when the judgement carries a grade. Below the floor
+  nothing is stored and the student takes the fallback — which is why that
+  unconditional edge must go somewhere sensible, not to the feedback node.
+- The `state` gets **the task and the answer**, never a mark already given.
+
+**The feedback node** says how to write, never what to decide. It receives the
+judgement rendered in full — levels, their texts, the weights, the points, the
+confidence — so it never needs the rubric repeated in its prompt, and it must not
+re-open the verdict.
+
+**The rewrite loop** is the reason to branch on a low level:
+
+```json
+{ "from": "s1", "to": "dm1", "when": { "key": "s1.method", "operator": "gte", "value": 1 } },
+{ "from": "s1", "to": "sm4" },
+{ "from": "sm4", "to": "f1" }
+```
+
+Weak work goes to a tips node and back to the form; the student rewrites and the
+judgement runs again, replacing `f1.text` and every key of `s1`. Keep the
+threshold in the edge and nowhere else — a number repeated in the node text and in
+the instructions is a number that will drift.
+
 ## Writing prompts that hold up
 
 Course prompts run unattended, on students you will never see. Brief them like a
@@ -257,5 +328,8 @@ freelancer: role, input, output shape, length, language.
 - Name the storage keys you want used and say what they mean.
 - State the length in words and the format (markdown, HTML fragment, JSON).
 - End with "Answer in the student's language."
-- For grading prompts, state what *not* to penalise (topics not yet taught, minor
-  typos, length).
+- A judgement is not a prompt: its `instructions` ask one question about one named
+  field of the `state`, and say what to leave aside — "Do not judge grammar,
+  length or tone." A question that excludes nothing weighs everything.
+- A node with `from` is briefed on tone and shape only. Never ask it to grade,
+  score or evaluate: that number already exists.
