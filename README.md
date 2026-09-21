@@ -141,7 +141,7 @@ There are eleven node types. Node ids carry their type as a prefix (`sm1`, `q1`,
 
 The last three are the only nodes the student never sees, and the only ones answered by the AI rather than by the student. They are the same three shapes as a `form` with `radio`, a quiz score and a `bool`, judged from what the student has already produced: a course can read what a student wrote and decide, from the options its author wrote, whether they need the remedial track, the standard one or the advanced one.
 
-There is no essay node. A text the student writes is a `form` with a `text-area`; a `score` node judges it against the scale its author wrote, with `points` per level turning that judgement into a grade; and a `dynamic-md` node with `from` writes the comment out of that same judgement. One judgement, one source of truth: the number that routes the student and the number the feedback explains cannot disagree.
+A text the student writes is a `form` with a `text-area`; a `score` node judges it against the scale its author wrote, with `points` per level turning that judgement into a grade; and a `dynamic-md` node with `from` writes the comment out of that same judgement. One judgement, one source of truth: the number that routes the student and the number the feedback explains cannot disagree.
 
 Activities store what the student produced, and judgements what the AI decided, under keys named `<node-id>.<name>` — `q1.percent`, `f1.text`, `dm1.text`, `b1.answer`, `c1.track`, `s1.evidence`, `s1.percent`, `n1.ready`. Those keys drive the two adaptive mechanisms of the standard. In **edges**, a `when` condition decides the path; edges leaving a node are tried from top to bottom, the first one that holds is taken, and an edge without `when` is the fallback:
 

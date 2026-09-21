@@ -268,7 +268,7 @@ The map draws edges that lead back to an earlier node dashed red.
 
 ## Grading with a rubric
 
-There is no essay node. Anything the student writes and the course judges is three
+Anything the student writes and the course judges is three
 nodes, and each does one thing:
 
 ```

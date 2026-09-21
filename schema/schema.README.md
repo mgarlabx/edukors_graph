@@ -76,7 +76,7 @@ Node ids carry their type as a prefix: `sm1` (static-md), `sh1` (static-html), `
 
 The last three are the only nodes the student never sees. They are passed through: the AI judges what the student has produced so far, the answer is stored, and the course carries on. They are described under [Judgements by the AI](#judgements-by-the-ai).
 
-There is no essay node. A text written by the student is a `form` with a `text-area`, and the judging is a `score` node — one judgement, restricted to the scale its author wrote, instead of a grade parsed back out of prose. See [Writing tasks](#writing-tasks).
+A text written by the student is a `form` with a `text-area`, and the judging is a `score` node — one judgement, restricted to the scale its author wrote, instead of a grade parsed back out of prose. See [Writing tasks](#writing-tasks).
 
 ### Stored data
 
