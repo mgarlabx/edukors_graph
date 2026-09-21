@@ -13,8 +13,8 @@
  *      refuses a judgement that came from somewhere else, and OpenRouter serves one
  *      name from several providers -- so a slug that does not round-trip refuses
  *      every judgement of every course, silently, for ever.
- *   2. Does it obey the JSON contract -- every question answered, only the labels
- *      the author wrote, whole numbers adding up to 100?
+ *   2. Does it answer the questions as asked -- every one of them, only the
+ *      options the author wrote, probabilities that add up?
  *   3. What does the judgement actually produce, and does it clear the node's
  *      confidence floor?
  *
@@ -99,12 +99,8 @@ foreach ($content['state'] ?? [] as $value) {
     }
 }
 
-$state    = ai_judge_state($content, $vars);
-$messages = [
-    ['role' => 'system', 'content' => ai_judge_system()],
-    ['role' => 'user',   'content' => ai_judge_questions((string) $step['type'], $items, $state)],
-];
-$body = ai_judge_body($messages, $model, $items);
+$state = ai_judge_state($content, $vars);
+$body  = ai_judge_body((string) $step['type'], $items, $state, $model);
 
 echo "course      " . $course->title() . "\n";
 echo "node        $node (" . $step['type'] . ", " . count($items) . " question(s))\n";
@@ -112,37 +108,21 @@ echo "judge-model " . ($named === '' ? '(none named)' : $named) . "\n";
 echo "asking      $model\n";
 echo "floor       " . (is_numeric($content['confidence'] ?? null) ? $content['confidence'] : '0 (none set)') . "\n\n";
 
-// -- the call, made here rather than through ai_send(), which logs to MySQL --
+// -- the call, made through ai_http(), which writes nothing --
 
-$curl = curl_init((string) $config['ai']['url']);
-curl_setopt_array($curl, [
-    CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-    CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Authorization: Bearer ' . $key],
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT        => (int) ($config['judge']['timeout'] ?? 45),
-    CURLOPT_CONNECTTIMEOUT => 10,
-]);
-$raw    = curl_exec($curl);
-$status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
-$oops   = curl_error($curl);
-
-if ($raw === false) {
-    fwrite(STDERR, "could not reach the model: $oops\n");
-    exit(1);
-}
-$reply = json_decode((string) $raw, true);
-if (!is_array($reply)) {
-    fwrite(STDERR, "the model returned something unreadable\n");
-    exit(1);
-}
-if ($status >= 400) {
-    fwrite(STDERR, 'the request failed: ' . (string) ($reply['error']['message'] ?? "status $status") . "\n");
+$call = ai_http(
+    (string) ($config['judge']['url'] ?? ''),
+    $body,
+    (int) ($config['judge']['timeout'] ?? 45)
+);
+if ($call['error'] !== null) {
+    fwrite(STDERR, ($call['status'] === 0 ? 'could not reach the model: ' : 'the request failed: ')
+        . $call['error'] . "\n");
     exit(1);
 }
 
-$text     = trim((string) ($reply['choices'][0]['message']['content'] ?? ''));
-$finish   = (string) ($reply['choices'][0]['finish_reason'] ?? '');
+$reply    = $call['json'];
+$answers  = is_array($reply['answers'] ?? null) ? $reply['answers'] : [];
 $answered = (string) ($reply['model'] ?? '');
 $cost     = $reply['usage']['cost'] ?? null;
 
@@ -152,8 +132,10 @@ $ok       = true;
 // 1. the slug
 if ($answered === '') {
     $verdicts[] = ['?', 'the answer names no model, so strict_model cannot check it'];
-} elseif ($answered === $model) {
-    $verdicts[] = ['ok', "the slug round-trips: strict_model will accept it"];
+} elseif (ai_judge_same_model($answered, $model)) {
+    $verdicts[] = ['ok', $answered === $model
+        ? 'the slug round-trips: strict_model will accept it'
+        : "answered \"$answered\", the dated build of \"$model\": strict_model will accept it"];
 } else {
     $ok = false;
     $verdicts[] = ['NO', "asked \"$model\", answered \"$answered\"\n"
@@ -162,15 +144,15 @@ if ($answered === '') {
         . "     the route can move under your thresholds."];
 }
 
-// 2. the contract
-$spread = null;
-if ($finish === 'length') {
+// 2. the answers
+$read = null;
+if ($answers === []) {
     $ok = false;
-    $verdicts[] = ['NO', 'the answer was cut off -- ai_judge_tokens() sized it too small for this node'];
+    $verdicts[] = ['NO', 'the answer carried no `answers` at all'];
 } else {
     try {
-        $spread = ai_judge_read($text, (string) $step['type'], $items);
-        $verdicts[] = ['ok', 'the answer obeys the JSON contract'];
+        $read = ai_judge_read($answers, (string) $step['type'], $items);
+        $verdicts[] = ['ok', 'every question is answered as it was asked'];
     } catch (AiNotJudged $e) {
         $ok = false;
         $verdicts[] = ['NO', 'the answer was refused: ' . $e->getMessage()];
@@ -179,9 +161,9 @@ if ($finish === 'length') {
 
 // 3. the judgement
 $vars = [];
-if ($spread !== null) {
+if ($read !== null) {
     try {
-        $vars = ai_judge_vars($node, (string) $step['type'], $content, $spread);
+        $vars = ai_judge_vars($node, (string) $step['type'], $content, $read);
         $verdicts[] = ['ok', 'the judgement clears the node\'s confidence floor'];
     } catch (AiNotJudged $e) {
         $ok = false;
@@ -195,7 +177,8 @@ foreach ($verdicts as [$mark, $line]) {
     printf("%-4s %s\n", $mark, $line);
 }
 
-echo "\n--- what it said " . str_repeat('-', 50) . "\n$text\n";
+echo "\n--- what it said " . str_repeat('-', 50) . "\n"
+    . json_encode($answers, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
 
 if ($vars !== []) {
     echo "\n--- the keys it would store " . str_repeat('-', 40) . "\n";

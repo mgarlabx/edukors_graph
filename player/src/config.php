@@ -26,6 +26,7 @@ function edukors_config(?string $path = null): array
         ],
         'judge'    => [
             'models' => [], 'timeout' => 45, 'strict_model' => true,
+            'url' => 'https://openrouter.ai/api/alpha/decisions',
         ],
         'admin'    => ['user' => 'admin', 'hash' => ''],
         'base_url' => '',
@@ -56,6 +57,7 @@ function edukors_config(?string $path = null): array
         ['EDUKORS_OPENROUTER_KEY',  'ai',    'key'],
         ['EDUKORS_MODEL',           'ai',    'model'],
         ['EDUKORS_AI_URL',          'ai',    'url'],
+        ['EDUKORS_JUDGE_URL',       'judge', 'url'],
         ['EDUKORS_ADMIN_USER',      'admin', 'user'],
         ['EDUKORS_ADMIN_HASH',      'admin', 'hash'],
     ];

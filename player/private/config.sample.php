@@ -29,9 +29,10 @@ return [
     // Inference, through OpenRouter -- EDUKORS_OPENROUTER_KEY, EDUKORS_MODEL
     'ai' => [
         'key'         => 'sk-or-v1-...',
-        // Where to send the call (EDUKORS_AI_URL). Change it only to put a
-        // gateway of your own in front of OpenRouter -- the answer must keep
-        // the same shape.
+        // Where to send the call that writes a step (EDUKORS_AI_URL). Change it
+        // only to put a gateway of your own in front of OpenRouter -- the
+        // answer must keep the same shape. A judgement does NOT go here: see
+        // judge.url below.
         'url'         => 'https://openrouter.ai/api/v1/chat/completions',
         // Check the exact slug at https://openrouter.ai/models before deploying.
         'model'       => 'openai/gpt-5.6-luna',
@@ -59,8 +60,17 @@ return [
     // unknown model is exactly the thing the exact version exists to prevent.
     'judge' => [
         'models' => [
-            // 'jev-1.13.0' => 'openai/gpt-5.6-luna',
+            // 'jev-1.13.0' => 'typesafe/jev-1.13',
         ],
+        // Where a judgement goes (EDUKORS_JUDGE_URL). It is not ai.url and it
+        // cannot be: jev is a decisions model, and OpenRouter refuses it at
+        // chat/completions in so many words --
+        //   "typesafe/jev-1.13 is a decisions model and cannot be used with
+        //    the chat/completions endpoint."
+        // This endpoint takes {model, state, questions} and answers with the
+        // typed answers themselves, which is the shape the choice, score and
+        // noul nodes were written against.
+        'url'          => 'https://openrouter.ai/api/alpha/decisions',
         'timeout'      => 45,
         // Refuse a judgement that came back from a slug other than the one asked
         // for. OpenRouter serves one name from several providers, and a route

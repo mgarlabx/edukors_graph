@@ -58,8 +58,8 @@ The bridge reads the node id out of the marker and sends `{"node":"dm1"}`, or `{
 3. it is the step the student is actually on, so nobody can have the whole course written at once;
 4. a dynamic step already written is returned from the database, with no second call, and so is a judgement already made on this visit;
 5. the student is under their hourly limit and the server under its daily one;
-6. the prompt is built here, from the stored course, with `{{STORAGE: key}}` filled in from the student's own saved answers;
-7. the model, the token limit and the temperature come from `config.php` and from nowhere else.
+6. the prompt of a step, or the `state` and `questions` of a judgement, are built here, from the stored course, with `{{STORAGE: key}}` filled in from the student's own saved answers;
+7. the model, the endpoint, the token limit and the temperature come from `config.php` and from nowhere else.
 
 A judge node can give all of that up because the answer it gets back is not a prompt's worth of text but the storage keys themselves, already worked out here — `{"judged":true,"vars":{"c1.track":"standard", …}}`. The browser asks "judge c1" and is told what came of it. It never learns what the question was.
 
@@ -249,23 +249,25 @@ The catalogue has no CSS of the admin's and no session of anyone's; [public/asse
 
 A `choice`, `score` or `noul` node is answered by the AI rather than by the student, who never sees it. The preview player the builder ships cannot answer one — it has no key and no server — so it shows the author a panel and lets them answer as the model would. Here the model actually answers.
 
-**What it is asked.** All the questions of a node go in one call. The node's `state` is resolved against the student's own work and sent as material, the questions follow with their labels, and the reply must be JSON: a whole-percent distribution per question, over the labels that question allows and adding up to exactly 100. Whole percents rather than fractions so that "adds up to one" is an exact equality with nothing to argue about. `info.system-prompt` is **not** sent — the schema is explicit that a course's own instructions do not reach these nodes — and neither is the sentence about the student's language that every generated step carries, since what is wanted back is the author's label names, not prose.
+**Where it goes.** Not where a generated step goes. `jev` is a *decisions* model, and OpenRouter refuses it at `chat/completions` in so many words — *"typesafe/jev-1.13 is a decisions model and cannot be used with the chat/completions endpoint. Use the /api/alpha/decisions endpoint instead."* So the judge has an endpoint of its own, `judge.url`, while `ai.url` stays the chat endpoint that writes the dynamic steps. Two kinds of call, two endpoints, one key.
 
-**What is derived from it.** [src/ai.php](src/ai.php) turns the distribution into the storage keys the schema names, and `JudgeView.collect` in the player does the same from what an author picked in the preview. The two are a pair, like `Course::holds` and `Course.holds`: change one and change the other, or a course branches one way on a laptop and another way here.
+**What it is asked.** All the questions of a node go in one call, as `{model, state, questions}` — byte for byte the body `JudgeView.request` builds in the preview player for the author to paste into the playground. The node's `state` is resolved against the student's own work; each question carries its node's type, the author's `instructions` and the author's `criteria`, and nothing else. There is no prompt here: a decisions model is asked in the shape it answers in, which is why the schema was written against these three types in the first place. `info.system-prompt` is **not** sent — the schema is explicit that a course's own instructions do not reach these nodes — and neither is the sentence about the student's language that every generated step carries.
 
-The one number the model is not asked for is `-confidence`, because it is not the same question as "which label". It is derived:
+**What is derived from it.** Almost nothing, which is the point. The answers come back typed, under the keys the questions were asked under, and [src/ai.php](src/ai.php) checks them against the author's own lists and stores them:
 
-| type     | `-confidence`                                                                       |
-| -------- | ------------------------------------------------------------------------------------- |
-| `choice` | chance-corrected winner mass, `(K·p − 1) / (K − 1)` over K options                  |
-| `score`  | the weight sitting at the level actually stored, `p[floor] + p[ceil]`                 |
-| `noul`   | none — the probability it returns is already the measure of how sure the model is    |
+| type     | what comes back                          | what is stored                                                        |
+| -------- | ---------------------------------------- | --------------------------------------------------------------------- |
+| `choice` | `choice`, `confidence`, `probabilities`  | `<id>.<key>`, `-confidence`, `-probabilities`                          |
+| `score`  | `score`, `confidence`, `probabilities`   | `<id>.<key>`, `-confidence`, `-probabilities`, `-legend`, `-points`    |
+| `noul`   | `noul`, one number from 0 to 1           | `<id>.<key>`                                                           |
 
-The `choice` formula is the exact inverse of the preview player's `spreadOne`, so a floor an author set by moving that panel's slider means the same number on both sides. The `score` one asks the only question that matters about a stored expectation: how much of the belief is actually at the number about to be stored. A split between neighbouring levels is not a defect on an ordered scale — the schema says 1.43 on a scale of three is an ordinary answer — so it costs nothing; a split between the two ends averages out to a level the model thinks impossible, and is refused.
+`JudgeView.collect` in the player mints the same keys from what an author picked in the preview. The two are a pair, like `Course::holds` and `Course.holds`: change one and change the other, or a course branches one way on a laptop and another way here.
 
-**Nothing is ever repaired.** A reply that will not parse, does not add up to 100, names a label the author never wrote, answers a question twice or leaves one out, or leaves two options exactly level, is retried once — as a repair turn showing the model its own reply and the specific fault, since asking again at temperature 0 returns the same answer — and then the node counts as not judged. Renormalising a distribution would move the level, and the level is what chooses the student's path: a path chosen by arithmetic this server invented is not a judgement.
+`-confidence` is no longer worked out from the spread — the model answers that question itself, and a floor an author set by moving the preview's slider means that number directly. A `noul` still has none and takes no floor: the probability it returns is already the measure of how sure the model is. `-legend` is built from the author's `criteria` rather than from the `legend` the answer echoes back, so no round trip can reword a course.
 
-**A model that is not the one asked for does not count.** OpenRouter serves one name from several providers, and `ai.php` has always conceded that what answered is not always what was asked for. For a generated step that is a quality question; for a judgement it is a correctness one, because the thresholds on the edges and the floors on the nodes were tuned against one version. The route is pinned, the model that answered is compared with the one asked for, and a mismatch is refused. Turn that off with `judge.strict_model` if you must.
+**Nothing is ever repaired.** An answer that leaves a question out, names an option the author never wrote, puts weight on a label nobody asked for, lands off the scale, comes back without a confidence or with a spread that does not add up makes the node count as not judged. Nothing is renormalised and nothing is asked twice: a decisions model answers in types, so an answer that cannot be read is not a wording to be repaired by saying it differently — it is a model that did not answer the question the author wrote. Renormalising a distribution would move the level, and the level is what chooses the student's path: a path chosen by arithmetic this server invented is not a judgement. The one allowance is rounding — the numbers arrive rounded, so a whole that misses 1 by a rounding step is the format, not a defect.
+
+**A model that is not the one asked for does not count.** OpenRouter serves one name from several providers, and `ai.php` has always conceded that what answered is not always what was asked for. For a generated step that is a quality question; for a judgement it is a correctness one, because the thresholds on the edges and the floors on the nodes were tuned against one version. The route is pinned, the model that answered is compared with the one asked for, and a mismatch is refused. The only difference allowed is a date: a versioned slug answers as the dated build behind it, so `typesafe/jev-1.13` coming back as `typesafe/jev-1.13-20260917` is the same version of the same model and is accepted. Turn the check off with `judge.strict_model` if you must.
 
 **Before trusting a model with it**, try it on a real node:
 
@@ -273,9 +275,9 @@ The `choice` formula is the exact inverse of the preview player's `spreadOne`, s
 php tools/judge-probe.php course.json c1
 ```
 
-It makes one real call and says whether the slug comes back as the slug that was asked for (a slug that does not round-trip makes `strict_model` refuse every judgement of every course, quietly), whether the model obeys the JSON contract, what keys the judgement would store and which edge the student would leave by. It writes nothing — no progress, no `node_state`, no `ai_call` row.
+It makes one real call and says whether the slug comes back as the slug that was asked for (a slug that does not round-trip makes `strict_model` refuse every judgement of every course, quietly), whether every question is answered as it was asked, what keys the judgement would store and which edge the student would leave by. It writes nothing — no progress, no `node_state`, no `ai_call` row.
 
-**What this server is honest about.** `info.judge-model` names a `jev` version, and this server answers with whatever OpenRouter model `judge.models` maps that name to. So the course declares what it was tuned against and the server declares what actually answered — the two are kept separate rather than quietly conflated, `ai_call.model` logs the second, and an unmapped name is refused rather than silently answered by the generation model. A general chat model also reports high confidence on almost everything, which is worth knowing before leaning on a floor: watch the `-confidence` values on the student pages of a real cohort before trusting one.
+**What this server is honest about.** `info.judge-model` names a `jev` version, and this server answers with whatever OpenRouter model `judge.models` maps that name to. So the course declares what it was tuned against and the server declares what actually answered — the two are kept separate rather than quietly conflated, `ai_call.model` logs the second, and an unmapped name is refused rather than silently answered by the generation model. The `-confidence` a decisions model returns is its own answer rather than a number read back out of a distribution, which makes a floor worth more than it used to be — but it is still worth watching the `-confidence` values on the student pages of a real cohort before leaning on one.
 
 ## The offline copy
 
@@ -289,7 +291,7 @@ For the steps they have not reached, there is no model to ask, so a short script
 
 It answers *successfully* rather than with an error on purpose: the player then shows the note as the step's content, and the student moves on — instead of a failure with a retry button that could never succeed. The prompts are not in the downloaded file either.
 
-A judge node in an offline copy needs no note and gets none. The stub answers it with that same prose, which is not the JSON a judgement is, so the node counts as not judged and the student leaves by its unconditional edge — the path the course already had to have for a judgement that could not be made. The branching still happens; it just takes the fallback every time. The rubric is not in the file either.
+A judge node in an offline copy needs no note and gets none. The stub answers it with that same prose, which is not the typed answer a judgement is, so the node counts as not judged and the student leaves by its unconditional edge — the path the course already had to have for a judgement that could not be made. The branching still happens; it just takes the fallback every time. The rubric is not in the file either.
 
 Everything else — reading, prebuilt HTML, quizzes, forms, yes/no questions, the branching — works with no network at all.
 
