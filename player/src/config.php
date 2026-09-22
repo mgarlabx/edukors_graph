@@ -28,6 +28,9 @@ function edukors_config(?string $path = null): array
             'models' => [], 'timeout' => 45, 'strict_model' => true,
             'url' => 'https://openrouter.ai/api/alpha/decisions',
         ],
+        // The catalogue's player: whether its AI steps run, and the share of the
+        // account an anonymous visitor may spend -- see src/visitor.php.
+        'catalog'  => ['ai' => true, 'per_hour' => 40, 'per_day' => 1000],
         'admin'    => ['user' => 'admin', 'hash' => ''],
         'base_url' => '',
         'dev_mode' => false,
@@ -43,6 +46,7 @@ function edukors_config(?string $path = null): array
         'db'       => array_merge($defaults['db'], $fromFile['db'] ?? []),
         'ai'       => array_merge($defaults['ai'], $fromFile['ai'] ?? []),
         'judge'    => array_merge($defaults['judge'], $fromFile['judge'] ?? []),
+        'catalog'  => array_merge($defaults['catalog'], $fromFile['catalog'] ?? []),
         'admin'    => array_merge($defaults['admin'], $fromFile['admin'] ?? []),
         'base_url' => $fromFile['base_url'] ?? $defaults['base_url'],
         'dev_mode' => $fromFile['dev_mode'] ?? $defaults['dev_mode'],

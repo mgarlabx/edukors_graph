@@ -148,6 +148,8 @@ CREATE TABLE IF NOT EXISTS node_state (
 CREATE TABLE IF NOT EXISTS ai_call (
   id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   progress_id INT UNSIGNED NULL,
+  visitor     CHAR(16)     NULL,   -- a catalogue visitor: a keyed hash of where they called from,
+                                   -- never the address itself. NULL for a student or the admin.
   node_id     VARCHAR(16)  NOT NULL,
   -- 'grade' was the essay node, which the schema no longer has. It stays in the
   -- enum because this table is the bill: rows written before it went away are
@@ -161,6 +163,7 @@ CREATE TABLE IF NOT EXISTS ai_call (
   error       VARCHAR(255) NULL,
   created_at  DATETIME     NOT NULL,
   KEY ix_rate (progress_id, created_at),
+  KEY ix_visitor (visitor, created_at),
   KEY ix_day (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

@@ -78,6 +78,15 @@ return [
         'strict_model' => true,
     ],
 
+    // The catalogue's player, which anybody may open. Its AI steps are paid from
+    // the same account as the students', so a visitor -- counted by a keyed hash
+    // of their address, since nobody signed in -- gets a share of their own.
+    'catalog' => [
+        'ai'       => true,   // false serves the offline copy, whose AI steps do not run
+        'per_hour' => 40,     // calls per visitor per hour, all courses together
+        'per_day'  => 1000,   // calls per day, all visitors together; counted inside ai.per_day
+    ],
+
     // The admin pages -- EDUKORS_ADMIN_USER, EDUKORS_ADMIN_HASH
     'admin' => [
         'user' => 'admin',

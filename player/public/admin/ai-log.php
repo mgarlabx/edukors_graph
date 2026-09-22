@@ -20,7 +20,8 @@ $day = db_row(
      FROM ai_call WHERE created_at > ?',
     [gmdate('Y-m-d H:i:s', time() - 86400)]
 );
-$limits = edukors_config()['ai'];
+$limits  = edukors_config()['ai'];
+$catalog = edukors_config()['catalog'];
 
 admin_head('AI calls');
 ?>
@@ -31,6 +32,10 @@ admin_head('AI calls');
   <?= h(ai_cost_label($day['cost'] ?? 0)) ?> ·
   <?= (int) $day['failed'] ?> failed ·
   each student may make <?= (int) $limits['per_hour'] ?> an hour.
+  <?php if ($catalog['ai']): ?>
+    The catalogue may make <?= (int) $catalog['per_day'] ?> a day,
+    each visitor <?= (int) $catalog['per_hour'] ?> an hour.
+  <?php endif; ?>
 </p>
 
 <?php if ($calls === []): ?>
@@ -42,7 +47,7 @@ admin_head('AI calls');
   <?php foreach ($calls as $c): ?>
   <tr>
     <td class="num"><?= h(substr((string) $c['created_at'], 0, 16)) ?></td>
-    <td><?= h($c['name'] ?? '—') ?></td>
+    <td><?= h($c['name'] ?? (($c['visitor'] ?? null) !== null ? 'catalogue visitor' : '—')) ?></td>
     <td><?= h($c['title'] ?? '—') ?></td>
     <td><span class="nid"><?= h($c['node_id']) ?></span></td>
     <td><?= h($c['kind']) ?></td>

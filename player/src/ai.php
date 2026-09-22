@@ -80,10 +80,12 @@ function ai_generate(array $progressRow, Course $course, string $nodeId): string
  * ai_generate() is this plus the freezing. The admin's own run of a course
  * comes here directly, with no student and so no progress to charge the call
  * to or to freeze the answer in -- an author trying a prompt wants it run
- * again, not handed back.
+ * again, not handed back. So does a catalogue visitor's, who has no progress
+ * either and is charged by $visitor instead (see src/visitor.php).
  */
-function ai_write_step(Course $course, string $nodeId, string $lang, array $vars, ?int $progressId): string
-{
+function ai_write_step(
+    Course $course, string $nodeId, string $lang, array $vars, ?int $progressId, ?string $visitor = null
+): string {
     $node = $course->node($nodeId);
     $type = $node === null ? '' : (string) ($node['type'] ?? '');
     if ($type !== 'dynamic-md' && $type !== 'dynamic-html') {
@@ -107,7 +109,7 @@ function ai_write_step(Course $course, string $nodeId, string $lang, array $vars
         $prompt .= "\n\n" . ai_judgement_block($judge, $vars);
     }
 
-    return ai_call($course->systemPrompt(), $prompt, $lang, $progressId, $nodeId, 'generate');
+    return ai_call($course->systemPrompt(), $prompt, $lang, $progressId, $nodeId, 'generate', $visitor);
 }
 
 /**
@@ -277,8 +279,9 @@ function ai_judge_frozen(int $progressId, string $nodeId, int $visit): ?array
  *
  * @return array{judged:bool,vars:array,reason:?string,verdict:array}
  */
-function ai_judge_node(Course $course, string $nodeId, array $vars, ?int $progressId): array
-{
+function ai_judge_node(
+    Course $course, string $nodeId, array $vars, ?int $progressId, ?string $visitor = null
+): array {
     $node = $course->node($nodeId);
     $type = $node === null ? '' : (string) ($node['type'] ?? '');
     if (!in_array($type, Course::JUDGE_TYPES, true)) {
@@ -303,7 +306,8 @@ function ai_judge_node(Course $course, string $nodeId, array $vars, ?int $progre
         $answers = ai_judge_ask(
             ai_judge_body($type, $items, $state, $model),
             $progressId,
-            $nodeId
+            $nodeId,
+            $visitor
         );
         $verdict['answers'] = $answers;
 
@@ -419,11 +423,11 @@ function ai_judge_body(string $type, array $items, array $state, string $model):
  *
  * @return array<string,array> the answers, keyed as the questions were
  */
-function ai_judge_ask(array $body, ?int $progressId, string $nodeId): array
+function ai_judge_ask(array $body, ?int $progressId, string $nodeId, ?string $visitor = null): array
 {
     $judge  = edukors_config()['judge'];
     $asked  = (string) ($body['model'] ?? '');
-    $answer = ai_decide($body, $progressId, $nodeId, (int) ($judge['timeout'] ?? 45));
+    $answer = ai_decide($body, $progressId, $nodeId, (int) ($judge['timeout'] ?? 45), $visitor);
 
     if (($judge['strict_model'] ?? true) && $answer['model'] !== ''
         && !ai_judge_same_model($answer['model'], $asked)) {
@@ -757,7 +761,8 @@ function ai_call(
     string $lang,
     ?int $progressId,
     string $nodeId,
-    string $kind
+    string $kind,
+    ?string $visitor = null
 ): string {
     $ai = edukors_config()['ai'];
     if (($ai['model'] ?? '') === '') {
@@ -778,7 +783,7 @@ function ai_call(
             ['role' => 'system', 'content' => $system],
             ['role' => 'user',   'content' => $userPrompt],
         ],
-    ], $progressId, $nodeId, $kind, (int) $ai['timeout']);
+    ], $progressId, $nodeId, $kind, (int) $ai['timeout'], $visitor);
 
     if ($answer['text'] === '') {
         throw new AiError('the model returned an empty answer', 502);
@@ -882,8 +887,9 @@ function ai_failed(array $call): AiError
  *
  * @return array{text:string,model:string,finish:string}
  */
-function ai_send(array $body, ?int $progressId, string $nodeId, string $kind, int $timeout): array
-{
+function ai_send(
+    array $body, ?int $progressId, string $nodeId, string $kind, int $timeout, ?string $visitor = null
+): array {
     $ai = edukors_config()['ai'];
     if (($ai['key'] ?? '') === '') {
         throw new AiError('no model is configured on this server', 503);
@@ -893,11 +899,11 @@ function ai_send(array $body, ?int $progressId, string $nodeId, string $kind, in
         throw new AiError('no model is configured on this server', 503);
     }
 
-    ai_check_rate($progressId, (int) $ai['per_hour'], (int) $ai['per_day']);
+    ai_check_rate($progressId, (int) $ai['per_hour'], (int) $ai['per_day'], $visitor);
 
     $call = ai_http((string) $ai['url'], $body, $timeout);
     if ($call['error'] !== null) {
-        ai_log($progressId, $nodeId, $kind, $asked, null, null, false, $call['error']);
+        ai_log($progressId, $nodeId, $kind, $asked, null, null, false, $call['error'], null, $visitor);
         throw ai_failed($call);
     }
 
@@ -915,7 +921,8 @@ function ai_send(array $body, ?int $progressId, string $nodeId, string $kind, in
         isset($usage['completion_tokens']) ? (int) $usage['completion_tokens'] : null,
         $text !== '',
         $text === '' ? 'empty answer' : null,
-        isset($usage['cost']) && is_numeric($usage['cost']) ? (float) $usage['cost'] : null
+        isset($usage['cost']) && is_numeric($usage['cost']) ? (float) $usage['cost'] : null,
+        $visitor
     );
 
     return [
@@ -936,7 +943,7 @@ function ai_send(array $body, ?int $progressId, string $nodeId, string $kind, in
  *
  * @return array{answers:array,model:string}
  */
-function ai_decide(array $body, ?int $progressId, string $nodeId, int $timeout): array
+function ai_decide(array $body, ?int $progressId, string $nodeId, int $timeout, ?string $visitor = null): array
 {
     $ai    = edukors_config()['ai'];
     $judge = edukors_config()['judge'];
@@ -954,11 +961,11 @@ function ai_decide(array $body, ?int $progressId, string $nodeId, int $timeout):
 
     // Paid from the same account as a written step, so counted against the
     // same limits.
-    ai_check_rate($progressId, (int) $ai['per_hour'], (int) $ai['per_day']);
+    ai_check_rate($progressId, (int) $ai['per_hour'], (int) $ai['per_day'], $visitor);
 
     $call = ai_http($url, $body, $timeout);
     if ($call['error'] !== null) {
-        ai_log($progressId, $nodeId, 'judge', $asked, null, null, false, $call['error']);
+        ai_log($progressId, $nodeId, 'judge', $asked, null, null, false, $call['error'], null, $visitor);
         throw ai_failed($call);
     }
 
@@ -974,7 +981,8 @@ function ai_decide(array $body, ?int $progressId, string $nodeId, int $timeout):
         isset($usage['output_tokens']) ? (int) $usage['output_tokens'] : null,
         $answers !== [],
         $answers === [] ? 'empty answer' : null,
-        isset($usage['cost']) && is_numeric($usage['cost']) ? (float) $usage['cost'] : null
+        isset($usage['cost']) && is_numeric($usage['cost']) ? (float) $usage['cost'] : null,
+        $visitor
     );
 
     return ['answers' => $answers, 'model' => $answered];
@@ -984,8 +992,13 @@ function ai_decide(array $body, ?int $progressId, string $nodeId, int $timeout):
  * Stops one student, or one bad day, from emptying the account. A call with no
  * progress is the admin's own, which has no hourly share -- but it is paid
  * from the same account, so the daily limit counts it all the same.
+ *
+ * A catalogue visitor has no progress either, and nobody who signed in behind
+ * them. They are counted by $visitor, which stands for where they call from,
+ * and all of them together by a daily share of their own: the open door may
+ * spend that share and never what the students' courses need.
  */
-function ai_check_rate(?int $progressId, int $perHour, int $perDay): void
+function ai_check_rate(?int $progressId, int $perHour, int $perDay, ?string $visitor = null): void
 {
     if ($perHour > 0 && $progressId !== null) {
         $mine = (int) db_value(
@@ -994,6 +1007,28 @@ function ai_check_rate(?int $progressId, int $perHour, int $perDay): void
         );
         if ($mine >= $perHour) {
             throw new AiError('too many requests for now; try again in a little while', 429);
+        }
+    }
+    if ($visitor !== null) {
+        ai_ensure_visitor_column();
+        $catalog = edukors_config()['catalog'];
+        if ((int) $catalog['per_hour'] > 0) {
+            $mine = (int) db_value(
+                'SELECT COUNT(*) FROM ai_call WHERE visitor = ? AND created_at > ?',
+                [$visitor, gmdate('Y-m-d H:i:s', time() - 3600)]
+            );
+            if ($mine >= (int) $catalog['per_hour']) {
+                throw new AiError('too many requests for now; try again in a little while', 429);
+            }
+        }
+        if ((int) $catalog['per_day'] > 0) {
+            $open = (int) db_value(
+                'SELECT COUNT(*) FROM ai_call WHERE visitor IS NOT NULL AND created_at > ?',
+                [gmdate('Y-m-d H:i:s', time() - 86400)]
+            );
+            if ($open >= (int) $catalog['per_day']) {
+                throw new AiError('the catalogue has reached its daily limit; try again tomorrow', 429);
+            }
         }
     }
     if ($perDay > 0) {
@@ -1009,14 +1044,17 @@ function ai_check_rate(?int $progressId, int $perHour, int $perDay): void
 
 function ai_log(
     ?int $progressId, string $nodeId, string $kind, string $model,
-    ?int $tokensIn, ?int $tokensOut, bool $ok, ?string $error, ?float $cost = null
+    ?int $tokensIn, ?int $tokensOut, bool $ok, ?string $error, ?float $cost = null,
+    ?string $visitor = null
 ): void {
     ai_ensure_cost_column();
+    ai_ensure_visitor_column();
     db_run(
-        'INSERT INTO ai_call (progress_id, node_id, kind, model, tokens_in, tokens_out, cost, ok, error, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [$progressId, $nodeId, $kind, mb_substr($model, 0, 80), $tokensIn, $tokensOut, $cost, $ok ? 1 : 0,
-         $error === null ? null : mb_substr($error, 0, 255), db_now()]
+        'INSERT INTO ai_call (progress_id, visitor, node_id, kind, model, tokens_in, tokens_out, cost, ok, error,
+                              created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$progressId, $visitor, $nodeId, $kind, mb_substr($model, 0, 80), $tokensIn, $tokensOut, $cost,
+         $ok ? 1 : 0, $error === null ? null : mb_substr($error, 0, 255), db_now()]
     );
 }
 
@@ -1038,6 +1076,28 @@ function ai_ensure_cost_column(): void
     );
     if ($has === 0) {
         db_run('ALTER TABLE ai_call ADD COLUMN cost DECIMAL(12,8) NULL AFTER tokens_out');
+    }
+}
+
+/**
+ * `ai_call.visitor` came with the catalogue's AI steps, after the first
+ * installations. Added the first time it is missed, as `cost` was, with the
+ * index its hourly count reads. Once per request.
+ */
+function ai_ensure_visitor_column(): void
+{
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+    $checked = true;
+    $has = (int) db_value(
+        "SELECT COUNT(*) FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ai_call' AND COLUMN_NAME = 'visitor'"
+    );
+    if ($has === 0) {
+        db_run('ALTER TABLE ai_call ADD COLUMN visitor CHAR(16) NULL AFTER progress_id,
+                ADD KEY ix_visitor (visitor, created_at)');
     }
 }
 

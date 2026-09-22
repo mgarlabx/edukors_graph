@@ -75,19 +75,48 @@ function progress_state(array $progressRow): array
     return is_array($state) ? $state : [];
 }
 
-/**
- * The state shaped for the player: `vars` and `answers` are maps, and an empty
- * PHP array would otherwise be written as [] rather than {}.
- */
+/** The saved state, shaped for the player: see progress_for_player(). */
 function progress_state_for_player(array $progressRow): array
 {
-    $state = progress_state($progressRow);
+    return progress_for_player(progress_state($progressRow));
+}
+
+/**
+ * A state shaped for the player: `vars` and `answers` are maps, and an empty
+ * PHP array would otherwise be written as [] rather than {}.
+ */
+function progress_for_player(array $state): array
+{
     foreach (['vars', 'answers'] as $key) {
         if (($state[$key] ?? []) === []) {
             $state[$key] = (object) [];
         }
     }
     return $state;
+}
+
+/**
+ * A state with no student behind it -- the admin's run of a course, or a
+ * catalogue visitor's -- checked for shape as a student's is. Only its language
+ * and its storage keys are ever read back, but the whole of it is what the page
+ * is reseeded from when it is opened again.
+ */
+function progress_shape(Course $course, array $state): array
+{
+    $currentId = $state['currentId'] ?? null;
+    $lang      = $state['lang'] ?? null;
+
+    return [
+        'lang'             => in_array($lang, $course->languages(), true) ? $lang : $course->sourceLanguage(),
+        'isLanguageChosen' => (bool) ($state['isLanguageChosen'] ?? false),
+        'currentId'        => is_string($currentId) && $course->hasNode($currentId) ? $currentId : null,
+        'history'          => array_values(array_filter(
+            is_array($state['history'] ?? null) ? $state['history'] : [],
+            static fn($id) => is_string($id) && $course->hasNode($id)
+        )),
+        'vars'             => is_array($state['vars'] ?? null) ? $state['vars'] : [],
+        'answers'          => is_array($state['answers'] ?? null) ? $state['answers'] : [],
+    ];
 }
 
 /** The storage keys a student has produced, for conditions and prompts. */

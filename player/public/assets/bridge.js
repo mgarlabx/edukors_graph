@@ -105,6 +105,15 @@
     setItem.call(this, key, value);
   };
 
+  // A catalogue visitor can come back with no session -- its cookie ends with
+  // the browser -- and the run still in this one. The server then has no copy
+  // at all, so this browser's goes up before the first question.
+  if (!config.state) {
+    try {
+      pending = window.localStorage.getItem(stateKey);
+    } catch (e) { /* nothing to send: the run starts over */ }
+  }
+
   function save() {
     flush().catch(function () { /* the next step will try again */ });
   }

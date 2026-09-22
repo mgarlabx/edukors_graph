@@ -226,13 +226,15 @@ Each course is a line, with three things you can do with it:
 | **play**     | `catalog/play.php` — the course itself, anonymously.                                                                                                                     |
 | **JSON**     | `catalog/json.php` — the file it is written in, every object and array folding, a folded step naming its id and its type. Downloading it is offered there, on the page of somebody already looking at the file, rather than as a fourth icon on every line. `catalog/download.php` is what that link asks for. |
 
-**The anonymous course is the offline copy.** It is the single self-contained file `download.php` hands a student, served as a page instead of as a download. That is what makes it safe to leave open to anyone: once the page has loaded it asks this server for nothing, so there is no session to start, no progress to write down and no model to pay for. The steps written by AI say so and let the visitor carry on, exactly as in the downloaded copy — and their prompts are not in that page, as they are not in any player page. Whoever wants those steps to actually run takes the course from their learning platform, where there is a student to attribute the work to.
+**The anonymous course runs its AI steps.** `catalog/play.php` is the online player, the one a launch gets: its AI steps are written by the model through [public/catalog/play-ai.php](public/catalog/play-ai.php), which builds the prompt on the server exactly as `api/ai.php` does, and `catalog/play-state.php` keeps where the visitor is in a session of their own (`edukors_graphs_catalog`), which is what fills a prompt's `{{STORAGE: key}}`. The prompts are not in the page, as they are not in any player page, and the step asked for has to be the one the visitor is on. There is no student behind it, so nothing is written to `progress` or `node_state` and nobody joins the list of students; a written step is frozen in the visitor's session, so a reload pays for nothing, and a judgement is made afresh each time and kept only in the player's own state. See [src/visitor.php](src/visitor.php).
+
+The calls are paid from the students' account, and nobody signed in to be charged for them — so a visitor is counted by where they call from. `ai_call.visitor` holds a keyed hash of the address, never the address itself (an IPv6 host is one visitor across its /64). One visitor may make `catalog.per_hour` calls an hour, all of them together `catalog.per_day` a day, and those calls count inside `ai.per_day` as well: the open door has a share of its own and cannot spend what the students' courses need. Past either limit a written step shows the error with its retry button and a judgement takes the unconditional edge, as for a student. With `catalog.ai` set to `false` — or with no model configured — the page is what it used to be: the offline copy `download.php` hands a student, whose AI steps say they cannot run and let the visitor carry on.
 
 **The JSON is the document, whole.** Prompts included, `info.system-prompt` included: it is byte for byte what was imported, so that whoever downloads it can validate it against the schema it names, open it in the builder, or import it into a server of their own.
 
-**The admin has the same three icons**, on every version in its list of courses — drafts and archived ones included, since they are opened by version rather than by course: `admin/map.php`, `admin/play.php` and `admin/json.php` (whose download link is `admin/download.php`). The one that differs is play. The admin's player is the online one, and its AI steps run: [public/admin/play-ai.php](public/admin/play-ai.php) builds the prompt on the server exactly as `api/ai.php` does, and `admin/play-state.php` keeps where the run is in the admin's session, which is what fills a prompt's `{{STORAGE: key}}`. There is no student behind it, so nothing is written to `progress` or `node_state`, nobody joins the list of students, and no step is frozen — reopening a step asks the model again, which is what an author trying a prompt wants. The calls are paid from the same account, so they are logged in AI calls (with no student or course on them) and count against the daily limit; the hourly one is a student's, and does not apply. See [src/preview.php](src/preview.php).
+**The admin has the same three icons**, on every version in its list of courses — drafts and archived ones included, since they are opened by version rather than by course: `admin/map.php`, `admin/play.php` and `admin/json.php` (whose download link is `admin/download.php`). The one that differs is play. The admin's player is online too, but opens any version, drafts included, and its AI steps run: [public/admin/play-ai.php](public/admin/play-ai.php) builds the prompt on the server exactly as `api/ai.php` does, and `admin/play-state.php` keeps where the run is in the admin's session, which is what fills a prompt's `{{STORAGE: key}}`. There is no student behind it, so nothing is written to `progress` or `node_state`, nobody joins the list of students, and no step is frozen — reopening a step asks the model again, which is what an author trying a prompt wants. The calls are paid from the same account, so they are logged in AI calls (with no student or course on them) and count against the daily limit; the hourly one is a student's, and does not apply. See [src/preview.php](src/preview.php).
 
-The catalogue has no CSS of the admin's and no session of anyone's; [public/assets/catalog.css](public/assets/catalog.css) and [public/assets/catalog-json.js](public/assets/catalog-json.js) are all it loads, and it sets no cookie.
+The catalogue has no CSS of the admin's; [public/assets/catalog.css](public/assets/catalog.css) and [public/assets/catalog-json.js](public/assets/catalog-json.js) are all it loads. The list, the maps and the JSON set no cookie; only a course actually taken does, on its player's first save.
 
 ## Running a course
 
@@ -310,7 +312,7 @@ Eight tables, in `sql/schema.sql`. The course JSON is stored whole, in `course.d
 | `student`      | one row per person, identified by platform and `sub`                      |
 | `progress`     | where each student is, plus the state object mirrored from the player       |
 | `node_state`   | what each step produced: the AI's text, the answer, the verdict of a judgement, the score, the feedback |
-| `ai_call`      | every call to the model — which model answered, the tokens and what it cost — for the rate limit and for the bill |
+| `ai_call`      | every call to the model — which model answered, the tokens and what it cost, and for a catalogue visitor the hash they are counted by — for the rate limit and for the bill |
 
 `progress.state` and `node_state` have different jobs. `state` is the literal mirror of what the player keeps in `localStorage`, and it is what makes a course resumable on another device. `node_state` is the server's own record: `api/ai.php` writes a generated step there *before* the student sees it, which is what freezes the content and what stops a page reload from paying twice. A judgement is frozen the same way but per visit, so a reload gets the judgement already paid for while coming back to the node later is judged afresh — which is what the schema asks for.
 
@@ -352,13 +354,15 @@ player/
 │  ├─ catalog.php                         what is published, and in what order
 │  ├─ json_page.php                       the foldable JSON page, for the catalogue and the admin
 │  ├─ preview.php                         the admin's run of a course, AI steps included
+│  ├─ visitor.php                         a catalogue visitor's run of a course, and its limits
 │  ├─ progress.php                        where a student is, and what they produced
 │  ├─ ai.php                              prompts, judgements, guards, OpenRouter
 │  ├─ lti.php  jwt.php                    receiving a launch
 │  └─ dev.php                             the stand-in student
 ├─ public/                     ← the web root
 │  ├─ index.php  course.php  download.php
-│  ├─ catalog/…                           the public list: map, play, json (and its download)
+│  ├─ catalog/…                           the public list: map, play (and its AI and state), json
+│  │                                      (and its download)
 │  ├─ lti/login.php  lti/launch.php  lti/jwks.php
 │  ├─ api/ai.php  api/progress.php
 │  ├─ assets/bridge.js  assets/admin.css  assets/catalog.css  assets/catalog-json.js
