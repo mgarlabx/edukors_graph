@@ -105,7 +105,6 @@ in numbers rather than inside a paragraph:
 ```json
 { "state": { "task": "Part 1 of a consulting report: state the problem and its scope.",
              "answer": "{{STORAGE: f1.text}}" },
-  "confidence": 0.75,
   "items": [
     { "key": "problem",
       "instructions": "Judge how clearly the field answer bounds the problem. Do not judge register or length.",
@@ -295,9 +294,11 @@ student's language — and one `text-area`. Put the length in `min-words`/
 - Keep the step between levels even: the answer is a weighted average over them.
 - `points` only where there is a grade to give. A question that merely decides the
   next node needs none.
-- `confidence` around `0.75` when the judgement carries a grade. Below the floor
-  nothing is stored and the student takes the fallback — which is why that
-  unconditional edge must go somewhere sensible, not to the feedback node.
+- How sure a judgement must be to count is set by the player, not the course.
+  Below that floor nothing is stored and the student takes the fallback — which
+  is why that unconditional edge must go somewhere sensible, not to the feedback
+  node. A branch that needs more certainty asks for it in its own edge, with
+  `<id>.<key>-confidence`.
 - The `state` gets **the task and the answer**, never a mark already given.
 
 **The feedback node** says how to write, never what to decide. It receives the

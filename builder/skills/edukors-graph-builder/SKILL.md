@@ -131,8 +131,6 @@ Non-negotiables while writing:
 
 - ids carry their type: `sm` static-md, `sh` static-html, `dm` dynamic-md,
   `dh` dynamic-html, `q` quiz, `f` form, `b` bool, `c` choice, `s` score, `n` noul.
-- a course with any judgement node names its model exactly in `info.judge-model`
-  (`jev-1.13.0`, never `jev-latest`): thresholds and points are tuned per version.
 - every `choice`, `score` and `noul` node ends with an unconditional edge, and that
   edge never leads to a node with `from` pointing back at it — that path is the one
   taken when there was no judgement, so there would be nothing to write from.
@@ -208,7 +206,8 @@ python3 <skill-dir>/scripts/build_player.py <slug>-course.json -o <slug>-player.
   dynamic node asks for its text; the player server answers that, and nowhere
   else does. Where nothing answers, no judgement is made and none is invented:
   the node stores nothing and the student leaves by the unconditional edge. A
-  judgement under the node's `confidence` counts the same way.
+  judgement the server finds too unsure, under its own confidence floor, counts
+  the same way.
   The panel also has a **Download the request** button, which saves the call the
   node would make — `model`, `state` and `questions`, with every
   `{{STORAGE: key}}` already replaced by what the student produced — as

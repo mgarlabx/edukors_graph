@@ -15,7 +15,7 @@
  *      every judgement of every course, silently, for ever.
  *   2. Does it answer the questions as asked -- every one of them, only the
  *      options the author wrote, probabilities that add up?
- *   3. What does the judgement actually produce, and does it clear the node's
+ *   3. What does the judgement actually produce, and does it clear this server's
  *      confidence floor?
  *
  * It writes nothing: no database, no progress, no node_state, no ai_call row --
@@ -57,13 +57,12 @@ if (!in_array((string) $course->nodeType($node), Course::JUDGE_TYPES, true)) {
     exit(2);
 }
 
-$named = trim((string) ($course->info()['judge-model'] ?? ''));
 if ($model === null) {
     try {
-        $model = ai_judge_model($course);
+        $model = ai_judge_model();
     } catch (AiNotJudged $e) {
-        fwrite(STDERR, 'this course cannot be judged yet: ' . $e->getMessage() . "\n"
-            . "Add a line for it under judge.models in private/config.php, or pass --model.\n");
+        fwrite(STDERR, 'this server cannot judge yet: ' . $e->getMessage() . "\n"
+            . "Set judge.model in private/config.php, or pass --model.\n");
         exit(2);
     }
 }
@@ -73,11 +72,6 @@ $key    = (string) ($config['ai']['key'] ?? '');
 if ($key === '' || $key === 'sk-or-v1-...') {
     fwrite(STDERR, "no OpenRouter key yet: ai.key in private/config.php is still the sample's\n"
         . "placeholder. Put a real key there, or in EDUKORS_OPENROUTER_KEY.\n");
-    exit(2);
-}
-if ($model === 'FILL-ME-IN') {
-    fwrite(STDERR, "judge.models still says FILL-ME-IN for \"$named\". Put the OpenRouter slug\n"
-        . "there, or pass one with --model to try it before writing it down.\n");
     exit(2);
 }
 
@@ -104,9 +98,10 @@ $body  = ai_judge_body((string) $step['type'], $items, $state, $model);
 
 echo "course      " . $course->title() . "\n";
 echo "node        $node (" . $step['type'] . ", " . count($items) . " question(s))\n";
-echo "judge-model " . ($named === '' ? '(none named)' : $named) . "\n";
 echo "asking      $model\n";
-echo "floor       " . (is_numeric($content['confidence'] ?? null) ? $content['confidence'] : '0 (none set)') . "\n\n";
+echo "floor       " . ($step['type'] === 'noul'
+    ? 'none -- a noul carries no confidence'
+    : (float) ($config['judge']['min_confidence'] ?? 0)) . "\n\n";
 
 // -- the call, made through ai_http(), which writes nothing --
 
@@ -140,7 +135,7 @@ if ($answered === '') {
     $ok = false;
     $verdicts[] = ['NO', "asked \"$model\", answered \"$answered\"\n"
         . "     strict_model would refuse every judgement. Either put \"$answered\" in\n"
-        . "     judge.models instead, or set judge.strict_model => false and accept that\n"
+        . "     judge.model instead, or set judge.strict_model => false and accept that\n"
         . "     the route can move under your thresholds."];
 }
 
@@ -164,7 +159,7 @@ $vars = [];
 if ($read !== null) {
     try {
         $vars = ai_judge_vars($node, (string) $step['type'], $content, $read);
-        $verdicts[] = ['ok', 'the judgement clears the node\'s confidence floor'];
+        $verdicts[] = ['ok', 'the judgement clears this server\'s confidence floor'];
     } catch (AiNotJudged $e) {
         $ok = false;
         $verdicts[] = ['NO', 'not judged: ' . $e->getMessage() . "\n"

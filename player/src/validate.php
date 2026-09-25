@@ -46,13 +46,8 @@ final class CourseValidator
      * names a score node produces for the node as a whole. A question may use
      * none of them, or its own answer would overwrite one of these.
      */
-    private const JUDGE_SUFFIXES = ['-confidence', '-probabilities', '-legend', '-points'];
+    private const JUDGE_SUFFIXES = ['-confidence', '-points'];
     private const JUDGE_RESERVED = ['total', 'percent'];
-    /**
-     * The keys of a judgement that hold a map rather than a single value. An
-     * edge comparing one of them never does what the author meant.
-     */
-    private const MAP_SUFFIXES = ['-probabilities', '-legend'];
     private const OPERATORS   = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'contains', 'not-contains'];
     private const FIELD_TYPES = ['text-line', 'text-area', 'radio', 'check', 'select'];
     private const CHOICE_TYPES = ['radio', 'check', 'select'];
@@ -64,15 +59,14 @@ final class CourseValidator
         'quiz'         => [['items'], []],
         'form'         => [['items'], ['instructions']],
         'bool'         => [['question'], ['yes-label', 'no-label', 'default']],
-        'choice'       => [['state', 'items'], ['confidence']],
-        'score'        => [['state', 'items'], ['confidence']],
+        'choice'       => [['state', 'items'], []],
+        'score'        => [['state', 'items'], []],
         'noul'         => [['state', 'items'], []],
     ];
 
     private array $errors = [];
     private array $warnings = [];
 
-    private array $info = [];
     private array $langs = [];
     private string $source = '';
     private ?string $start = null;
@@ -146,24 +140,11 @@ final class CourseValidator
 
     private function validateInfo($info): void
     {
-        $this->info = is_array($info) ? $info : [];
         $required = ['course-id', 'source-language', 'other-languages', 'title',
                      'author', 'version', 'date', 'start'];
-        $optional = ['description', 'sections', 'system-prompt', 'judge-model'];
+        $optional = ['description', 'sections', 'system-prompt'];
         if (!$this->checkKeys($info, 'info', $required, $optional)) {
             return;
-        }
-        if (array_key_exists('judge-model', $info)) {
-            $model = $info['judge-model'];
-            if (!is_string($model) || trim($model) === '') {
-                $this->error('info.judge-model', 'must name the model that answers the judgements');
-            } elseif (preg_match('/(latest|preview|newest)$/i', trim($model)) === 1) {
-                // An alias moves under a course without notice, and everything
-                // tuned against the model it used to mean moves with it.
-                $this->error('info.judge-model', "'$model' is an alias, not a version: the thresholds in the "
-                    . 'edges, the points on the levels and the confidence floors were all tuned against one '
-                    . "version, so name it exactly, e.g. 'jev-1.13.0'");
-            }
         }
 
         $source = $info['source-language'] ?? null;
@@ -411,9 +392,8 @@ final class CourseValidator
      * listed, a level of the scale listed, or a probability -- so everything
      * around that is checked here once: a 'state' to judge, and one question per
      * key. Every question produces '<id>.<key>'; choice and score add
-     * '-confidence' and '-probabilities', score adds '-legend', and a score
-     * question with 'points' adds '-points' and gives the node a 'total' and a
-     * 'percent'.
+     * '-confidence', and a score question with 'points' adds '-points' and gives
+     * the node a 'total' and a 'percent'.
      */
     private function validateJudge(array $content, string $id, string $type, string $where): void
     {
@@ -459,18 +439,6 @@ final class CourseValidator
         // same mistake here as in a dynamic node.
         foreach ($prompts as $text) {
             $this->prompts[$id][] = $text;
-        }
-
-        if (array_key_exists('confidence', $content)) {
-            $floor = $content['confidence'];
-            if ($type === 'noul') {
-                $this->error("$where.confidence", 'a noul takes no confidence floor: the probability it '
-                    . 'returns is already the measure of how sure the AI is');
-            } elseif (is_bool($floor) || !is_int($floor) && !is_float($floor)) {
-                $this->error("$where.confidence", 'must be a number');
-            } elseif ($floor < 0 || $floor > 1) {
-                $this->error("$where.confidence", "must be between 0 and 1, found $floor");
-            }
         }
 
         $items = $content['items'] ?? null;
@@ -531,10 +499,8 @@ final class CourseValidator
             $produced = [$key];
             if ($type !== 'noul') {
                 $produced[] = "$key-confidence";
-                $produced[] = "$key-probabilities";
             }
             if ($type === 'score') {
-                $produced[] = "$key-legend";
                 if (is_array($criteria) && array_is_list($criteria)) {
                     $this->scoreLevels[$id][$key] = count($criteria);
                 }
@@ -1014,18 +980,6 @@ final class CourseValidator
 
         // Keys read by edge conditions.
         foreach ($this->reads as [$reader, $key, $where, $value]) {
-            $isMap = false;
-            foreach (self::MAP_SUFFIXES as $suffix) {
-                if (str_ends_with($key, $suffix)) {
-                    $isMap = true;
-                    break;
-                }
-            }
-            if ($isMap) {
-                $this->error($where, "'$key' holds a map, not a single value, so comparing it never does what "
-                    . 'you meant -- test the level, the option or the confidence instead');
-                continue;
-            }
             if (!isset($this->produced[$key])) {
                 $this->error($where, "the condition reads '$key', which no node produces");
                 continue;
@@ -1046,21 +1000,6 @@ final class CourseValidator
                     . "question, so comparing it against $value never holds. For a grade out of 100 give the "
                     . "question 'points' and test $owner.percent");
             }
-        }
-
-        // A course that judges must name the exact version of the model that
-        // answers its judgements: the thresholds on its edges, the points on its
-        // levels and its confidence floors were all tuned against one of them.
-        $judges = false;
-        foreach ($this->order as $id) {
-            if (in_array($this->types[$id] ?? '', self::JUDGE_TYPES, true)) {
-                $judges = true;
-                break;
-            }
-        }
-        if ($judges && trim((string) ($this->info['judge-model'] ?? '')) === '') {
-            $this->error('info.judge-model', 'the course has a choice, score or noul node, so it must name the '
-                . "exact version of the model that answers them, e.g. 'jev-1.13.0'");
         }
 
         // A judgement anchored on a mark already given is no longer an

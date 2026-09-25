@@ -40,8 +40,7 @@
         ]
       }
     ],
-    "system-prompt": "You are a friendly natural-history guide in a short course about the cats of the world (family Felidae) for a general, international audience with no biology background. Be warm, concrete and accurate; prefer well-established facts about species, habitats and behaviour, and say 'roughly' when numbers vary between sources. Never invent image URLs. Use metric units. Answer in the student's language.",
-    "judge-model": "jev-1.13.0"
+    "system-prompt": "You are a friendly natural-history guide in a short course about the cats of the world (family Felidae) for a general, international audience with no biology background. Be warm, concrete and accurate; prefer well-established facts about species, habitats and behaviour, and say 'roughly' when numbers vary between sources. Never invent image URLs. Use metric units. Answer in the student's language."
   },
   "nodes": [
     {
@@ -412,7 +411,6 @@
           "task": "Choose one cat species or breed and write 150 to 250 words arguing for 'adopting' it -- supporting a wild species' conservation, or taking a domestic cat home. The text must cover where it lives, what it eats and how it hunts, one behaviour that makes it special, and what it would need to live well. First person, addressed to a friend.",
           "answer": "{{STORAGE: f1.text}}"
         },
-        "confidence": 0.6,
         "items": [
           {
             "key": "habitat",

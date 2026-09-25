@@ -53,11 +53,8 @@ JUDGE_TYPES = ("choice", "score", "noul")
 # Suffixes a judgement node appends to a question key on its own, and the two
 # names a score node produces for the node as a whole. A question may use none
 # of them, or its own answer would overwrite one of these.
-JUDGE_SUFFIXES = ("-confidence", "-probabilities", "-legend", "-points")
+JUDGE_SUFFIXES = ("-confidence", "-points")
 JUDGE_RESERVED = ("total", "percent")
-# The keys of a judgement that hold a map rather than a single value. An edge
-# comparing one of them never does what the author meant.
-MAP_SUFFIXES = ("-probabilities", "-legend")
 # Verbs that give away a feedback prompt judging all over again. Whole words only:
 # a prompt has to be able to say "the judgement below" without being told off.
 JUDGING_RE = re.compile(
@@ -79,7 +76,7 @@ INFO_REQUIRED = [
     "date",
     "start",
 ]
-INFO_OPTIONAL = ["description", "sections", "system-prompt", "judge-model"]
+INFO_OPTIONAL = ["description", "sections", "system-prompt"]
 NODE_REQUIRED = ["id", "type", "title", "content"]
 NODE_OPTIONAL = ["section"]
 
@@ -91,8 +88,8 @@ CONTENT_FIELDS = {
     "quiz": (["items"], []),
     "form": (["items"], ["instructions"]),
     "bool": (["question"], ["yes-label", "no-label", "default"]),
-    "choice": (["state", "items"], ["confidence"]),
-    "score": (["state", "items"], ["confidence"]),
+    "choice": (["state", "items"], []),
+    "score": (["state", "items"], []),
     "noul": (["state", "items"], []),
 }
 
@@ -266,20 +263,6 @@ def validate_info(info, rep):
             rep.warn(
                 "info.system-prompt",
                 "does not mention the student's language; add 'Answer in the student's language.'",
-            )
-
-    # Whether it is required depends on the nodes, so main() checks that; here we
-    # only check that what is written is a version and not a moving alias.
-    model = info.get("judge-model")
-    if model is not None:
-        if not isinstance(model, str) or not model.strip():
-            rep.error("info.judge-model", "must be a non-empty string")
-        elif "latest" in model.lower() or not any(ch.isdigit() for ch in model):
-            rep.error(
-                "info.judge-model",
-                f"{model!r} is an alias, not a version. The thresholds in the edges, the points on "
-                "the levels and the confidence floors were tuned against one version of one model, "
-                "and an alias moves under them -- name it exactly, e.g. 'jev-1.13.0'",
             )
 
     return langs, source, start, numbers
@@ -574,19 +557,6 @@ def validate_judge(content, nid, ntype, where, rep):
                 "student and the node always takes the same edge",
             )
 
-    if "confidence" in content:
-        floor = content["confidence"]
-        if ntype == "noul":
-            rep.error(
-                f"{where}.content.confidence",
-                "a noul takes no confidence floor: the probability it returns is already the "
-                "measure of how sure the AI is",
-            )
-        elif isinstance(floor, bool) or not isinstance(floor, (int, float)):
-            rep.error(f"{where}.content.confidence", f"must be a number, found {floor!r}")
-        elif not 0 <= floor <= 1:
-            rep.error(f"{where}.content.confidence", f"must be between 0 and 1, found {floor!r}")
-
     items = content.get("items")
     if not isinstance(items, list) or not items:
         rep.error(f"{where}.content.items", "a judgement node needs at least one question")
@@ -633,9 +603,8 @@ def validate_judge(content, nid, ntype, where, rep):
 
         produced.append(key)
         if ntype != "noul":
-            produced.extend([f"{key}-confidence", f"{key}-probabilities"])
+            produced.append(f"{key}-confidence")
         if ntype == "score":
-            produced.append(f"{key}-legend")
             if isinstance(criteria, list):
                 levels[key] = len(criteria)
             if "points" in item:
@@ -826,9 +795,6 @@ def main():
         rep.error("$schema", "must be a string (the address of the schema)")
 
     langs, source, start, section_numbers = validate_info(course.get("info", {}), rep)
-    info_has_judge_model = isinstance(course.get("info"), dict) and bool(
-        str(course["info"].get("judge-model") or "").strip()
-    )
 
     nodes = course.get("nodes")
     if not isinstance(nodes, list) or not nodes:
@@ -856,12 +822,6 @@ def main():
             if isinstance(origin, str):
                 writes_from[nid] = origin
 
-    if any(t in JUDGE_TYPES for t in types.values()) and not info_has_judge_model:
-        rep.error(
-            "info.judge-model",
-            "the course has a choice, score or noul node, so it must name the exact version of the "
-            "model that answers them, e.g. 'jev-1.13.0'",
-        )
 
     # A judgement anchored on a grade already given is no longer an independent
     # judgement: the schema asks for what the judgement needs and nothing else.
@@ -1045,13 +1005,6 @@ def main():
 
     # keys used in edge conditions
     for reader, key, where, value in reads:
-        if key.endswith(MAP_SUFFIXES):
-            rep.error(
-                where,
-                f"'{key}' holds a map, not a single value, so comparing it never does what you "
-                "meant -- test the level, the option or the confidence instead",
-            )
-            continue
         if key not in produced:
             rep.error(where, f"condition reads '{key}', which no node produces")
             continue

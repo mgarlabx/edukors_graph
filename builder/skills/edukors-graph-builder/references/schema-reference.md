@@ -47,7 +47,6 @@ the format: unknown properties are rejected, so an invented field like
 | `start` | yes | id of the entry node; the only entry point |
 | `sections` | no | `[{ "number": 1, "title": [...] }]` — names for the node groups |
 | `system-prompt` | no | English; sent as system prompt on every call that *generates* content. Judgement nodes take none |
-| `judge-model` | when the course judges | The exact version of the model behind `choice`/`score`/`noul`, e.g. `jev-1.13.0`. Never an alias |
 
 `system-prompt` is where audience, tone and global rules live, so each dynamic
 node only carries what is specific to it. End it with the language instruction:
@@ -90,8 +89,8 @@ The id prefix must match the type:
 | `quiz` | `q` | `items` — list of questions |
 | `form` | `f` | `items` — list of fields, plus optional `instructions` (localized) |
 | `bool` | `b` | `question`, optional `yes-label`, `no-label`, `default` |
-| `choice` | `c` | `state`, `items`, optional `confidence` — the AI picks one of the options listed |
-| `score` | `s` | `state`, `items`, optional `confidence` — the AI places the student on a scale |
+| `choice` | `c` | `state`, `items` — the AI picks one of the options listed |
+| `score` | `s` | `state`, `items` — the AI places the student on a scale |
 | `noul` | `n` | `state`, `items` — the AI gives the probability of a yes |
 
 There is no `essay`. A text written by the student is a `form` with a `text-area`,
@@ -265,9 +264,8 @@ version?".
 
 The three nodes the AI decides with. All carry a `state` — an object of named
 fields, each written out or built with `{{STORAGE: key}}` — and `items`, one
-question per key. `choice` and `score` also take an optional `confidence`. All the
-questions of a node are judged together, in one call, over the same state, by the
-model named in `info.judge-model`.
+question per key. All the questions of a node are judged together, in one call,
+over the same state, by the model the player names — a course names none.
 
 ```json
 {
@@ -278,7 +276,6 @@ model named in `info.judge-model`.
       "task": "Explain in your own words why equivalent fractions name the same number.",
       "answer": "{{STORAGE: f2.text}}"
     },
-    "confidence": 0.75,
     "items": [{
       "key": "track",
       "instructions": "Which track does this student need next, judging the field answer?",
@@ -305,12 +302,11 @@ Two habits decide whether a judgement is any good:
 Never put a mark already given into a state — another judgement's level, or
 `q1.percent`. The AI anchors on it instead of judging, and the validator warns.
 
-`confidence` is the least the AI must be sure for the judgement to count. Below
-it, **the whole node counts as not judged**: nothing is stored, no edge testing
-its keys holds, and the student takes the unconditional edge. Declaring it once
-on the node beats repeating a `-confidence` comparison in every edge. Around
-`0.75` where the judgement carries a grade; leave it out where every branch is
-cheap to get wrong.
+How sure the AI must be for a judgement to count is for the player to decide, not
+the course. Below the player's floor, **the whole node counts as not judged**:
+nothing is stored, no edge testing its keys holds, and the student takes the
+unconditional edge. A branch that is expensive to get wrong asks for more in its
+own edge, by comparing `<id>.<key>-confidence`.
 
 `criteria` is what an answer may be, and it is the one part that differs:
 
@@ -321,8 +317,8 @@ cheap to get wrong.
 - **score** — the levels of the scale, in order, low end first, 2 to 10 of them.
   Describe situations, not degrees. The level stored is **fractional**: `1.43` on
   a scale of three is ordinary. Compare with `gte` and `lt`, never `eq`.
-- **noul** — optional, and only says what `true` and `false` cover. A noul takes
-  no `confidence`: the probability already is one.
+- **noul** — optional, and only says what `true` and `false` cover. A noul stores
+  no `-confidence`: the probability already is one.
 
 A `score` question may also carry **`points`**, one number per level, in the same
 order. The question then stores `<id>.<key>-points`, the expected value — each
@@ -358,18 +354,14 @@ Eight node types store data, and the key is always `<node-id>.<name>`:
 | quiz `q1` | `q1.score`, `q1.total`, `q1.percent` (0–100), plus `q1.<key>` per keyed question |
 | form `f1` | one per field: `f1.goal`, `f1.text`… (`check` fields store a list) |
 | bool `b1` | `b1.answer` — `true` / `false` |
-| choice `c1` | per question: `c1.track` (the option picked), `c1.track-confidence` (0–1), `c1.track-probabilities` (option → probability) |
-| score `s1` | per question: `s1.evidence` (level, fractional), `s1.evidence-confidence` (0–1), `s1.evidence-probabilities` (level → probability), `s1.evidence-legend` (level → its text). With `points`: `s1.evidence-points`, and for the node `s1.total` and `s1.percent` (0–100) |
+| choice `c1` | per question: `c1.track` (the option picked), `c1.track-confidence` (0–1) |
+| score `s1` | per question: `s1.evidence` (level, fractional), `s1.evidence-confidence` (0–1). With `points`: `s1.evidence-points`, and for the node `s1.total` and `s1.percent` (0–100) |
 | noul `n1` | per question: `n1.ready` — the probability of a yes, 0–1. No confidence key: the probability already is one |
 
 Mind the scales. `q1.percent` and `s1.percent` run 0–100. A score node's **level**
 runs over the levels of its own question — 0 to 2 on a scale of three. A noul and
 every `-confidence` key run 0–1. Comparing a level against 60 is the habit an
 essay grade left behind; the edge simply never fires, and the validator warns.
-
-`-probabilities` and `-legend` hold maps, not single values, so edges do not
-compare them. They are there for the node that writes the feedback, which gets
-them rendered.
 
 They have exactly two uses: `{{STORAGE: key}}` inside prompts (dynamic nodes and
 the `state`/`instructions` of a judgement), and `when` on edges.
@@ -421,7 +413,6 @@ content per node.
     "version": "1.0.0",
     "date": "2026-09-15",
     "start": "sm1",
-    "judge-model": "jev-1.13.0",
     "sections": [
       { "number": 1, "title": [{ "lang": "pt", "text": "Chegada" }] },
       { "number": 2, "title": [{ "lang": "pt", "text": "Fundamentos" }] }
@@ -481,7 +472,6 @@ content per node.
           "task": "Explain to a classmate how to add 1/3 and 1/6, showing the step of equalising the denominators.",
           "answer": "{{STORAGE: f2.text}}"
         },
-        "confidence": 0.75,
         "items": [
           { "key": "method",
             "instructions": "Judge whether the field answer gets the method right: equalise the denominators, then add the numerators. Do not judge grammar, length or tone.",
@@ -537,4 +527,4 @@ content per node.
 | feedback contradicts the grade | the prompt of a node with `from` told the AI to grade; it must say how to write, never what to decide |
 | fallback leads to the feedback node | the judge's unconditional edge is the path taken when there was no judgement, so it cannot go where a judgement is required |
 | judgement anchored on a mark | the `state` read another judgement's level or `q1.percent`; give it the work and the task, not a verdict |
-| `judge-model` rejected | it is an alias like `jev-latest`; name the version, `jev-1.13.0` |
+| `judge-model` or `confidence` rejected | both belong to the player now (`judge.model`, `judge.min_confidence`); delete them from the course |

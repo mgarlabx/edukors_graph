@@ -48,20 +48,26 @@ return [
 
     // Judgements: the choice, score and noul nodes.
     //
-    // A course names the model that answers them in `info.judge-model`, as an
-    // exact version and never an alias, because the thresholds in its edges, the
-    // points on its levels and its confidence floors were all tuned against one
-    // version of one model. This map is where a server says which slug answers
-    // each of those names.
+    // A course does not name the model that answers them: this server does, for
+    // every course it holds (EDUKORS_JUDGE_MODEL). Name an exact version and
+    // never an alias, because the thresholds in the edges and the points on the
+    // levels of every course were tuned against one version of one model, and an
+    // alias moves under them without notice. For the same reason, changing it
+    // moves every course at once: try the new one with tools/judge-probe.php on
+    // a real node first.
     //
-    // A course whose judge-model has no line here is refused at import, and at
-    // run time its judgements do not happen: the student takes the unconditional
-    // edge. It is never quietly answered by `ai.model` -- a judgement from an
-    // unknown model is exactly the thing the exact version exists to prevent.
+    // Left empty, judgements do not happen: the student takes the unconditional
+    // edge. It is never quietly answered by `ai.model` -- a judgement from a
+    // model nobody chose is exactly the thing an exact version exists to prevent.
     'judge' => [
-        'models' => [
-            // 'jev-1.13.0' => 'typesafe/jev-1.13',
-        ],
+        'model'          => '',   // e.g. 'typesafe/jev-1.13'
+        // The least a choice or score judgement has to be sure of to count. When
+        // any question of a node comes back under it, the whole node counts as
+        // not judged: nothing is stored and the student takes the unconditional
+        // edge. It is tuned against the model above, like everything else here.
+        // A course that needs more on one branch asks for it in that edge, by
+        // comparing `<id>.<key>-confidence`. 0 lets every judgement count.
+        'min_confidence' => 0.7,
         // Where a judgement goes (EDUKORS_JUDGE_URL). It is not ai.url and it
         // cannot be: jev is a decisions model, and OpenRouter refuses it at
         // chat/completions in so many words --
@@ -70,12 +76,12 @@ return [
         // This endpoint takes {model, state, questions} and answers with the
         // typed answers themselves, which is the shape the choice, score and
         // noul nodes were written against.
-        'url'          => 'https://openrouter.ai/api/alpha/decisions',
-        'timeout'      => 45,
+        'url'            => 'https://openrouter.ai/api/alpha/decisions',
+        'timeout'        => 45,
         // Refuse a judgement that came back from a slug other than the one asked
         // for. OpenRouter serves one name from several providers, and a route
-        // that moves under a tuned floor is the alias the schema forbids.
-        'strict_model' => true,
+        // that moves under tuned thresholds is an alias by another name.
+        'strict_model'   => true,
     ],
 
     // The catalogue's player, which anybody may open. Its AI steps are paid from

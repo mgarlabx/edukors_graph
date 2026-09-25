@@ -25,7 +25,7 @@ function edukors_config(?string $path = null): array
             'referer' => '', 'title' => 'Edukors Graph Player',
         ],
         'judge'    => [
-            'models' => [], 'timeout' => 45, 'strict_model' => true,
+            'model' => '', 'min_confidence' => 0.0, 'timeout' => 45, 'strict_model' => true,
             'url' => 'https://openrouter.ai/api/alpha/decisions',
         ],
         // The catalogue's player: whether its AI steps run, and the share of the
@@ -61,6 +61,7 @@ function edukors_config(?string $path = null): array
         ['EDUKORS_OPENROUTER_KEY',  'ai',    'key'],
         ['EDUKORS_MODEL',           'ai',    'model'],
         ['EDUKORS_AI_URL',          'ai',    'url'],
+        ['EDUKORS_JUDGE_MODEL',     'judge', 'model'],
         ['EDUKORS_JUDGE_URL',       'judge', 'url'],
         ['EDUKORS_ADMIN_USER',      'admin', 'user'],
         ['EDUKORS_ADMIN_HASH',      'admin', 'hash'],

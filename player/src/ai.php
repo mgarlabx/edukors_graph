@@ -146,13 +146,19 @@ function ai_judgement_block(array $judge, array $vars): string
         $lines[] = '';
         $lines[] = "Question \"$key\": " . (string) ($item['instructions'] ?? '');
 
-        $legend = $vars["$id.$key-legend"] ?? null;
-        $probs  = $vars["$id.$key-probabilities"] ?? null;
-        if (is_array($legend)) {
+        // A score is shown on its own scale, in the words the author wrote for
+        // each level -- read from the node, which has them -- with the weight
+        // the judgement put on each, kept under a key of the player's own.
+        $criteria = $item['criteria'] ?? null;
+        $scale    = ($judge['type'] ?? '') === 'score' && is_array($criteria) && array_is_list($criteria)
+            ? $criteria
+            : null;
+        $spread   = $vars["$id.$key" . AI_JUDGE_SPREAD] ?? null;
+        if ($scale !== null) {
             $lines[] = "  Level reached: " . ai_judge_number($value)
-                     . ' on a scale of 0 to ' . (count($legend) - 1);
-            foreach ($legend as $level => $text) {
-                $weight  = is_array($probs) ? ($probs[(string) $level] ?? null) : null;
+                     . ' on a scale of 0 to ' . (count($scale) - 1);
+            foreach ($scale as $level => $text) {
+                $weight  = is_array($spread) ? ($spread[(string) $level] ?? null) : null;
                 $share   = $weight === null ? '' : '  (' . round(100 * (float) $weight) . '% of the weight)';
                 $nearest = round((float) $value) == (float) $level ? '  <- nearest level' : '';
                 $lines[] = "    $level - $text$share$nearest";
@@ -205,6 +211,20 @@ function ai_judge_number($value): string
  * message says why, and is kept with the node so an author can read it.
  */
 final class AiNotJudged extends RuntimeException {}
+
+/**
+ * Where a score keeps the weight its judgement put on each level.
+ *
+ * Not a key of the schema, and it cannot be taken for one: a question's key is
+ * lowercase letters, digits and hyphens, so no course can name, compare or
+ * collide with "s1.evidence~spread". It is kept for the node that writes from
+ * the judgement, which shows every level with its share of the weight (see
+ * ai_judgement_block()). It still begins with the node's id and a dot, and that
+ * is what makes it travel with the node's other keys: the player drops them all
+ * when the node is visited again, and progress_own_vars() writes them all back
+ * from node_state, whatever a browser sent.
+ */
+const AI_JUDGE_SPREAD = '~spread';
 
 /**
  * Judges a node and returns the storage keys it produced.
@@ -274,8 +294,8 @@ function ai_judge_frozen(int $progressId, string $nodeId, int $visit): ?array
  * Judges a node with nothing kept, as ai_write_step() writes a step.
  *
  * Everything is derived before anything is returned, because the confidence
- * floor belongs to the node and not to one of its questions: one question under
- * it and the whole node counts as not judged.
+ * floor applies to the node as a whole and not to one of its questions: one
+ * question under it and the whole node counts as not judged.
  *
  * @return array{judged:bool,vars:array,reason:?string,verdict:array}
  */
@@ -293,7 +313,7 @@ function ai_judge_node(
     $verdict = ['node' => $nodeId, 'type' => $type, 'at' => gmdate('Y-m-d H:i:s')];
 
     try {
-        $model = ai_judge_model($course);
+        $model = ai_judge_model();
         $state = ai_judge_state($content, $vars);
 
         $verdict['model'] = $model;
@@ -328,25 +348,23 @@ function ai_judge_node(
 }
 
 /**
- * The slug that answers this course's judgements.
+ * The slug that answers every judgement on this server.
  *
- * A course names an exact version in `info.judge-model` because its thresholds,
- * its points and its confidence floors were tuned against one version of one
- * model. A server says here which of its own models stands for that name, and a
- * name it has no line for is not answered by the generation model instead: a
- * judgement from an unknown model is the thing the exact version exists to
- * prevent.
+ * Named in `judge.model` and not in the course, and named exactly: the
+ * thresholds on the edges, the points on the levels and the confidence floor
+ * were tuned against one version of one model, and an alias moves under them
+ * without notice. A server that names none does not judge -- it is never
+ * answered by the generation model instead, because a judgement from a model
+ * nobody chose is the thing the exact version exists to prevent.
  */
-function ai_judge_model(Course $course): string
+function ai_judge_model(): string
 {
-    $named = trim((string) ($course->info()['judge-model'] ?? ''));
-    if ($named === '') {
-        throw new AiNotJudged('this course names no judge-model.');
-    }
-    $models = edukors_config()['judge']['models'] ?? [];
-    $slug   = is_array($models) ? trim((string) ($models[$named] ?? '')) : '';
+    $slug = trim((string) (edukors_config()['judge']['model'] ?? ''));
     if ($slug === '') {
-        throw new AiNotJudged("this server has no model configured for judge-model \"$named\".");
+        throw new AiNotJudged('this server has no judge.model configured.');
+    }
+    if (preg_match('/(latest|preview|newest)$/i', $slug) === 1 || preg_match('/[0-9]/', $slug) !== 1) {
+        throw new AiNotJudged("judge.model \"$slug\" is an alias, not a version.");
     }
     return $slug;
 }
@@ -410,9 +428,9 @@ function ai_judge_body(string $type, array $items, array $state, string $model):
         'model'     => $model,
         'state'     => $state,
         'questions' => $questions,
-        // A pinned route. `info.judge-model` names an exact version because the
+        // A pinned route. `judge.model` names an exact version because the
         // thresholds on the edges, the points on the levels and the confidence
-        // floors were tuned against it, and a fallback to another provider
+        // floor were tuned against it, and a fallback to another provider
         // moves under them without saying so.
         'provider'  => ['allow_fallbacks' => false],
     ];
@@ -432,7 +450,7 @@ function ai_judge_ask(array $body, ?int $progressId, string $nodeId, ?string $vi
     if (($judge['strict_model'] ?? true) && $answer['model'] !== ''
         && !ai_judge_same_model($answer['model'], $asked)) {
         throw new AiNotJudged(
-            "the answer came back from \"{$answer['model']}\", which is not the \"$asked\" this course is tuned against."
+            "the answer came back from \"{$answer['model']}\", which is not the \"$asked\" named in judge.model."
         );
     }
     if ($answer['answers'] === []) {
@@ -615,7 +633,7 @@ function ai_judge_spread(string $key, array $given, array $labels): array
     return $read;
 }
 
-/** How sure the model says it is, which the node's floor is measured against. */
+/** How sure the model says it is, which the server's floor is measured against. */
 function ai_judge_confidence(string $key, array $given): float
 {
     if (!is_numeric($given['confidence'] ?? null)) {
@@ -644,7 +662,7 @@ function ai_judge_unit(string $key, float $value): float
 function ai_judge_vars(string $nodeId, string $type, array $content, array $read): array
 {
     $items = is_array($content['items'] ?? null) ? $content['items'] : [];
-    $floor = is_numeric($content['confidence'] ?? null) ? (float) $content['confidence'] : 0.0;
+    $floor = (float) (edukors_config()['judge']['min_confidence'] ?? 0);
 
     $vars     = [];
     $total    = 0.0;
@@ -663,17 +681,16 @@ function ai_judge_vars(string $nodeId, string $type, array $content, array $read
         }
 
         // How sure the model says it is, as it says it. It is not read back out
-        // of the spread: the model answers this question itself, and a floor an
-        // author set on the preview's slider means this number.
+        // of the spread: the model answers this question itself, and the floor
+        // in judge.min_confidence means this number.
         $sure = round((float) $answer['confidence'], 3);
         if ($sure < $floor) {
-            throw new AiNotJudged("question \"$key\" came back at $sure, under this node's floor of $floor.");
+            throw new AiNotJudged("question \"$key\" came back at $sure, under this server's floor of $floor.");
         }
 
         if ($type === 'choice') {
-            $vars["$nodeId.$key"]               = (string) $answer['choice'];
-            $vars["$nodeId.$key-confidence"]    = $sure;
-            $vars["$nodeId.$key-probabilities"] = ai_judge_shares($answer['probabilities'], 3);
+            $vars["$nodeId.$key"]            = (string) $answer['choice'];
+            $vars["$nodeId.$key-confidence"] = $sure;
             continue;
         }
 
@@ -683,10 +700,9 @@ function ai_judge_vars(string $nodeId, string $type, array $content, array $read
         $criteria = is_array($item['criteria'] ?? null) ? array_values($item['criteria']) : [];
         $chance   = is_array($answer['probabilities'] ?? null) ? $answer['probabilities'] : [];
 
-        $vars["$nodeId.$key"]               = round((float) $answer['score'], 2);
-        $vars["$nodeId.$key-confidence"]    = $sure;
-        $vars["$nodeId.$key-probabilities"] = ai_judge_shares($chance, 2);
-        $vars["$nodeId.$key-legend"]        = ai_judge_legend($criteria);
+        $vars["$nodeId.$key"]                   = round((float) $answer['score'], 2);
+        $vars["$nodeId.$key-confidence"]        = $sure;
+        $vars["$nodeId.$key" . AI_JUDGE_SPREAD] = ai_judge_shares($chance, 2);
 
         $points = $item['points'] ?? null;
         if (is_array($points) && $criteria !== [] && count($points) === count($criteria)) {
@@ -712,7 +728,7 @@ function ai_judge_vars(string $nodeId, string $type, array $content, array $read
     return $vars;
 }
 
-/** The probabilities as the schema stores them, every label kept, rounded once. */
+/** A spread as it is kept: every label in it, rounded once. */
 function ai_judge_shares(array $chance, int $places): array
 {
     $shares = [];
@@ -722,26 +738,15 @@ function ai_judge_shares(array $chance, int $places): array
     return $shares;
 }
 
-/** Level number to the words the author wrote for it. */
-function ai_judge_legend(array $criteria): array
-{
-    $legend = [];
-    foreach (array_values($criteria) as $level => $text) {
-        $legend[(string) $level] = (string) $text;
-    }
-    return $legend;
-}
-
 /**
- * The maps a judgement produces are keyed by level number, and PHP turns "0",
- * "1", "2" back into a list the moment it encodes them. The schema says these
- * are maps and the player reads them as maps, so they are cast back on the way
- * out.
+ * A score's spread is keyed by level number, and PHP turns "0", "1", "2" back
+ * into a list the moment it encodes one. It is a map, and the player reads it as
+ * one, so it is cast back on the way out.
  */
 function ai_judge_maps(array $vars): array
 {
     foreach ($vars as $key => $value) {
-        if (is_array($value) && (str_ends_with($key, '-probabilities') || str_ends_with($key, '-legend'))) {
+        if (is_array($value) && str_ends_with((string) $key, AI_JUDGE_SPREAD)) {
             $vars[$key] = (object) $value;
         }
     }
