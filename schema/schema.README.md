@@ -39,7 +39,7 @@ The course begins at the `start` node. Every other node is reached by following 
 | `date`            |          yes          | The date of this version, as`YYYY-MM-DD`.                                                                                                                                                                                                                  |
 | `start`           |          yes          | The id of the first node, and the only way into the course.                                                                                                                                                                                                  |
 | `sections`        |           no           | Names for the groups the nodes are displayed in. Purely visual: they do not affect the order.                                                                                                                                                                |
-| `system-prompt`   |           no           | Course-wide instructions sent as the system prompt of every call that*generates* content. Audience, tone and global rules live here, so each node only carries what is specific to it. It does not reach the judgement nodes, which take no system prompt. |
+| `system-prompt`   |           no           | Course-wide instructions sent as the system prompt of every call that generates content. Audience, tone and global rules live here, so each node only carries what is specific to it. It does not reach the judgement nodes, which take no system prompt. |
 
 ## Text in several languages
 
@@ -383,6 +383,85 @@ A writing task is a `form` with `instructions` and one `text-area` field. The in
 
 The student's text lands in `f1.text`. Nothing has been judged yet: the form only collects. A `score` node judges it next, and a `dynamic-md` node writes the feedback from that judgement — the chain described under [Feedback from a judgement](#feedback-from-a-judgement).
 
+## Edges
+
+An edge is a directed link from one node to the next. The whole order of a course lives in `edges`; a node knows nothing about what comes after it.
+
+| Field    | Required | What it is                                                                   |
+| -------- | :------: | ---------------------------------------------------------------------------- |
+| `from` |   yes   | The id of the node the student is leaving.                                   |
+| `to`   |   yes   | The id of the node the student goes to.                                      |
+| `when` |    no    | The condition under which this edge is the one taken. Without it, it always is. |
+
+```json
+"edges": [
+  { "from": "sm1", "to": "q1" },
+  { "from": "q1",  "to": "sm2", "when": { "key": "q1.percent", "operator": "gte", "value": 70 } },
+  { "from": "q1",  "to": "sm3" }
+]
+```
+
+### How the next node is chosen
+
+When the student finishes a node, the player looks at the edges whose `from` is that node, **in the order they appear in the file**, and takes the **first one whose `when` holds**. The others are not looked at, even if their conditions also hold. The order of the edges is therefore part of their meaning:
+
+- Put the most specific conditions first and the broadest last.
+- An edge without `when` always holds, so it is the **fallback** and must be the last edge of its node: anything written after it could never be taken, and the course is refused. A node has at most one.
+- A node with no edge leaving it ends the course, and that is a normal ending. But when a node has edges and **none of them holds**, the player also finds nowhere to go and ends the course there — silently, as if the student had finished. So a node whose edges are all conditional should always get an unconditional one last; on a judgement node it is required (see [Fallback is not optional](#fallback-is-not-optional)).
+
+### Conditions
+
+A `when` is either a single **comparison** or a group of them.
+
+A comparison has three fields, all required:
+
+- `key` — the stored value to test, written `<node-id>.<name>` (`q1.percent`, `f1.goal`, `c1.track`). It is the same key used in `{{STORAGE: key}}`; the keys each node produces are listed under [Stored data](#stored-data).
+- `operator` — how to compare it (see below).
+- `value` — what to compare it with: a number, a text, or `true` / `false`.
+
+```json
+{ "key": "q1.percent", "operator": "gte", "value": 70 }
+```
+
+Comparisons are combined with `and` (every one must hold) and `or` (at least one must hold). Each takes a list of two or more conditions, and those can themselves be `and` / `or` groups, nested as deep as needed:
+
+```json
+"when": { "and": [
+  { "key": "q1.percent", "operator": "gte", "value": 50 },
+  { "or": [
+    { "key": "b1.answer", "operator": "eq", "value": true },
+    { "key": "s1.evidence", "operator": "gte", "value": 1.5 }
+  ] }
+] }
+```
+
+There is no `not`. To negate a comparison, use its opposite operator: `ne` for `eq`, `lt` for `gte`, `not-contains` for `contains`.
+
+### Operators
+
+| Operator         | Holds when the stored value…         | Use it for                                                    | Example                                                                  |
+| ---------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `eq`           | is equal to `value`                | a bool answer, a choice option, a quiz or form option value   | `{ "key": "c1.track", "operator": "eq", "value": "remedial" }`         |
+| `ne`           | is different from `value`          | the same, negated                                             | `{ "key": "f1.level", "operator": "ne", "value": "beginner" }`         |
+| `gt`           | is greater than `value`            | numbers                                                       | `{ "key": "q1.score", "operator": "gt", "value": 3 }`                  |
+| `gte`          | is greater than or equal to `value` | numbers — the usual "at least" threshold                     | `{ "key": "q1.percent", "operator": "gte", "value": 70 }`              |
+| `lt`           | is less than `value`               | numbers                                                       | `{ "key": "s1.evidence", "operator": "lt", "value": 1 }`               |
+| `lte`          | is less than or equal to `value`   | numbers — the usual "at most" threshold                      | `{ "key": "n1.ready", "operator": "lte", "value": 0.3 }`               |
+| `contains`     | contains `value`                   | a `check` field (a list of answers), or a text               | `{ "key": "f1.topics", "operator": "contains", "value": "decimals" }`  |
+| `not-contains` | does not contain `value`           | the same, negated                                             | `{ "key": "f1.topics", "operator": "not-contains", "value": "decimals" }` |
+
+How each one compares:
+
+- **`eq` and `ne`** compare booleans as booleans, numbers as numbers (so `70` and `70.0` are equal), and anything else as text, exactly and case-sensitively. Compare a `bool` answer with the JSON `true` or `false`, **never with the text `"true"` or `"false"`**: a non-empty text counts as true, so `"false"` would match a yes.
+- **`gt`, `gte`, `lt` and `lte`** are for numbers only. A value that is not a number makes the comparison fail. Prefer them over `eq` for anything the AI produces: a score level (`1.43`), a noul probability or a confidence is rarely a round number, so `eq` would almost never hold.
+- **`contains` and `not-contains`** work on two kinds of stored value. On a list, such as the answers of a `check` field, they test whether one of its items equals `value`, with the same rules as `eq`. On a text, they test whether `value` appears anywhere in it, **ignoring case** — `"cat"` is found in `"Wildcats are…"` too, so choose the text with care.
+
+### Keys that do not exist yet
+
+A comparison on a key the student has not produced — a node they have not gone through, or a judgement that did not happen — **never holds, whatever the operator**. That includes `ne` and `not-contains`: "the answer is not *remedial*" does not hold when there is no answer at all. Inside an `and`, one such comparison is enough to make the group fail; inside an `or`, the other comparisons can still make it hold.
+
+This is what makes it safe to test a node that may have been skipped: the edge is simply not taken, and the student goes on to the next one.
+
 ## Judgements by the AI
 
 A `bool` node branches on what the student *says* about themselves. A `choice`, `score` or `noul` node branches on what the AI *reads* in what the student has already produced. They are the same three shapes, with the AI answering instead of the student:
@@ -582,7 +661,7 @@ Note that the unconditional edge of `s1` goes to `sm9`, **not** to `dm1`. A node
 
 A judgement node decides nothing on its own — the edges leaving it do. **One of them must be unconditional**, because a judgement can land anywhere in its range, and because it may not happen at all.
 
-A judgement does not happen when the call fails, or when the player does not accept the answer — one under its confidence floor, say. In either case **nothing is stored** — no level, no option, no confidence, no default, no middle value. No condition holds (see [Adaptive learning](#adaptive-learning)) and the student takes the unconditional edge.
+A judgement does not happen when the call fails, or when the player does not accept the answer — one under its confidence floor, say. In either case **nothing is stored** — no level, no option, no confidence, no default, no middle value. No condition holds (see [Keys that do not exist yet](#keys-that-do-not-exist-yet)) and the student takes the unconditional edge.
 
 That silence is deliberate. A grade and the feedback written from it both come out of the same answer, so a made-up number would not just send a student down the wrong path: it would become a confident, false account of their own work, addressed to them.
 
@@ -603,13 +682,9 @@ Use the confidence in an edge when one particular branch is expensive to get wro
 
 ## Adaptive learning
 
-Edges leaving a node are evaluated **from top to bottom**, and the **first one whose `when` holds** is the path taken. An edge without `when` always holds, so it works as the fallback and should come last.
+Edges with conditions are what make the course adapt: two students who answer differently at the same node go on to different nodes. The branches can rejoin later, or never.
 
-A `when` is a comparison between a stored key and a value, using one of these operators: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `contains`, `not-contains`. Comparisons can be combined with `and` / `or` (which can be nested).
-
-A condition on a key the student has not produced yet **never holds**, so an edge can safely test a node that may not have been answered.
-
-An edge may lead **back** to a node already visited — "study again, then retake". Coming back is a new visit: quiz, form and bool nodes are answered again, and choice, score and noul nodes are judged again, so either way the new answers overwrite the old keys, while dynamic nodes keep the content already generated. Every cycle needs a way out that the student can reach.
+An edge may also lead **back** to a node already visited — "study again, then retake". Coming back is a new visit: quiz, form and bool nodes are answered again, and choice, score and noul nodes are judged again, so either way the new answers overwrite the old keys, while dynamic nodes keep the content already generated. Every cycle needs a way out that the student can reach.
 
 This is how a rewrite loop is built: `f1 → s1`, and from `s1` an edge back to a tips node and on to `f1` when the level is too low. The student rewrites, the judgement runs again, and `f1.text` and the keys of `s1` are replaced.
 
