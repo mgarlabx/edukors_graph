@@ -15,6 +15,21 @@ The division of labour, in the order it happens: the author spends the whole dev
 
 A small course can still be written straight to JSON by the builder alone. The exploded layout pays off as soon as the course is long enough that nobody can read a 600-line JSON with markdown crammed into `"text"` strings — which is most of them.
 
+## The desktop builder
+
+The skills are not the only way to build a course. [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor) is a **desktop builder**: a visual app that runs on the author's own computer, for now only on macOS (11 or later), installed from source. With the skills, the author talks to an AI and receives the finished course; with the desktop builder, they see the course as a map and build or adjust it with their own hands.
+
+- **The map.** Each node is a box and each edge an arrow, in the style of n8n. Boxes can be dragged, connected, copied and arranged automatically.
+- **The inspector.** Clicking a box opens a form tailored to its node type, in every language the course declares. Edge conditions ("at least 70% of the quiz correct") are built from menus.
+- **Validation.** The course is checked as the author works, with the same rules as `validate_course.py`, and each problem is shown where it is.
+- **The JSON.** A tab shows the course JSON itself, editable and kept in sync with the map.
+- **The preview.** The course runs as a student sees it, in this repository's own player. AI steps run for real with an [OpenRouter](https://openrouter.ai) key; without one, the author picks the judgements, as in the preview player here.
+- **The AI agent.** A side panel holds an agent, built with Claude, that reads the open course and changes it on request. Each change waits for the author's approval, and everything can be undone.
+
+It saves a course as `course.json`, the same single-file course the skills produce in `_output/`, plus `course.layout.json` with the position of the boxes on the map. Only the first one goes to the player. It works on the single JSON, not on the exploded folders: a course can move between the two with `split_course.py` and `build_course.py`.
+
+Despite the similar name, the desktop builder is a separate project from the `edukors-graph-editor` skill described here, which defines the folder standard. Its [README](https://github.com/mgarlabx/edukors_graph_editor) covers installation and use.
+
 ## Installing them
 
 Copy both folders to wherever the assistant looks for skills, keeping their shape — each `SKILL.md` must sit at the top of its own folder, with `references`, `assets` and `scripts` beside it.

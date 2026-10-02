@@ -165,6 +165,10 @@ flowchart LR
 
 **See the [builder.README](builder/builder.README.md) for details.**
 
+### ****Desktop builder****
+
+**There is also a **desktop builder**, [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor), a visual app that runs on the author's own computer (macOS for now). Instead of talking to an AI and receiving the finished course, the author sees the course as a map, in the style of n8n, and builds or adjusts it by hand: a box per node, arrows for the edges, an inspector for each node's content, edge conditions built from menus, validation as they work with the same rules as this repository, and a preview that runs the course with the project's own player. An AI agent, built with Claude, can sit alongside and change the course on request, each change waiting for approval. The result is the same course JSON, which the player opens without any conversion. Despite the similar name, it is a separate project from the `edukors-graph-editor` skill.**
+
 ## ****Player****
 
 **The **player** is the server that delivers courses to students. It is a reference implementation in plain PHP (8.1 or later, no framework, no Composer dependency) with MySQL. It takes the standalone player the builder ships, unchanged, and adds around it what a real deployment needs:**
@@ -196,6 +200,8 @@ flowchart LR
 ****Explore a course.** Open [world-cats-3-full-map.html](samples/world-cats-3-full-map.html) in a browser to see the graph, and [world-cats-3-full-player.html](samples/world-cats-3-full-player.html) to walk it as a student. Both carry the whole course and need no server, though these particular samples fetch their photographs from Wikimedia Commons. Read the three sample JSON files next to the [schema.README](schema/schema.README.md) to learn the standard.**
 
 ****Build a course with an AI assistant.** Copy both folders under [builder/skills](builder/skills) — [edukors-graph-builder](builder/skills/edukors-graph-builder) and [edukors-graph-editor](builder/skills/edukors-graph-editor) — to wherever your assistant loads skills. In Claude Code that is `.claude/skills/` inside a project, or `~/.claude/skills/` for every project; in claude.ai, upload each folder as a skill in the settings. Then ask for a course. The skills ask only for what is missing from the brief and deliver the three files.**
+
+****Build a course visually.** Install the [desktop builder](https://github.com/mgarlabx/edukors_graph_editor) (macOS 11 or later, built from source with Rust and Node.js), open or create a course and work on its map. Its README walks through the installation.**
 
 ****Validate and build by hand.** The scripts need Python 3 and nothing else:**
 
