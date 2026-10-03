@@ -78,7 +78,7 @@ INFO_REQUIRED = [
 ]
 INFO_OPTIONAL = ["description", "sections", "system-prompt"]
 NODE_REQUIRED = ["id", "type", "title", "content"]
-NODE_OPTIONAL = ["section"]
+NODE_OPTIONAL = ["section", "position"]
 
 CONTENT_FIELDS = {
     "static-md": (["item"], []),
@@ -650,6 +650,14 @@ def validate_node(node, index, rep, langs, source, section_numbers, ids):
         rep.error(where, f"'section' must be an integer >= 1, found {section!r}")
     elif section_numbers and section not in section_numbers:
         rep.warn(where, f"section {section} is not declared in info.sections")
+
+    if "position" in node:
+        position = node["position"]
+        if check_keys(position, f"{where}.position", ["x", "y"], [], rep):
+            for axis in ("x", "y"):
+                value = position.get(axis)
+                if axis in position and (isinstance(value, bool) or not isinstance(value, (int, float))):
+                    rep.error(f"{where}.position", f"'{axis}' must be a number, found {value!r}")
 
     check_localized(node.get("title"), f"{where}.title", rep, langs, langs, "title")
 

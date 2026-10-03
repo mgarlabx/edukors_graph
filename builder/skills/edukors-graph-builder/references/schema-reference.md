@@ -76,7 +76,10 @@ and correct, since the AI is told to answer in the student's language.
 ## Nodes
 
 Every node has `id`, `type`, `title`, `content`, and optionally `section`
-(integer ≥ 1, defaults to 1, purely visual grouping — it does not affect order).
+(integer ≥ 1, defaults to 1, purely visual grouping — it does not affect order)
+and `position` (`{ "x": 34, "y": -12 }`, numbers, where a builder with manual
+layout placed the node on its canvas — also purely visual, and players ignore it).
+When writing a course from scratch, leave `position` out.
 
 The id prefix must match the type:
 

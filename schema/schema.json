@@ -259,6 +259,9 @@
           "description": "Number of the group the node is displayed in, named in 'info.sections' when it has a title. It is only a visual hint for the frontend, so that courses with many nodes can be shown in blocks; it has no effect on the order of the course, which is defined by 'edges'. Defaults to 1.",
           "default": 1
         },
+        "position": {
+          "$ref": "#/$defs/nodePosition"
+        },
         "title": {
           "$ref": "#/$defs/localizedTextList",
           "description": "Title of the node in each language. Plain text."
@@ -488,6 +491,31 @@
               }
             }
           }
+        }
+      ]
+    },
+    "nodePosition": {
+      "type": "object",
+      "description": "Where the node sits on the canvas of a builder that lets the author arrange the nodes by hand, so that the layout the author chose survives saving and reopening the course. It is only a visual hint for the builder: it has no effect on the order of the course, which is defined by 'edges', nor on what the student sees, and players ignore it. The units and the origin are those of the builder's own canvas. Without it, the builder lays the node out by itself. Optional.",
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number",
+          "description": "Horizontal coordinate of the node on the canvas."
+        },
+        "y": {
+          "type": "number",
+          "description": "Vertical coordinate of the node on the canvas."
+        }
+      },
+      "examples": [
+        {
+          "x": 34,
+          "y": -12
         }
       ]
     },

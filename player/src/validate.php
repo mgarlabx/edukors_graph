@@ -243,7 +243,7 @@ final class CourseValidator
         $where = "nodes[$index]";
         // A node missing a field is still registered by its id, so the edges
         // that name it are not reported as dangling on top of the real error.
-        $this->checkKeys($node, $where, ['id', 'type', 'title', 'content'], ['section']);
+        $this->checkKeys($node, $where, ['id', 'type', 'title', 'content'], ['section', 'position']);
         if (!is_array($node)) {
             return;
         }
@@ -276,6 +276,16 @@ final class CourseValidator
                 $this->error("$where.section", 'must be an integer of 1 or more');
             } elseif ($this->sectionNumbers !== [] && !in_array($section, $this->sectionNumbers, true)) {
                 $this->warn("$where.section", "section $section has no title in info.sections");
+            }
+        }
+
+        if (array_key_exists('position', $node)
+            && $this->checkKeys($node['position'], "$where.position", ['x', 'y'], [])) {
+            foreach (['x', 'y'] as $axis) {
+                $value = $node['position'][$axis];
+                if (is_bool($value) || (!is_int($value) && !is_float($value))) {
+                    $this->error("$where.position", "'$axis' must be a number");
+                }
             }
         }
 
