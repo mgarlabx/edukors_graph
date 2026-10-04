@@ -11,7 +11,7 @@ possibly a different next for each student.
 
 The deliverable is always **three files** — the same course, seen three ways:
 
-1. `<slug>-course.json` — the course itself, valid against `assets/course.schema.json`.
+1. `<slug>-course.egf` — the course itself (plain JSON, `.egf` extension), valid against `assets/course.schema.json`.
 2. `<slug>-map.html` — the course graph, produced by embedding the JSON into `assets/course_viewer.html`.
 3. `<slug>-player.html` — the course as the student meets it, produced by embedding the JSON into `assets/course_player.html`.
 
@@ -148,15 +148,16 @@ Non-negotiables while writing:
   typically 150–500 words: explanation, a worked example, and why it matters.
   Three bullet points is a slide, not a course node.
 
-Write the file to the working directory as `<slug>-course.json`. For a course of
-more than ~15 nodes, write it section by section and append, rather than in one
-enormous pass — a truncated write costs more than the extra steps, and the
+Write the file to the working directory as `<slug>-course.egf` — `.egf` (Edukors
+Graph Format) is the extension of every course file; the content is plain JSON.
+For a course of more than ~15 nodes, write it section by section and append,
+rather than in one enormous pass — a truncated write costs more than the extra steps, and the
 validator will catch anything the assembly broke.
 
 ### 5. Validate, and fix until clean
 
 ```bash
-python3 <skill-dir>/scripts/validate_course.py <slug>-course.json
+python3 <skill-dir>/scripts/validate_course.py <slug>-course.egf
 ```
 
 It checks the schema rules, the graph (reachability, fallback ordering, dangling
@@ -172,8 +173,8 @@ An author judges a course by reading it, by seeing its shape, and by walking it.
 Build both HTML files after the JSON validates:
 
 ```bash
-python3 <skill-dir>/scripts/build_viewer.py <slug>-course.json -o <slug>-map.html
-python3 <skill-dir>/scripts/build_player.py <slug>-course.json -o <slug>-player.html
+python3 <skill-dir>/scripts/build_viewer.py <slug>-course.egf -o <slug>-map.html
+python3 <skill-dir>/scripts/build_player.py <slug>-course.egf -o <slug>-player.html
 ```
 
 - **The JSON** — the course itself, what gets imported into Edukors.

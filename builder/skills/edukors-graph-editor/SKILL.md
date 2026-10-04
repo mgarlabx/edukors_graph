@@ -6,7 +6,7 @@ description: FOLDER STANDARD for Edukors courses during development: every cours
 # Edukors Graph Editor — course folder architecture
 
 A course is **not** a file here. A course is a folder, and the single
-`*-course.json` that Edukors imports is a *build artifact* of that folder.
+`*-course.egf` that Edukors imports is a *build artifact* of that folder.
 
 The reason is editing: a 600-line JSON with markdown crammed into `"text"`
 strings cannot be read, diffed or edited by a human — or by a model without
@@ -40,7 +40,7 @@ it.
 ├── edges/
 │   └── <from-node-id>.json         ← the edges leaving that node, ordered
 └── _output/                        ← everything GENERATED, nothing hand-written
-    ├── <slug>-course.json          ← GENERATED from info + nodes + edges
+    ├── <slug>-course.egf           ← GENERATED from info + nodes + edges
     ├── <slug>-map.html             ← GENERATED from the json
     └── <slug>-player.html          ← GENERATED from the json
 ```
@@ -53,7 +53,7 @@ the three folders beside `_output/` and nothing else. The build recreates
 `_output/` from scratch, so deleting it loses nothing.
 
 `<slug>` is the kebab-case of the **course folder name**, e.g.
-`World Cats 1 (short)/` → `_output/world-cats-1-short-course.json`,
+`World Cats 1 (short)/` → `_output/world-cats-1-short-course.egf`,
 `_output/world-cats-1-short-map.html`, `_output/world-cats-1-short-player.html`.
 The three files sit loose in `_output/`, with no subfolders. Renaming the folder
 renames the three outputs on the next build; delete the old ones (or the whole
@@ -304,7 +304,7 @@ feedback out of that pick, so the author can see what a given level produces.
 `other/` and `samples/`, which are still flat files:
 
 ```bash
-python3 .claude/skills/edukors-graph-editor/scripts/split_course.py <path-to>-course.json -o "<Course Title>"
+python3 .claude/skills/edukors-graph-editor/scripts/split_course.py <path-to>-course.egf -o "<Course Title>"
 ```
 
 It writes the full folder structure and copies the original into `_output/`. The

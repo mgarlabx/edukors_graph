@@ -10,7 +10,7 @@ DirectoryIndex index.php
 </IfModule>
 
 # Only the kinds of file this server actually serves.
-<FilesMatch "\.(json|md|sql|log|ini|bak|sample)$">
+<FilesMatch "\.(egf|json|md|sql|log|ini|bak|sample)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

@@ -25,9 +25,9 @@ with {{STORAGE: key}} resolved from what the student produced -- as JSON, to
 paste into https://console.typesafe.ai/playground and see the real answer.
 
 Usage:
-    python3 build_player.py course.json
-    python3 build_player.py course.json -o my-course-player.html
-    python3 build_player.py course.json --player /path/to/course_player.html
+    python3 build_player.py course.egf
+    python3 build_player.py course.egf -o my-course-player.html
+    python3 build_player.py course.egf --player /path/to/course_player.html
 
 By default the template is ../assets/course_player.html, next to this script.
 No third-party dependencies.
@@ -84,7 +84,7 @@ def escape_html(text):
 
 def main():
     parser = argparse.ArgumentParser(description="Build a standalone course player from a course JSON.")
-    parser.add_argument("course", help="path to the course JSON")
+    parser.add_argument("course", help="path to the course file (.egf)")
     parser.add_argument("-o", "--output", help="output HTML path (default: <course>-player.html)")
     parser.add_argument("--player", default=DEFAULT_PLAYER, help="player template to use")
     args = parser.parse_args()

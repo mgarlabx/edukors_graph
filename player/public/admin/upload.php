@@ -57,7 +57,7 @@ admin_head('Import a course');
 <form method="post" enctype="multipart/form-data" class="card">
   <?= admin_csrf_field() ?>
   <label for="file">Course file</label>
-  <input id="file" name="file" type="file" accept=".json,application/json">
+  <input id="file" name="file" type="file" accept=".egf,.json,application/json">
 
   <label for="json">…or paste the JSON</label>
   <textarea id="json" name="json" spellcheck="false" placeholder='{"info": {...}, "nodes": [...], "edges": [...]}'></textarea>

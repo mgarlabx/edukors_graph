@@ -10,8 +10,8 @@ Checks three layers:
                   exist and are produced upstream of where they are read
 
 Usage:
-    python3 validate_course.py course.json
-    python3 validate_course.py course.json --quiet   # only errors and warnings
+    python3 validate_course.py course.egf
+    python3 validate_course.py course.egf --quiet   # only errors and warnings
 
 Exit code is 1 when there is at least one error, 0 otherwise.
 No third-party dependencies.

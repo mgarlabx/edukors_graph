@@ -11,7 +11,7 @@ The two skills split the work, and they are not interchangeable:
 | `edukors-graph-builder` | [skills/edukors-graph-builder](skills/edukors-graph-builder) | The **format** and the **generation** step: node types, edges, conditions, prompts, the quality bar — and the scripts that assemble and validate the course JSON, the map and the player. |
 | `edukors-graph-editor` | [skills/edukors-graph-editor](skills/edukors-graph-editor) | The **folder standard** a course is developed in: the course exploded into `info/`, `nodes/<node-id>/`, `edges/`, with every piece of prose as a real `.md`/`.html` file, plus the generated `_output/`. |
 
-The division of labour, in the order it happens: the author spends the whole development process inside the exploded folders (the editor), and at the end the builder generates the JSON, the map and the player into `_output/`. The course JSON is a build artifact, never the file a human edits.
+The division of labour, in the order it happens: the author spends the whole development process inside the exploded folders (the editor), and at the end the builder generates the course (`.egf`), the map and the player into `_output/`. The course file is a build artifact, never the file a human edits.
 
 A small course can still be written straight to JSON by the builder alone. The exploded layout pays off as soon as the course is long enough that nobody can read a 600-line JSON with markdown crammed into `"text"` strings — which is most of them.
 
@@ -49,7 +49,7 @@ For every course, the builder delivers three files, written side by side into th
 
 | File | Content |
 |------|---------|
-| `<slug>-course.json` | The course: `info`, `nodes` and `edges`, valid against the course schema. This is the file imported into Edukors. |
+| `<slug>-course.egf` | The course: `info`, `nodes` and `edges`, valid against the course schema. This is the file imported into Edukors. |
 | `<slug>-map.html` | A standalone viewer that draws the course graph, with a panel that shows each node's details. |
 | `<slug>-player.html` | A standalone player that runs the course the way a student sees it, one step at a time, with the edges choosing the next step. |
 
@@ -154,7 +154,7 @@ A course under development:
 ├── edges/
 │   └── <from-node-id>.json         # the edges leaving that node, ordered
 └── _output/                        # GENERATED — never edited by hand
-    ├── <slug>-course.json
+    ├── <slug>-course.egf
     ├── <slug>-map.html
     └── <slug>-player.html
 ```
@@ -174,15 +174,15 @@ python3 builder/skills/edukors-graph-editor/scripts/build_course.py "<Course Tit
 Explode an existing single-file course into the layout:
 
 ```bash
-python3 builder/skills/edukors-graph-editor/scripts/split_course.py my-course.json -o "<Course Title>"
+python3 builder/skills/edukors-graph-editor/scripts/split_course.py my-course.egf -o "<Course Title>"
 ```
 
-Work on a loose JSON file directly:
+Work on a loose course file directly:
 
 ```bash
-python3 builder/skills/edukors-graph-builder/scripts/validate_course.py my-course.json
-python3 builder/skills/edukors-graph-builder/scripts/build_viewer.py my-course.json -o my-course-map.html
-python3 builder/skills/edukors-graph-builder/scripts/build_player.py my-course.json -o my-course-player.html
+python3 builder/skills/edukors-graph-builder/scripts/validate_course.py my-course.egf
+python3 builder/skills/edukors-graph-builder/scripts/build_viewer.py my-course.egf -o my-course-map.html
+python3 builder/skills/edukors-graph-builder/scripts/build_player.py my-course.egf -o my-course-player.html
 ```
 
 `validate_course.py` checks three things:

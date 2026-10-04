@@ -293,7 +293,7 @@ admin_head((string) $row['title']);
   <form method="post" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <?= admin_csrf_field() ?>
     <input type="hidden" name="action" value="update">
-    <input name="file" type="file" accept=".json,application/json" required style="width:auto;flex:1 1 240px">
+    <input name="file" type="file" accept=".egf,.json,application/json" required style="width:auto;flex:1 1 240px">
     <label style="display:inline;font-weight:400;margin:0">
       <input type="checkbox" name="publish" style="width:auto"<?= $row['status'] === 'published' ? ' checked' : '' ?>> publish it
     </label>

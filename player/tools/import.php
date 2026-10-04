@@ -3,8 +3,8 @@
 /**
  * Imports a course JSON into the database.
  *
- *     php tools/import.php course.json
- *     php tools/import.php course.json --publish
+ *     php tools/import.php course.egf
+ *     php tools/import.php course.egf --publish
  *
  * Errors stop the import and are printed; warnings are kept with the course and
  * shown in the admin. Re-importing the same version replaces it.
@@ -24,7 +24,7 @@ $publish = in_array('--publish', $args, true);
 $files   = array_values(array_filter($args, static fn($a) => !str_starts_with($a, '--')));
 
 if ($files === []) {
-    fwrite(STDERR, "usage: php tools/import.php <course.json> [--publish]\n");
+    fwrite(STDERR, "usage: php tools/import.php <course.egf> [--publish]\n");
     exit(2);
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Split a single Edukors course JSON into the exploded course folder.
+"""Split a single-file Edukors course (.egf) into the exploded course folder.
 
-    python3 split_course.py <course>.json -o "<Course Title>"
+    python3 split_course.py <course>.egf -o "<Course Title>"
 
 Writes info/, nodes/<id>/, edges/<from>.json and copies the source file into
 _output/. Rebuild with build_course.py; the round trip is exact.
@@ -103,7 +103,7 @@ def split(course, out_dir, force):
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("course_json", help="the single-file course to split")
+    parser.add_argument("course_json", help="the single-file course (.egf) to split")
     parser.add_argument("-o", "--out", help="course folder (default: the course title)")
     parser.add_argument("--force", action="store_true", help="overwrite existing nodes/ and edges/")
     args = parser.parse_args()
@@ -117,7 +117,7 @@ def main():
 
     errors = split(course, out_dir, args.force)
 
-    target = out_dir / OUTPUT / ("%s-course.json" % course_slug(out_dir))
+    target = out_dir / OUTPUT / ("%s-course.egf" % course_slug(out_dir))
     if source.resolve() != target.resolve():
         shutil.copyfile(source, target)
 

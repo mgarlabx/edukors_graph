@@ -114,7 +114,7 @@ flowchart LR
 
 ## ****Schema****
 
-**The centerpiece is the schema ([schema](schema) folder): a [JSON Schema](https://json-schema.org) (draft 2020-12) describing a course as a single JSON file with three parts:**
+**The centerpiece is the schema ([schema](schema) folder): a [JSON Schema](https://json-schema.org) (draft 2020-12) describing a course as a single JSON file, saved with the `.egf` extension (Edukors Graph Format), with three parts:**
 
 - **`info` — metadata: title, author, version, languages, the `start` node and an optional course-wide `system-prompt` for the AI.**
 - **`nodes` — the **steps** of the course: content, activities, and the judgements that decide where a student goes next.**
@@ -147,6 +147,8 @@ flowchart LR
 
 **Every text the student reads is a list of `{ "lang", "text" }` entries, one per language of the course. Markdown accepts inline HTML and LaTeX formulas, which the player typesets with KaTeX.**
 
+**A course file is plain JSON, and `.egf` only says which JSON it is. Applications that write a course should save it as `.egf`, and applications that open one should look for `.egf` first — while still accepting `.json`, the extension used before. Editors need to be told once that `.egf` is JSON to keep validating it as it is typed. See [The .egf file](schema/schema.README.md#the-egf-file) for the details.**
+
 **See the [schema.README](schema/schema.README.md) for the full description of the standard, and the field descriptions inside [schema.json](schema/schema.json) for the exact contract.**
 
 ## ****Builder****
@@ -157,11 +159,11 @@ flowchart LR
 
 | File                   | Content                                                                  |
 | ---------------------- | ------------------------------------------------------------------------ |
-| `<slug>-course.json` | The course, valid against the schema. This is the file a player imports. |
+| `<slug>-course.egf`  | The course, valid against the schema. This is the file a player imports. |
 | `<slug>-map.html`    | A standalone viewer that draws the graph, for the author.                |
 | `<slug>-player.html` | A standalone preview player that runs the course as a student sees it.   |
 
-**The builder collects the brief (size, objectives, sources, course type, static or dynamic content, media, linear or adaptive path), builds a blueprint, writes the course, validates it and builds the two HTML files. It can also edit an existing course, and bring a loose course JSON into the exploded layout. The scripts use only the Python 3 standard library and work without the assistant.**
+**The builder collects the brief (size, objectives, sources, course type, static or dynamic content, media, linear or adaptive path), builds a blueprint, writes the course, validates it and builds the two HTML files. It can also edit an existing course, and bring a loose `.egf` course into the exploded layout. The scripts use only the Python 3 standard library and work without the assistant.**
 
 **See the [builder.README](builder/builder.README.md) for details.**
 
@@ -197,7 +199,7 @@ flowchart LR
 
 # ****Getting started****
 
-****Explore a course.** Open [world-cats-3-full-map.html](samples/world-cats-3-full-map.html) in a browser to see the graph, and [world-cats-3-full-player.html](samples/world-cats-3-full-player.html) to walk it as a student. Both carry the whole course and need no server, though these particular samples fetch their photographs from Wikimedia Commons. Read the three sample JSON files next to the [schema.README](schema/schema.README.md) to learn the standard.**
+****Explore a course.** Open [world-cats-3-full-map.html](samples/world-cats-3-full-map.html) in a browser to see the graph, and [world-cats-3-full-player.html](samples/world-cats-3-full-player.html) to walk it as a student. Both carry the whole course and need no server, though these particular samples fetch their photographs from Wikimedia Commons. Read the three sample `.egf` files next to the [schema.README](schema/schema.README.md) to learn the standard.**
 
 ****Build a course with an AI assistant.** Copy both folders under [builder/skills](builder/skills) — [edukors-graph-builder](builder/skills/edukors-graph-builder) and [edukors-graph-editor](builder/skills/edukors-graph-editor) — to wherever your assistant loads skills. In Claude Code that is `.claude/skills/` inside a project, or `~/.claude/skills/` for every project; in claude.ai, upload each folder as a skill in the settings. Then ask for a course. The skills ask only for what is missing from the brief and deliver the three files.**
 
@@ -207,11 +209,11 @@ flowchart LR
 
 **The validator checks the structure, the graph (dangling edges, fallback order, unreachable nodes, dead ends) and the storage keys, and exits with code `1` on any error.**
 
-**For a course kept in the exploded layout, one command does all three steps — assemble, validate, build — and a second brings a loose JSON file into that layout:**
+**For a course kept in the exploded layout, one command does all three steps — assemble, validate, build — and a second brings a loose `.egf` file into that layout:**
 
 ****Where the preview player's AI steps run.** The standalone player has no API key: it asks the host it runs in for a model. Today that works inside claude.ai chat artifacts and in Artifacts published with the `sample` capability (for example from Claude Code). Opened as a local file, in an IDE preview or in another harness, the AI steps show a retry button and everything else in the course works. The `choice`, `score` and `noul` nodes never ask a model there: the author picks in a panel, and a button on it downloads the request the node would have sent — `state`, `model` and `questions`, with the student's answers already in the state — to paste into the [TypeSafe playground](https://console.typesafe.ai/playground) and see what the AI would have answered.**
 
-****Deliver a course to students.** Deploy the [player](player) server (PHP 8.1+ with `pdo_mysql`, `curl`, `openssl` and `json`, a MySQL database, an OpenRouter key and HTTPS), import the course JSON and register the server as an LTI 1.3 tool in the LMS. The [player.README](player/player.README.md) walks through every step, including Moodle.**
+****Deliver a course to students.** Deploy the [player](player) server (PHP 8.1+ with `pdo_mysql`, `curl`, `openssl` and `json`, a MySQL database, an OpenRouter key and HTTPS), import the course `.egf` file and register the server as an LTI 1.3 tool in the LMS. The [player.README](player/player.README.md) walks through every step, including Moodle.**
 
 # ****Repository layout****
 
@@ -233,7 +235,7 @@ flowchart LR
 
 ****Ways to help:****
 
-- ****Report bugs** — open an [issue](https://github.com/mgarlabx/edukors_graph/issues) describing what happened and how to reproduce it. If a course misbehaved, attach its JSON.**
+- ****Report bugs** — open an [issue](https://github.com/mgarlabx/edukors_graph/issues) describing what happened and how to reproduce it. If a course misbehaved, attach its `.egf` file.**
 - ****Suggest ideas** — start a [discussion](https://github.com/mgarlabx/edukors_graph/discussions) before writing code for larger changes, and always before changing the schema.**
 - ****Write code** — the player is plain PHP, the scripts are plain Python 3, and the viewer and player are single HTML files. Nothing here needs a build step or a dependency.**
 - ****Improve the docs** — clearer documentation is as valuable as a new feature.**
@@ -248,7 +250,7 @@ flowchart LR
 
 ****Before you open a pull request:****
 
-- ****Rebuild what you changed.** If you edited a sample's JSON, rebuild its map and player with `build_viewer.py` and `build_player.py`. A stale HTML file is a course that disagrees with itself.**
+- ****Rebuild what you changed.** If you edited a sample's `.egf` file, rebuild its map and player with `build_viewer.py` and `build_player.py`. A stale HTML file is a course that disagrees with itself.**
 - ****Keep the two copies in sync.** `schema/schema.json` is copied verbatim into the `edukors-graph-builder` skill as `assets/course.schema.json`, and that skill's `assets/course_player.html` is copied verbatim into `player/assets/`. Change one and copy it over the other.**
 - ****Treat the schema as the contract.** A change to it also touches both validators (`validate_course.py` and `player/src/validate.php`), the authoring reference and [schema.README](schema/schema.README.md). They move together or not at all.**
 

@@ -2,7 +2,7 @@
 
 *Part of [Edukors Graph](../README.md).*
 
-A course is a single JSON file that describes the **steps** a student goes through (**nodes**) and **in which order** they come (**edges**). Because edges can carry conditions, the order is not fixed: the course adapts to each student.
+A course is a single JSON file, saved with the `.egf` extension, that describes the **steps** a student goes through (**nodes**) and **in which order** they come (**edges**). Because edges can carry conditions, the order is not fixed: the course adapts to each student.
 
 The contract is [schema.json](schema.json), a JSON Schema (draft 2020-12). This file explains it; the field descriptions inside the schema are the authority. A course names the version it was written against, which is also what makes an editor validate it as it is typed:
 
@@ -24,6 +24,25 @@ Every course file has three parts:
 No other top-level key is allowed, and the same holds almost everywhere else in the format: an invented field is an error, not an extra.
 
 The course begins at the `start` node. Every other node is reached by following edges from there.
+
+## The .egf file
+
+A course is saved with the extension **`.egf`** — *Edukors Graph Format*. The extension names the format; the content is still JSON, UTF-8, exactly the object described here. Nothing is wrapped, compressed or encoded: renaming a `.egf` to `.json` gives a valid JSON file, and any JSON parser reads it as it is.
+
+The tools in this repository name a course `<slug>-course.egf` — `world-cats-1-mini-course.egf`, for instance. The extension is what matters; the name is only a convention.
+
+**For applications** that read or write Edukors Graph courses:
+
+- **Write** a course as `.egf`: when saving, exporting or offering a download. Served over HTTP, it goes as `Content-Type: application/json` — the format has no media type of its own — with the `.egf` name in `Content-Disposition`.
+- **Open** `.egf` first, and keep accepting `.json`: courses written before the extension existed carry it. A file picker for courses takes `accept=".egf,.json,application/json"`.
+- **Trust the content, not the name.** The extension says what a file claims to be; the schema says whether it is. Parse it as JSON and validate it like any other course.
+- **Only a whole course is `.egf`.** Other JSON a tool keeps around a course — the pieces of the exploded layout (`info.json`, `node.json`, `edges/<id>.json`), a map layout, an exported request — stays `.json`, because none of them is a course on its own.
+
+**For editors**, `.egf` is an unknown extension until it is associated with JSON, and without that the `$schema` line above validates nothing. Do it once:
+
+- **VS Code** — in `settings.json`: `"files.associations": { "*.egf": "json" }`.
+- **JetBrains IDEs** — *Settings → Editor → File Types → JSON*, add the pattern `*.egf`.
+- **Other editors** — whatever they call a file-type or language mapping, pointing `*.egf` at JSON.
 
 ## info
 

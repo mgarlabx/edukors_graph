@@ -3,7 +3,7 @@
 
     python3 build_course.py "<Course Title>"
 
-Reads info/, nodes/ and edges/, writes _output/<slug>-course.json, then runs
+Reads info/, nodes/ and edges/, writes _output/<slug>-course.egf, then runs
 the edukors-graph-builder validator and viewer/player builders on it.
 """
 import argparse
@@ -240,7 +240,7 @@ def main():
         return 1
 
     slug = course_slug(course_dir)
-    course_json = course_dir / OUTPUT / ("%s-course.json" % slug)
+    course_json = course_dir / OUTPUT / ("%s-course.egf" % slug)
     write_json(course_json, course)
     print("built %s (%d nodes, %d edges)"
           % (course_json, len(course["nodes"]), len(course["edges"])))

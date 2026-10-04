@@ -6,9 +6,9 @@ server, no upload step. The viewer serves that one course — it has no way to o
 another, so rebuild the map whenever the JSON changes.
 
 Usage:
-    python3 build_viewer.py course.json
-    python3 build_viewer.py course.json -o my-course-map.html
-    python3 build_viewer.py course.json --viewer /path/to/course_viewer.html
+    python3 build_viewer.py course.egf
+    python3 build_viewer.py course.egf -o my-course-map.html
+    python3 build_viewer.py course.egf --viewer /path/to/course_viewer.html
 
 By default the template is ../assets/course_viewer.html, next to this script.
 No third-party dependencies.
@@ -57,7 +57,7 @@ def escape_html(text):
 
 def main():
     parser = argparse.ArgumentParser(description="Build a standalone course map from a course JSON.")
-    parser.add_argument("course", help="path to the course JSON")
+    parser.add_argument("course", help="path to the course file (.egf)")
     parser.add_argument("-o", "--output", help="output HTML path (default: <course>-map.html)")
     parser.add_argument("--viewer", default=DEFAULT_VIEWER, help="viewer template to use")
     args = parser.parse_args()

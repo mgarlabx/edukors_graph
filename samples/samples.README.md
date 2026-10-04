@@ -12,7 +12,7 @@ Each sample is delivered as the three files the builder produces:
 
 | File                   | Content                                                                                      |
 | ---------------------- | -------------------------------------------------------------------------------------------- |
-| `<slug>-course.json` | The course itself: `info`, `nodes` and `edges`. This is the file imported into Edukors. |
+| `<slug>-course.egf`  | The course itself: `info`, `nodes` and `edges`. This is the file imported into Edukors. |
 | `<slug>-map.html`    | A standalone viewer that draws the course graph, for the author.                             |
 | `<slug>-player.html` | A standalone preview player that runs the course the way a student sees it.                  |
 
@@ -43,7 +43,7 @@ What it shows:
 - Static content only — `static-md` for text and `static-html` for a richer "who is who" page.
 - No AI, no stored data: the course runs the same way for every student.
 
-Files: [course](world-cats-1-mini-course.json) · [map](world-cats-1-mini-map.html) · [player](world-cats-1-mini-player.html)
+Files: [course](world-cats-1-mini-course.egf) · [map](world-cats-1-mini-map.html) · [player](world-cats-1-mini-player.html)
 
 ## 2. Short
 
@@ -68,7 +68,7 @@ What it shows:
 - **The graded chain** `form → score → dynamic-md`: `f1` collects the text (with `min-words`/`max-words` enforced), `s1` judges it on five criteria with `points`, and `dm2` writes the comment `from: s1`. The grade is `s1.percent`, worked out from the judgement rather than asked of a model a second time.
 - Edge order: the conditional edge comes first and the unconditional one works as the fallback. On `s1` that fallback goes to the closing node, never to `dm2` — it is the path taken when there was no judgement to write from.
 
-Files: [course](world-cats-2-short-course.json) · [map](world-cats-2-short-map.html) · [player](world-cats-2-short-player.html)
+Files: [course](world-cats-2-short-course.egf) · [map](world-cats-2-short-map.html) · [player](world-cats-2-short-player.html)
 
 ## 3. Full
 
@@ -106,11 +106,11 @@ What it shows:
 - **Choices by the student**: `bool` nodes turn yes/no answers into forks.
 - **Cycles with a way out**: a text scoring under 60 on `s1.percent` leads to tips and back to the form, and the student may loop back to the profile to explore another group before closing. The threshold lives in the edge and nowhere else.
 
-Files: [course](world-cats-3-full-course.json) · [map](world-cats-3-full-map.html) · [player](world-cats-3-full-player.html)
+Files: [course](world-cats-3-full-course.egf) · [map](world-cats-3-full-map.html) · [player](world-cats-3-full-player.html)
 
 ## Using the samples
 
 - **To learn the standard**, read the three course files in order, next to the [schema.README](../schema/schema.README.md). Each one adds a layer to the previous.
 - **To see a course**, open the `-map.html` file to inspect the graph and the `-player.html` file to walk through it as a student.
 - **As a starting point**, ask the builder skill to edit one of them — for instance, "add a quiz after the small wild cats" — instead of starting from an empty file.
-- **To test a deployment**, import one of the JSON files into the [player](../player/player.README.md) server.
+- **To test a deployment**, import one of the `.egf` files into the [player](../player/player.README.md) server.

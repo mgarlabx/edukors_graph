@@ -3,9 +3,9 @@
  * Tries a model against one judge node of a course, and says whether it can do
  * the job -- before a student is the one who finds out.
  *
- *     php tools/judge-probe.php course.json c1
- *     php tools/judge-probe.php course.json s1 --model openai/gpt-4o-2024-11-20
- *     php tools/judge-probe.php course.json c1 --answer "what the student wrote"
+ *     php tools/judge-probe.php course.egf c1
+ *     php tools/judge-probe.php course.egf s1 --model openai/gpt-4o-2024-11-20
+ *     php tools/judge-probe.php course.egf c1 --answer "what the student wrote"
  *
  * It answers the three questions worth asking of a judge model:
  *
@@ -43,7 +43,7 @@ for ($i = 0; $i < count($args); $i++) {
 }
 
 if ($file === null || $node === null) {
-    fwrite(STDERR, "usage: php tools/judge-probe.php <course.json> <node-id> [--model <slug>] [--answer <text>]\n");
+    fwrite(STDERR, "usage: php tools/judge-probe.php <course.egf> <node-id> [--model <slug>] [--answer <text>]\n");
     exit(2);
 }
 if (!is_file($file)) {

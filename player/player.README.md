@@ -97,10 +97,10 @@ That is about the **page a student is given**. The catalogue publishes something
 5. **Courses.** Either
 
    ```
-   php tools/import.php course.json --publish
+   php tools/import.php course.egf --publish
    ```
 
-   or the admin at `/admin/`, which takes an upload or pasted JSON.
+   or the admin at `/admin/`, which takes an upload (`.egf`, or `.json` for older files) or pasted JSON.
 6. **Platforms.** Register each LMS at `/admin/platforms.php`. That page also shows the four URLs the LMS administrator will ask you for.
 
 ## Installing in a subfolder of an existing site
@@ -276,7 +276,7 @@ The spread is not a key of the schema, and no course can read it. A score's is k
 **Before trusting a model with it**, try it on a real node:
 
 ```
-php tools/judge-probe.php course.json c1
+php tools/judge-probe.php course.egf c1
 ```
 
 It makes one real call and says whether the slug comes back as the slug that was asked for (a slug that does not round-trip makes `strict_model` refuse every judgement of every course, quietly), whether every question is answered as it was asked, what keys the judgement would store and which edge the student would leave by. It writes nothing — no progress, no `node_state`, no `ai_call` row.
@@ -371,9 +371,9 @@ player/
 │  └─ admin/…                             courses, categories, students, platforms, AI calls,
 │                                         and each version's map, play and json
 └─ tools/
-   ├─ import.php               php tools/import.php course.json --publish
+   ├─ import.php               php tools/import.php course.egf --publish
    ├─ admin-password.php       php tools/admin-password.php
-   ├─ judge-probe.php          php tools/judge-probe.php course.json c1
+   ├─ judge-probe.php          php tools/judge-probe.php course.egf c1
    └─ deploy.sh                ./tools/deploy.sh /path/to/site/graphs
 ```
 
