@@ -29,7 +29,7 @@ The course begins at the `start` node. Every other node is reached by following 
 
 A course is saved with the extension **`.egf`** — *Edukors Graph Format*. The extension names the format; the content is still JSON, UTF-8, exactly the object described here. Nothing is wrapped, compressed or encoded: renaming a `.egf` to `.json` gives a valid JSON file, and any JSON parser reads it as it is.
 
-The tools in this repository name a course `<slug>-course.egf` — `world-cats-1-mini-course.egf`, for instance. The extension is what matters; the name is only a convention.
+The tools in this repository name a course `<slug>-course.egf` — `fractions-course.egf`, for instance. The extension is what matters; the name is only a convention.
 
 **For applications** that read or write Edukors Graph courses:
 
@@ -474,7 +474,7 @@ How each one compares:
 
 - **`eq` and `ne`** compare booleans as booleans, numbers as numbers (so `70` and `70.0` are equal), and anything else as text, exactly and case-sensitively. Compare a `bool` answer with the JSON `true` or `false`, **never with the text `"true"` or `"false"`**: a non-empty text counts as true, so `"false"` would match a yes.
 - **`gt`, `gte`, `lt` and `lte`** are for numbers only. A value that is not a number makes the comparison fail. Prefer them over `eq` for anything the AI produces: a score level (`1.43`), a noul probability or a confidence is rarely a round number, so `eq` would almost never hold.
-- **`contains` and `not-contains`** work on two kinds of stored value. On a list, such as the answers of a `check` field, they test whether one of its items equals `value`, with the same rules as `eq`. On a text, they test whether `value` appears anywhere in it, **ignoring case** — `"cat"` is found in `"Wildcats are…"` too, so choose the text with care.
+- **`contains` and `not-contains`** work on two kinds of stored value. On a list, such as the answers of a `check` field, they test whether one of its items equals `value`, with the same rules as `eq`. On a text, they test whether `value` appears anywhere in it, **ignoring case** — `"sum"` is found in `"Summary of…"` too, so choose the text with care.
 
 ### Keys that do not exist yet
 

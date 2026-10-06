@@ -34,6 +34,7 @@ flowchart LR
 
 1. **This repository is still being tested. Changes are expected, with no guarantee of backward compatibility. Use it for experimental purposes only.**
 2. **Edukors Graph is part of a larger project, [Edukors.org](https://edukors.org), a global and free teacher-training school for the use of artificial intelligence in education.**
+3. **Example courses and more information are available at [edukors.org/graph](https://edukors.org/graph/).**
 
 # ****About****
 
@@ -110,7 +111,7 @@ flowchart LR
 - ****Multilingual**: the resources allow courses to be built in any language.**
 - ****Responsible use**: the resources are intended exclusively for education and must be employed with the goal of the sustainable development of society and the planet through education.**
 
-**The project has four parts. The **schema** is the standard itself. The **builder**, the **player** and the **samples** are the tools and examples around it, and all of them must stay compatible with the schema.**
+**The project has three parts. The **schema** is the standard itself. The **builder** and the **player** are the tools around it, and both must stay compatible with the schema.**
 
 ## ****Schema****
 
@@ -185,21 +186,9 @@ flowchart LR
 
 **See the [player.README](player/player.README.md) for installation, LMS registration and the design decisions.**
 
-## ****Samples****
-
-**The [samples](samples) folder holds three courses that tell the same story, **Cats of the World**, in three sizes, so the differences between them come from the graph and not from the subject:**
-
-| Sample                 | What it shows                                                                                                                           |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `world-cats-1-mini`  | The smallest valid course: five static nodes in a straight line.                                                                        |
-| `world-cats-2-short` | A quiz that decides the path, an AI-written reinforcement step, and a writing task judged against a rubric.                             |
-| `world-cats-3-full`  | Nine node types, three languages, a form that routes, a graded delivery with a rewrite loop, student choices and cycles with a way out. |
-
-**Each sample comes as the three files the builder produces. See the [samples.README](samples/samples.README.md) for details.**
-
 # ****Getting started****
 
-****Explore a course.** Open [world-cats-3-full-map.html](samples/world-cats-3-full-map.html) in a browser to see the graph, and [world-cats-3-full-player.html](samples/world-cats-3-full-player.html) to walk it as a student. Both carry the whole course and need no server, though these particular samples fetch their photographs from Wikimedia Commons. Read the three sample `.egf` files next to the [schema.README](schema/schema.README.md) to learn the standard.**
+****Explore a course.** Example courses are available at [edukors.org/graph](https://edukors.org/graph/). Open a course's map in a browser to see the graph, and its player to walk it as a student. Both carry the whole course and need no server. Read a course's `.egf` file next to the [schema.README](schema/schema.README.md) to learn the standard.**
 
 ****Build a course with an AI assistant.** Copy both folders under [builder/skills](builder/skills) — [edukors-graph-builder](builder/skills/edukors-graph-builder) and [edukors-graph-editor](builder/skills/edukors-graph-editor) — to wherever your assistant loads skills. In Claude Code that is `.claude/skills/` inside a project, or `~/.claude/skills/` for every project; in claude.ai, upload each folder as a skill in the settings. Then ask for a course. The skills ask only for what is missing from the brief and deliver the three files.**
 
@@ -250,7 +239,7 @@ flowchart LR
 
 ****Before you open a pull request:****
 
-- ****Rebuild what you changed.** If you edited a sample's `.egf` file, rebuild its map and player with `build_viewer.py` and `build_player.py`. A stale HTML file is a course that disagrees with itself.**
+- ****Rebuild what you changed.** If you edited a course's `.egf` file, rebuild its map and player with `build_viewer.py` and `build_player.py`. A stale HTML file is a course that disagrees with itself.**
 - ****Keep the two copies in sync.** `schema/schema.json` is copied verbatim into the `edukors-graph-builder` skill as `assets/course.schema.json`, and that skill's `assets/course_player.html` is copied verbatim into `player/assets/`. Change one and copy it over the other.**
 - ****Treat the schema as the contract.** A change to it also touches both validators (`validate_course.py` and `player/src/validate.php`), the authoring reference and [schema.README](schema/schema.README.md). They move together or not at all.**
 

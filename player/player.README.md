@@ -299,7 +299,7 @@ A judge node in an offline copy needs no note and gets none. The stub answers it
 
 Everything else — reading, prebuilt HTML, quizzes, forms, yes/no questions, the branching — works with no network at all.
 
-One thing does not travel: an image a course refers to by URL, as the [samples](../samples/samples.README.md) do with Wikimedia Commons. The markup goes into the file, the file does not. A course meant to be taken offline should carry its illustrations as inline SVG in a `static-html` node, which is what the builder's design patterns already recommend.
+One thing does not travel: an image a course refers to by URL, such as a photograph on Wikimedia Commons. The markup goes into the file, the file does not. A course meant to be taken offline should carry its illustrations as inline SVG in a `static-html` node, which is what the builder's design patterns already recommend.
 
 ## The database
 

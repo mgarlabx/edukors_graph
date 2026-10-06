@@ -8,15 +8,15 @@ nobody proofreads). Here each language gets the whole thing in one file.
 
     content/<lang>/quiz.md          content/<lang>/form.md      content/<lang>/bool.md
 
-    ## 1. habitat                   ## 1. interest (radio,      Do you want the
+    ## 1. sum                       ## 1. interest (radio,      Do you want the
                                            required)            advanced track?
-    Which cat cannot roar?
-                                    Which group now?            - [ ] yes: Yes please
-    - [ ] jaguar: Jaguar                                        - [x] no: No, go on
-    - [x] snow-leopard: Snow …      - big: Big cats
-    - [ ] lion: Lion                - small: Small wild cats
+    Which is 1/2 + 1/4?
+                                    Which topic now?            - [ ] yes: Yes please
+    - [ ] two-sixths: 2/6                                       - [x] no: No, go on
+    - [x] three-quarters: 3/4       - adding: Adding …
+    - [ ] two-quarters: 2/4         - comparing: Comparing …
 
-    > The snow leopard lives …      ## 2. country (text-line)
+    > Write 1/2 as 2/4 …            ## 2. country (text-line)
 
                                     Where are you writing from?
 

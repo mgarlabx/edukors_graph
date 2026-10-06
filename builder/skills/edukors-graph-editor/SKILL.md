@@ -53,8 +53,8 @@ the three folders beside `_output/` and nothing else. The build recreates
 `_output/` from scratch, so deleting it loses nothing.
 
 `<slug>` is the kebab-case of the **course folder name**, e.g.
-`World Cats 1 (short)/` → `_output/world-cats-1-short-course.egf`,
-`_output/world-cats-1-short-map.html`, `_output/world-cats-1-short-player.html`.
+`Fractions 1 (intro)/` → `_output/fractions-1-intro-course.egf`,
+`_output/fractions-1-intro-map.html`, `_output/fractions-1-intro-player.html`.
 The three files sit loose in `_output/`, with no subfolders. Renaming the folder
 renames the three outputs on the next build; delete the old ones (or the whole
 `_output/`, which the build rebuilds).
@@ -166,16 +166,16 @@ language, and `scripts/content_md.py` is the only place that knows their syntax.
 **quiz.md** — one heading per question:
 
 ```markdown
-## 1. habitat
+## 1. sum
 
-Which of these cats lives in the mountains of Central Asia and cannot roar?
+Which fraction is equal to 1/2 + 1/4?
 
-- [ ] jaguar: Jaguar
-- [x] snow-leopard: Snow leopard
-- [ ] lion: Lion
+- [ ] two-sixths: 2/6
+- [x] three-quarters: 3/4
+- [ ] two-quarters: 2/4
 
-> The snow leopard lives in the Himalayas. Although it is a Panthera, its
-> throat does not allow a full roar.
+> Write 1/2 as 2/4, so both fractions share the denominator 4. Then
+> 2/4 + 1/4 = 3/4.
 ```
 
 The heading is the question number and then its `key`, which a question without
@@ -190,11 +190,11 @@ question without feedback has none.
 ```markdown
 ## 1. interest (radio, required)
 
-Which group of cats do you want to explore now?
+Which topic do you want to explore now?
 
-- big: Big cats
-- small: Small wild cats
-- domestic: Domestic cats
+- adding: Adding fractions
+- comparing: Comparing fractions
+- decimals: Fractions and decimals
 
 ## 2. country (text-line, optional)
 
@@ -300,8 +300,8 @@ picks a level and a confidence, which is how every branch of an adaptive course
 gets walked without a server. A `dynamic-md` node with `from` then writes its
 feedback out of that pick, so the author can see what a given level produces.
 
-**Importing an existing single-file course** — including everything under
-`other/` and `samples/`, which are still flat files:
+**Importing an existing single-file course** — any `.egf` file kept as a single
+flat file:
 
 ```bash
 python3 .claude/skills/edukors-graph-editor/scripts/split_course.py <path-to>-course.egf -o "<Course Title>"
