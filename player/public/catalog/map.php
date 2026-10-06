@@ -1,9 +1,9 @@
 <?php
 /**
- * The map of a course: its graph, drawn by the viewer the builder skill ships.
+ * The map of a course: its graph, drawn by assets/course_viewer.html from what
+ * the database holds.
  *
- * The same file build_viewer.py writes on a laptop, built here from what the
- * database holds. It is a picture of how the course is put together -- the
+ * It is a picture of how the course is put together -- the
  * steps, the branches, the conditions on them -- and it runs nothing.
  */
 

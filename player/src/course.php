@@ -345,14 +345,16 @@ final class Course
      * The course as the browser may see it: nothing a student could read that
      * the course does not mean to show them.
      *
-     * Two kinds of thing are taken out. A prompt is replaced by a marker naming
+     * Three kinds of thing are taken out. A prompt is replaced by a marker naming
      * its node: the player sends the marker where it would have sent a prompt,
      * and public/api/ai.php builds the real one here, on the server, from the
      * course in the database. A judge node loses more than that -- its state,
      * and every question's instructions, criteria and points -- because the
      * rubric a teacher wrote and the marks they hung on it are the answer key
      * of the step, and a `choice` node's criteria are literally the list of
-     * decisions the course can make about a student.
+     * decisions the course can make about a student. And the extras of the
+     * course, of its nodes and of its edges go too: they were written for some
+     * other tool, not for a student, and nothing in this player reads them.
      *
      * Taking all of it out is only possible because api/ai.php answers a
      * judgement with the storage keys already derived, so the browser has
@@ -362,10 +364,15 @@ final class Course
     public function withoutPrompts(): array
     {
         $doc = $this->doc;
-        unset($doc['info']['system-prompt']);
+        unset($doc['info']['system-prompt'], $doc['info']['extras']);
         $language = $this->sourceLanguage();
 
+        foreach (array_keys($doc['edges'] ?? []) as $index) {
+            unset($doc['edges'][$index]['extras']);
+        }
+
         foreach ($doc['nodes'] ?? [] as $index => $node) {
+            unset($doc['nodes'][$index]['extras']);
             $type = (string) ($node['type'] ?? '');
             $id   = (string) ($node['id'] ?? '');
 

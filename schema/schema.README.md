@@ -21,7 +21,7 @@ Every course file has three parts:
 - `nodes` — the content and activities of the course.
 - `edges` — directed links between nodes that define the sequence.
 
-No other top-level key is allowed, and the same holds almost everywhere else in the format: an invented field is an error, not an extra.
+No other top-level key is allowed, and the same holds almost everywhere else in the format: an invented field is an error, not an extra. The one place for data the format does not define is [`extras`](#extras).
 
 The course begins at the `start` node. Every other node is reached by following edges from there.
 
@@ -36,7 +36,7 @@ The tools in this repository name a course `<slug>-course.egf` — `fractions-co
 - **Write** a course as `.egf`: when saving, exporting or offering a download. Served over HTTP, it goes as `Content-Type: application/json` — the format has no media type of its own — with the `.egf` name in `Content-Disposition`.
 - **Open** `.egf` first, and keep accepting `.json`: courses written before the extension existed carry it. A file picker for courses takes `accept=".egf,.json,application/json"`.
 - **Trust the content, not the name.** The extension says what a file claims to be; the schema says whether it is. Parse it as JSON and validate it like any other course.
-- **Only a whole course is `.egf`.** Other JSON a tool keeps around a course — the pieces of the exploded layout (`info.json`, `node.json`, `edges/<id>.json`), a map layout, an exported request — stays `.json`, because none of them is a course on its own.
+- **Only a whole course is `.egf`.** Other JSON a tool keeps around a course — the pieces of a course split into files, a map layout, an exported request — stays `.json`, because none of them is a course on its own.
 
 **For editors**, `.egf` is an unknown extension until it is associated with JSON, and without that the `$schema` line above validates nothing. Do it once:
 
@@ -59,6 +59,7 @@ The tools in this repository name a course `<slug>-course.egf` — `fractions-co
 | `start`           |          yes          | The id of the first node, and the only way into the course.                                                                                                                                                                                                  |
 | `sections`        |           no           | Names for the groups the nodes are displayed in. Purely visual: they do not affect the order.                                                                                                                                                                |
 | `system-prompt`   |           no           | Course-wide instructions sent as the system prompt of every call that generates content. Audience, tone and global rules live here, so each node only carries what is specific to it. It does not reach the judgement nodes, which take no system prompt. |
+| `extras`          |           no           | Data that a particular tool keeps with the course and that the format does not define. See [Extras](#extras).                                                                                                                                                |
 
 ## Text in several languages
 
@@ -100,6 +101,7 @@ Every node carries the same fields; only `content` changes shape with the type:
 - `content` — what the node shows or does.
 - `section` — optional, 1 by default. It sets the group the node is displayed in (see `info.sections`).
 - `position` — optional, such as `{ "x": 34, "y": -12 }`. It records where the node sits on the canvas of a builder that lets the author arrange the nodes by hand, in that builder's own units. Purely visual: players ignore it, and it does not affect the order.
+- `extras` — optional, such as `{ "acme-lms": { "competency": "fractions-1" } }`. Data that a particular tool keeps with the node and that the format does not define. See [Extras](#extras).
 
 #### static-md
 
@@ -412,6 +414,7 @@ An edge is a directed link from one node to the next. The whole order of a cours
 | `from` |   yes   | The id of the node the student is leaving.                                   |
 | `to`   |   yes   | The id of the node the student goes to.                                      |
 | `when` |    no    | The condition under which this edge is the one taken. Without it, it always is. |
+| `extras` |    no    | Data that a particular tool keeps with the edge. See [Extras](#extras).      |
 
 ```json
 "edges": [
@@ -719,6 +722,34 @@ After quiz `q1`, strong students move on to `sm2` while the others get a review 
   { "from": "sm3", "to": "sm2" }
 ]
 ```
+
+## Extras
+
+The format refuses any field it does not know, so that a typo is an error rather than a field quietly ignored. `extras` is the one exception. It can appear on `info`, on any node and on any edge, and it holds data that a particular tool or use case keeps with the course and that the format does not define: the competency a learning platform maps a node to, a tag for analytics, a note left by an authoring tool.
+
+```json
+{
+  "id": "q1",
+  "type": "quiz",
+  "title": [{ "lang": "en", "text": "Check yourself" }],
+  "content": { "...": "..." },
+  "extras": {
+    "acme-lms": { "competency": "fractions-1" }
+  }
+}
+```
+
+It is an object with at least one entry, and nothing inside it is checked. Give each tool its own key, as `acme-lms` above, so that several tools can share the field without overwriting each other.
+
+Five rules keep it an extra rather than a second format:
+
+- **A course works without its extras.** Whatever reads a course ignores the keys it does not know, and a player that ignores all of them still runs the whole course: the same nodes, in the same order, judged the same way.
+- **Nothing in them reaches the AI or is content for the student.** What the AI is given is what the format names, and nothing else. Text a student reads belongs in the fields of the format, which carry a version per language and are checked for every language the course declares.
+- **They are kept.** A tool that rewrites a course keeps the extras it does not understand, exactly as they were.
+- **They are public.** They travel with the file wherever it is copied or downloaded, so they must never hold a secret, such as a key or a password.
+- **What every player needs is not an extra.** When something kept here turns out to be needed by every player, it belongs in the format as a field of its own.
+
+`extras` is allowed on `info`, on a node and on an edge, and nowhere else: not inside `content`, and not on a question or an option. Data about a part of a node goes in the extras of the node.
 
 ## Known limitations
 

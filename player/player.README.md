@@ -4,7 +4,7 @@
 
 The **player** is the server that delivers Edukors Graph courses to students.
 
-The builder skill already produces a standalone player — one HTML file that runs a course with no server at all. That file is a preview for the author. It keeps progress in one browser, and it asks whatever AI host it happens to be running inside to write the dynamic steps, which works inside an AI assistant and nowhere else.
+The project already has a standalone player — one HTML file, [assets/course_player.html](assets/course_player.html), that runs a course with no server at all. On its own it is a preview for the author, the one the builder shows a course in. It keeps progress in one browser, and it asks whatever host it runs inside to write the dynamic steps, which only works where a host answers, such as the builder's preview.
 
 This server is the other half. It takes the same player, unchanged, and gives it the four things a real deployment needs:
 
@@ -35,7 +35,7 @@ public/lti/login.php → public/lti/launch.php → session → public/course.php
                               public/api/ai.php   public/api/progress.php
 ```
 
-The player is used exactly as the builder skill ships it. Nothing in [assets/course_player.html](assets/course_player.html) is edited — it is a verbatim copy of [the builder's asset](../builder/skills/edukors-graph-builder/assets/course_player.html). When that one changes, copy it over again.
+The player is used exactly as it is. Nothing in [assets/course_player.html](assets/course_player.html) is edited for this server, and the builder copies the same file, verbatim, to preview a course.
 
 That is possible because the player was already written to ask a *host* for the model, trying, in order, a Claude artifact capability, a `fetch` to `api.anthropic.com`, and a claude.ai bridge. In an ordinary browser only the `fetch` exists, and it is meant to be intercepted. This server steps into that role: [public/assets/bridge.js](public/assets/bridge.js) catches the call and hands it to [public/api/ai.php](public/api/ai.php), which answers in the same envelope the player already reads.
 
@@ -50,6 +50,7 @@ So the course is served with those taken out (`Course::withoutPrompts` in [src/c
 | the prompt of `dm1`                                            | `#edukors:dm1` |
 | the `state`, `instructions`, `criteria` and `points` of `c1` | gone, only each question's `key` is left |
 | `info.system-prompt`                                           | removed        |
+| the `extras` of the course, of every node and of every edge    | removed        |
 
 The bridge reads the node id out of the marker and sends `{"node":"dm1"}`, or `{"node":"c1"}`. **There is no prompt in the page to send.** `api/ai.php` then insists on all of this before it calls anything:
 
@@ -222,7 +223,7 @@ Each course is a line, with three things you can do with it:
 
 | Icon         | What opens                                                                                                                                                               |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **map**      | `catalog/map.php` — the course graph, drawn by [assets/course_viewer.html](assets/course_viewer.html), the viewer the builder skill ships. The same file `build_viewer.py` writes on a laptop, built here from what the database holds. |
+| **map**      | `catalog/map.php` — the course graph, drawn by [assets/course_viewer.html](assets/course_viewer.html) from the course the database holds. |
 | **play**     | `catalog/play.php` — the course itself, anonymously.                                                                                                                     |
 | **JSON**     | `catalog/json.php` — the file it is written in, every object and array folding, a folded step naming its id and its type. Downloading it is offered there, on the page of somebody already looking at the file, rather than as a fourth icon on every line. `catalog/download.php` is what that link asks for. |
 
@@ -230,7 +231,7 @@ Each course is a line, with three things you can do with it:
 
 The calls are paid from the students' account, and nobody signed in to be charged for them — so a visitor is counted by where they call from. `ai_call.visitor` holds a keyed hash of the address, never the address itself (an IPv6 host is one visitor across its /64). One visitor may make `catalog.per_hour` calls an hour, all of them together `catalog.per_day` a day, and those calls count inside `ai.per_day` as well: the open door has a share of its own and cannot spend what the students' courses need. Past either limit a written step shows the error with its retry button and a judgement takes the unconditional edge, as for a student. With `catalog.ai` set to `false` — or with no model configured — the page is what it used to be: the offline copy `download.php` hands a student, whose AI steps say they cannot run and let the visitor carry on.
 
-**The JSON is the document, whole.** Prompts included, `info.system-prompt` included: it is byte for byte what was imported, so that whoever downloads it can validate it against the schema it names, open it in the builder, or import it into a server of their own.
+**The JSON is the document, whole.** Prompts included, `info.system-prompt` included, `extras` included: it is byte for byte what was imported, so that whoever downloads it can validate it against the schema it names, open it in the builder, or import it into a server of their own.
 
 **The admin has the same three icons**, on every version in its list of courses — drafts and archived ones included, since they are opened by version rather than by course: `admin/map.php`, `admin/play.php` and `admin/json.php` (whose download link is `admin/download.php`). The one that differs is play. The admin's player is online too, but opens any version, drafts included, and its AI steps run: [public/admin/play-ai.php](public/admin/play-ai.php) builds the prompt on the server exactly as `api/ai.php` does, and `admin/play-state.php` keeps where the run is in the admin's session, which is what fills a prompt's `{{STORAGE: key}}`. There is no student behind it, so nothing is written to `progress` or `node_state`, nobody joins the list of students, and no step is frozen — reopening a step asks the model again, which is what an author trying a prompt wants. The calls are paid from the same account, so they are logged in AI calls (with no student or course on them) and count against the daily limit; the hourly one is a student's, and does not apply. See [src/preview.php](src/preview.php).
 
@@ -249,7 +250,7 @@ The catalogue has no CSS of the admin's; [public/assets/catalog.css](public/asse
 
 ## Judgements
 
-A `choice`, `score` or `noul` node is answered by the AI rather than by the student, who never sees it. The preview player the builder ships cannot answer one — it has no key and no server — so it shows the author a panel and lets them answer as the model would. Here the model actually answers.
+A `choice`, `score` or `noul` node is answered by the AI rather than by the student, who never sees it. The standalone player cannot answer one on its own — it has no key and no server — so, as a preview, it shows the author a panel and lets them answer as the model would. Here the model actually answers.
 
 **Where it goes.** Not where a generated step goes. `jev` is a *decisions* model, and OpenRouter refuses it at `chat/completions` in so many words — *"typesafe/jev-1.13 is a decisions model and cannot be used with the chat/completions endpoint. Use the /api/alpha/decisions endpoint instead."* So the judge has an endpoint of its own, `judge.url`, while `ai.url` stays the chat endpoint that writes the dynamic steps. Two kinds of call, two endpoints, one key.
 
@@ -285,7 +286,7 @@ It makes one real call and says whether the slug comes back as the slug that was
 
 ## The offline copy
 
-`public/download.php` is the PHP equivalent of the skill's `build_player.py`: it splices the course into the same `<script id="edukors-player-boot">` block and hands back one self-contained file.
+`public/download.php` splices the course into the player's `<script id="edukors-player-boot">` block and hands back one self-contained file.
 
 It also carries the student's own work — the steps the AI has already written for them, their answers and their feedback all travel with the file.
 
@@ -299,7 +300,7 @@ A judge node in an offline copy needs no note and gets none. The stub answers it
 
 Everything else — reading, prebuilt HTML, quizzes, forms, yes/no questions, the branching — works with no network at all.
 
-One thing does not travel: an image a course refers to by URL, such as a photograph on Wikimedia Commons. The markup goes into the file, the file does not. A course meant to be taken offline should carry its illustrations as inline SVG in a `static-html` node, which is what the builder's design patterns already recommend.
+One thing does not travel: an image a course refers to by URL, such as a photograph on Wikimedia Commons. The markup goes into the file, the file does not. A course meant to be taken offline should carry its illustrations as inline SVG in a `static-html` node.
 
 ## The database
 
@@ -320,9 +321,9 @@ Eight tables, in `sql/schema.sql`. The course JSON is stored whole, in `course.d
 
 ## Importing and validation
 
-`src/validate.php` is a port of the builder's `validate_course.py` — its structure, graph and storage-key layers. An **error** stops the import: it is something that would break in front of a student (an edge to a node that does not exist, an id whose prefix disagrees with its type, an unconditional edge that is not last, a `{{STORAGE: key}}` nothing produces). A **warning** is kept with the course and shown on its page in the admin.
+`src/validate.php` checks a course in three layers: its structure, its graph and its storage keys. An **error** stops the import: it is something that would break in front of a student (an edge to a node that does not exist, an id whose prefix disagrees with its type, an unconditional edge that is not last, a `{{STORAGE: key}}` nothing produces). A **warning** is kept with the course and shown on its page in the admin.
 
-The one check not ported is how the correct answers of a quiz are spread across the options. That is a judgement about teaching rather than about running the course, and leaving it in the skill avoids two implementations of it drifting apart. Run `validate_course.py` for that.
+The one check it leaves out is how the correct answers of a quiz are spread across the options. That is a judgement about teaching rather than about running the course, so it belongs to the builder, whose validator makes it as the author works.
 
 **How a course is listed.** The **How it is listed** card on a course's page in the admin holds three things the JSON has no say in: the **name** this server lists the course under whatever `info.title` says, the **category** it is on, and its **order** inside that category, smallest first. All three belong to the course rather than to one of its versions — every version already stored takes them, and `src/import.php` hands them to the next version imported. Nothing records *that* a course was renamed: a name given by hand is a name that differs from the one in the course's own `doc`, and comparing the two (`Course::storedTitle`) is what the import asks. Emptying the name writes the file's own title back, which is what undoes it. Students see none of it: the player takes the title from the JSON, in the language they are reading, and never hears of the categories.
 
@@ -345,8 +346,8 @@ Categories are managed at `/admin/categories.php` — a name and a number each, 
 player/
 ├─ sql/schema.sql              the database
 ├─ private/config.sample.php   the configuration to copy; never in the web root
-├─ assets/course_player.html   the skill's player, verbatim
-├─ assets/course_viewer.html   the skill's map viewer, verbatim
+├─ assets/course_player.html   the standalone player, used verbatim
+├─ assets/course_viewer.html   the course map viewer, used verbatim
 ├─ src/
 │  ├─ config.php   db.php   session.php   admin.php     plumbing
 │  ├─ course.php                          a course: text, graph, conditions, prompts
@@ -377,4 +378,4 @@ player/
    └─ deploy.sh                ./tools/deploy.sh /path/to/site/graphs
 ```
 
-The admin borrows the look of the course viewer the skill ships — grey paper, one hairline round every card, one blue accent, monospace for ids and storage keys. Students never see it; they only ever see the player.
+The admin borrows the look of the course viewer in `assets/course_viewer.html` — grey paper, one hairline round every card, one blue accent, monospace for ids and storage keys. Students never see it; they only ever see the player.

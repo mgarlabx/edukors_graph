@@ -81,8 +81,11 @@ function edukors_import(string $json, bool $publish = false, ?string $only = nul
         'source_language' => $course->sourceLanguage(),
         'languages'       => implode(',', $course->languages()),
         'start_node'      => (string) $course->firstNodeId(),
-        // Stored as delivered, so what the server runs is what the author wrote.
-        'doc'             => json_encode($doc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        // Stored as delivered, byte for byte, so what the server runs is what
+        // the author wrote. Encoding $doc again would not do: decoded into
+        // arrays, an empty {} comes back out as [], and inside 'extras' that
+        // changes data some other tool wrote.
+        'doc'             => $json,
         'warnings'        => $result['warnings'] === [] ? null : implode("\n", $result['warnings']),
         'category_id'     => $kept === null || $kept['category_id'] === null ? null : (int) $kept['category_id'],
         'sort_order'      => $kept === null ? 0 : (int) $kept['sort_order'],

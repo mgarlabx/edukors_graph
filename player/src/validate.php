@@ -2,11 +2,10 @@
 /**
  * Validates a course JSON before it is imported.
  *
- * It is a port of the three layers of the builder's validate_course.py --
- * structure, graph and storage keys -- minus the one check that is a matter of
- * pedagogy rather than of running the course (how the correct answers of the
- * quizzes are spread across the options). Keeping that one in the skill avoids
- * two implementations of a judgement call drifting apart.
+ * It checks three layers -- structure, graph and storage keys -- and leaves out
+ * the one check that is a matter of pedagogy rather than of running the course
+ * (how the correct answers of the quizzes are spread across the options). That
+ * one belongs to the builder, which makes it as the author works.
  *
  * An error stops the import: it is something that would break in front of a
  * student. A warning is kept with the course and shown in the admin.
@@ -142,10 +141,11 @@ final class CourseValidator
     {
         $required = ['course-id', 'source-language', 'other-languages', 'title',
                      'author', 'version', 'date', 'start'];
-        $optional = ['description', 'sections', 'system-prompt'];
+        $optional = ['description', 'sections', 'system-prompt', 'extras'];
         if (!$this->checkKeys($info, 'info', $required, $optional)) {
             return;
         }
+        $this->checkExtras($info, 'info');
 
         $source = $info['source-language'] ?? null;
         if (!is_string($source) || preg_match(self::LANG_RE, $source) !== 1) {
@@ -243,10 +243,11 @@ final class CourseValidator
         $where = "nodes[$index]";
         // A node missing a field is still registered by its id, so the edges
         // that name it are not reported as dangling on top of the real error.
-        $this->checkKeys($node, $where, ['id', 'type', 'title', 'content'], ['section', 'position']);
+        $this->checkKeys($node, $where, ['id', 'type', 'title', 'content'], ['section', 'position', 'extras']);
         if (!is_array($node)) {
             return;
         }
+        $this->checkExtras($node, $where);
 
         $id   = $node['id'] ?? null;
         $type = $node['type'] ?? null;
@@ -811,10 +812,11 @@ final class CourseValidator
 
         foreach ($edges as $index => $edge) {
             $where = "edges[$index]";
-            $this->checkKeys($edge, $where, ['from', 'to'], ['when']);
+            $this->checkKeys($edge, $where, ['from', 'to'], ['when', 'extras']);
             if (!is_array($edge)) {
                 continue;
             }
+            $this->checkExtras($edge, $where);
             $from = $edge['from'] ?? null;
             $to   = $edge['to'] ?? null;
             $where = 'edge ' . json_encode($from) . ' -> ' . json_encode($to);
@@ -953,7 +955,7 @@ final class CourseValidator
     private function validateGraph(): void
     {
         // Without a valid start node there is no reachability to compute; the
-        // checks on keys and prompts below still run, as validate_course.py does.
+        // checks on keys and prompts below still run.
         $reachable = [];
         if ($this->start !== null && !isset($this->ids[$this->start])) {
             $this->error('info.start', "start node '{$this->start}' does not exist");
@@ -1182,6 +1184,21 @@ final class CourseValidator
             }
         }
         return $ok;
+    }
+
+    /** 'extras' is free inside, but it is an object, and not an empty one. */
+    private function checkExtras(array $object, string $where): void
+    {
+        if (!array_key_exists('extras', $object)) {
+            return;
+        }
+        $extras = $object['extras'];
+        // [] is what json_decode makes of {} as well, so it is reported as empty.
+        if ($extras === []) {
+            $this->error("$where.extras", 'is empty; leave it out');
+        } elseif (!is_array($extras) || array_is_list($extras)) {
+            $this->error("$where.extras", 'must be an object');
+        }
     }
 
     /**

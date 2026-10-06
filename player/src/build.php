@@ -3,7 +3,7 @@
  * Builds the HTML the student gets, out of assets/course_player.html -- and
  * the map of a course, out of assets/course_viewer.html.
  *
- * The template is the player the builder skill ships, taken as it is. It
+ * The template is the standalone player, taken as it is. It
  * already renders every node type, follows the edges, speaks ten languages and
  * follows the light/dark setting of the browser. What it does not have is a
  * model to ask, a place to keep progress and an identity for the student --
@@ -17,12 +17,11 @@
  *   offline -- a single file that runs with no network at all. Its AI steps
  *              say so and let the student carry on.
  *
- * Both splice the course into the same block build_player.py uses, so the
- * template stays interchangeable with the one in the skill.
+ * Both splice the course into the player's boot block and nothing else, so
+ * the template stays the very file the builder previews a course with.
  *
- * The map is the third build, and the same idea a second time: the viewer the
- * skill ships, with the placeholder course of its last script replaced by a
- * real one, exactly as build_viewer.py does it.
+ * The map is the third build, and the same idea a second time: the viewer,
+ * with the placeholder course of its last script replaced by a real one.
  */
 
 declare(strict_types=1);
@@ -72,7 +71,7 @@ function edukors_splice_boot(string $html, array $payload): string
     return $head . edukors_boot_json($payload) . $tail;
 }
 
-/** Puts the course title and language in the page, as build_player.py does. */
+/** Puts the course title and language in the page. */
 function edukors_set_head(string $html, Course $course, string $lang): string
 {
     // Through a callback, so a '$' or a backslash in a title is not read as a
@@ -224,12 +223,11 @@ function edukors_offline_script(string $notice, Course $course, ?array $state): 
 
 
 /**
- * The course map: the viewer the builder skill ships, with this course in it.
+ * The course map: the viewer in assets/course_viewer.html, with this course in
+ * it.
  *
  * The template carries a placeholder course between `const DEMO = {` and
- * `render(DEMO);`, which is what build_viewer.py replaces and what is replaced
- * here, so a map built by this server and one built on a laptop are the same
- * file. Nothing is stripped: a map is for whoever is looking at how the course
+ * `render(DEMO);`, and that is what is replaced here. Nothing is stripped: a map is for whoever is looking at how the course
  * is built, and that includes the prompts.
  */
 function edukors_build_map(Course $course, ?string $lang = null): string
@@ -259,7 +257,7 @@ function edukors_build_map(Course $course, ?string $lang = null): string
 }
 
 /**
- * JSON safe to sit inside a <script> block, as build_viewer.py writes it.
+ * JSON safe to sit inside a <script> block.
  *
  * `</` is the only sequence that could end the block early, and `<\/` is the
  * same string to a JavaScript parser. Outside a string a JSON document has no

@@ -129,6 +129,9 @@
           "examples": [
             "You are tutoring first-year undergraduates. Be concise, use plain language, and always give a worked example."
           ]
+        },
+        "extras": {
+          "$ref": "#/$defs/extras"
         }
       }
     },
@@ -269,6 +272,9 @@
         "content": {
           "type": "object",
           "description": "Content of the node. Its shape depends on 'type'."
+        },
+        "extras": {
+          "$ref": "#/$defs/extras"
         }
       },
       "allOf": [
@@ -516,6 +522,18 @@
         {
           "x": 34,
           "y": -12
+        }
+      ]
+    },
+    "extras": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Data that a particular tool or use case keeps with the course and that the format itself does not define: the one place where a field the format does not know is not an error. Nothing inside it is checked beyond its being an object with at least one entry. Give each tool or use case a key of its own, such as 'acme-lms', so that several can share it without overwriting each other. Whatever reads a course ignores the keys it does not know, and the course must work without any of its extras: the same nodes, in the same order, judged the same way. They are never sent to the AI, and nothing in them is content for the student: text a student reads belongs in the fields of the format, which carry a version per language. A tool that rewrites a course keeps the extras it does not understand, as they were. They travel with the file wherever it is copied or downloaded, so they must never hold a secret. When something kept here turns out to be needed by every player, it belongs in the format as a field of its own. Allowed on 'info', on a node and on an edge, and nowhere else: data about a part of a node goes in the extras of the node. Optional.",
+      "examples": [
+        {
+          "acme-lms": {
+            "competency": "fractions-1"
+          }
         }
       ]
     },
@@ -1175,6 +1193,9 @@
         "when": {
           "$ref": "#/$defs/edgeCondition",
           "description": "Condition that makes this edge the one to follow: a single comparison, or several joined with 'and' or 'or', which can be nested. Omit it for an unconditional edge, which should be listed last among the edges leaving the same node, as a fallback."
+        },
+        "extras": {
+          "$ref": "#/$defs/extras"
         }
       }
     },
