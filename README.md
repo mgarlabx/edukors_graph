@@ -34,7 +34,10 @@ flowchart LR
 
 1. **This repository is still being tested. Changes are expected, with no guarantee of backward compatibility. Use it for experimental purposes only.**
 2. **Edukors Graph is part of a larger project, [Edukors.org](https://edukors.org), a global and free teacher-training school for the use of artificial intelligence in education.**
-3. **Example courses and more information are available at [edukors.org/graph](https://edukors.org/graph/).**
+3. **Courses are built in [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor), a free desktop app for Mac and Windows. Its [README](https://github.com/mgarlabx/edukors_graph_editor#readme) is the place to start: download, installation and a tour of the app.**
+4. **Example courses are in the [samples](samples/samples.README.md) folder, and more information is available at [edukors.org/graph](https://edukors.org/graph/).**
+
+> **📥 Download Edukors Graph Editor** — [Mac (Apple Silicon and Intel, macOS 11+)](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-mac.dmg) · [Windows (10 or 11, x64)](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-windows.exe) · [README](https://github.com/mgarlabx/edukors_graph_editor#readme)
 
 # ****About****
 
@@ -76,7 +79,7 @@ flowchart LR
 
 ## ****How does Edukors Graph relate to artificial intelligence?****
 
-**Courses are built in the [builder](#builder), a desktop app with an AI agent, built with Claude, beside the course map. The teacher asks the agent to plan, write, review, translate or fix parts of the course, and each change waits, by default, for the teacher's approval. AI also works inside the course, while the student takes it: dynamic nodes generate content with a language model (LLM), and the judgement nodes are answered by a System One model (SOM).**
+**Courses are built in the [builder](#builder), a desktop app with an AI agent beside the course map. The teacher asks the agent to plan, write, review, translate or fix parts of the course, and each change waits, by default, for the teacher's approval. AI also works inside the course, while the student takes it: dynamic nodes generate content with a language model (LLM), and the judgement nodes are answered by a System One model (SOM).**
 
 ## ****What is the human role in generating courses with Edukors Graph?****
 
@@ -111,7 +114,7 @@ flowchart LR
 - ****Multilingual**: the resources allow courses to be built in any language.**
 - ****Responsible use**: the resources are intended exclusively for education and must be employed with the goal of the sustainable development of society and the planet through education.**
 
-**The project has three parts. The **schema** is the standard itself. The **builder** and the **player** are the tools around it, and both must stay compatible with the schema. The schema and the player live in this repository; the builder is a desktop app with a repository of its own.**
+**The project has three parts. The **schema** is the standard itself. The **builder** and the **player** are the tools around it, and both must stay compatible with the schema. The schema and the player live in this repository; the builder, [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor), is a desktop app with a repository of its own.**
 
 ## ****Schema****
 
@@ -123,7 +126,16 @@ flowchart LR
 
 **A course file should name the version of the standard it follows. The field is optional, but it lets editors validate the file as it is typed:**
 
-**There are eleven node types. Node ids carry their type as a prefix (`sm1`, `q1`, `e1`, and so on).**
+```json
+{
+  "$schema": "https://edukors.org/graph/schema/v1/",
+  "info":  { "...": "..." },
+  "nodes": [ ],
+  "edges": [ ]
+}
+```
+
+**There are ten node types. Node ids carry their type as a prefix (`sm1`, `q1`, `f1`, and so on).**
 
 | Type             | What it is                                                                          | Stores data? |
 | ---------------- | ----------------------------------------------------------------------------------- | :----------: |
@@ -144,6 +156,13 @@ flowchart LR
 
 **Activities store what the student produced, and judgements what the AI decided, under keys named `<node-id>.<name>` — `q1.percent`, `f1.text`, `dm1.text`, `b1.answer`, `c1.track`, `s1.evidence`, `s1.percent`, `n1.ready`. Those keys drive the two adaptive mechanisms of the standard. In **edges**, a `when` condition decides the path; edges leaving a node are tried from top to bottom, the first one that holds is taken, and an edge without `when` is the fallback:**
 
+```json
+"edges": [
+  { "from": "q1",  "to": "sm2", "when": { "key": "q1.percent", "operator": "gte", "value": 70 } },
+  { "from": "q1",  "to": "dm1" }
+]
+```
+
 **In **prompts**, `{{STORAGE: key}}` inserts the stored value, so a dynamic node can write for one particular student: `Write a study plan for a student whose goal is: {{STORAGE: f1.goal}}`.**
 
 **Every text the student reads is a list of `{ "lang", "text" }` entries, one per language of the course. Markdown accepts inline HTML and LaTeX formulas, which the player typesets with KaTeX.**
@@ -154,18 +173,25 @@ flowchart LR
 
 ## ****Builder****
 
-**The **builder** is [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor), a desktop app for macOS (11 or later) and Windows (x64) in which authors create and edit courses. The author sees the course as a map, in the style of n8n, and builds or adjusts it with their own hands:**
+**The **builder** is [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor), a free desktop app for macOS (11 or later, Apple Silicon and Intel) and Windows (10 or 11, x64) in which authors create and edit courses. It has a repository of its own, and its [README](https://github.com/mgarlabx/edukors_graph_editor#readme) is the entry point for anyone who wants to build a course.**
 
-- ****The map**: a box for each node and an arrow for each edge, which can be dragged, connected, copied and arranged automatically.**
+> **📥 [Download for Mac](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-mac.dmg) · [Download for Windows](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-windows.exe) · [Read the README](https://github.com/mgarlabx/edukors_graph_editor#readme)**
+>
+> **The Mac app is signed and notarized by Apple. The Windows installer is not signed yet: when SmartScreen warns, choose *More info → Run anyway*. Once installed, the app updates itself.**
+
+**The author sees the course as a map, in the style of n8n, and builds or adjusts it with their own hands:**
+
+- ****The map**: a box for each node and an arrow for each edge, which can be dragged, connected, copied and arranged automatically. Several courses can be open at once, in tabs.**
 - ****The inspector**: a form for the content of each node, in every language the course declares, with edge conditions built from menus.**
 - ****Validation**: the course is checked as the author works, against the rules of the standard, and each problem is shown where it is.**
-- ****The JSON**: a tab with the course file itself, editable and kept in step with the map.**
+- ****The EGF tab**: the course file itself, editable and kept in step with the map.**
 - ****The preview**: the course runs as a student sees it, in the project's own player. AI steps run for real with an [OpenRouter](https://openrouter.ai) key; without one, the author picks the judgements.**
-- ****The AI agent**: a panel with an agent, built with Claude, that reads the open course and changes it on request. Each change waits, by default, for the author's approval, and everything can be undone.**
+- ****The AI agent**: a panel with an agent (Claude Code, which comes with the app, or Antigravity or Codex) that reads the open course and changes it on request. Each change waits, by default, for the author's approval, and everything can be undone.**
+- ****Export**: a single HTML file that runs the course on its own, with no server.**
 
 **Each course is saved as a single `.egf` file, the file the player imports, with no conversion. The position of each box on the map goes in the node's `position` field, which players ignore.**
 
-**The app's [README](https://github.com/mgarlabx/edukors_graph_editor#readme) covers the installation, and its teacher's guide, in [Portuguese](https://github.com/mgarlabx/edukors_graph_editor/blob/main/docs/guia-do-professor.md), [English](https://github.com/mgarlabx/edukors_graph_editor/blob/main/docs/guia-do-professor.en.md) and [Spanish](https://github.com/mgarlabx/edukors_graph_editor/blob/main/docs/guia-do-professor.es.md), explains how to use it step by step.**
+**The app's [README](https://github.com/mgarlabx/edukors_graph_editor#readme) covers the download and installation, and its teacher's guide, in [Portuguese](https://github.com/mgarlabx/edukors_graph_editor/blob/main/docs/guia-do-professor.md), [English](https://github.com/mgarlabx/edukors_graph_editor/blob/main/docs/guia-do-professor.en.md) and [Spanish](https://github.com/mgarlabx/edukors_graph_editor/blob/main/docs/guia-do-professor.es.md), explains how to use it step by step.**
 
 ## ****Player****
 
@@ -183,9 +209,9 @@ flowchart LR
 
 # ****Getting started****
 
-****Explore a course.** Example courses are available at [edukors.org/graph](https://edukors.org/graph/). Open a course's map in a browser to see the graph, and its player to walk it as a student. Both carry the whole course and need no server. Read a course's `.egf` file next to the [schema.README](schema/schema.README.md) to learn the standard.**
+****Explore a course.** Eight example courses, with explanations, are in the [samples](samples/samples.README.md) folder. Open one in the builder to see its map and walk it as a student in the preview, or open it at [edukors.org/graph](https://edukors.org/graph/), where each example also runs in the player and has a short video. Read a course's `.egf` file next to the [schema.README](schema/schema.README.md) to learn the standard.**
 
-****Build a course.** Install the [builder](https://github.com/mgarlabx/edukors_graph_editor), create a course or open an `.egf` file, and work on its map. The app's README walks through the installation, and its teacher's guide through everything else.**
+****Build a course.** Download [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor) for [Mac](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-mac.dmg) or [Windows](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-windows.exe), create a course or open an `.egf` file, and work on its map. The app's [README](https://github.com/mgarlabx/edukors_graph_editor#readme) walks through the installation, and its teacher's guide through everything else.**
 
 ****Deliver a course to students.** Deploy the [player](player) server (PHP 8.1+ with `pdo_mysql`, `curl`, `openssl` and `json`, a MySQL database, an OpenRouter key and HTTPS), import the course `.egf` file and register the server as an LTI 1.3 tool in the LMS. The [player.README](player/player.README.md) walks through every step, including Moodle.**
 
@@ -197,7 +223,7 @@ flowchart LR
 
 **More than a standard or a specification, Edukors Graph can become the basis of a global ecosystem:**
 
-- ****Authors**: teachers anywhere in the world will be able to produce advanced courses in the builder, with its AI agent alongside. The JSON files created are small and very light, easy to port, and can form international catalogues of open courses. Translating a course in the Edukors Graph standard takes a single request to the builder's AI agent.**
+- ****Authors**: teachers anywhere in the world will be able to produce advanced courses in the builder, with its AI agent alongside. The `.egf` files created are small and very light, easy to port, and can form international catalogues of open courses. Translating a course in the Edukors Graph standard takes a single request to the builder's AI agent.**
 - ****Providers**: courses created by authors can be hosted by providers, those who have the player developed and deployed on their infrastructure. This allows providers of all kinds: internal or open, commercial or community-run, and so on. Course marketplaces, with different monetization models, may even emerge.**
 - ****Consumers**: learning management systems (LMS) deployed in educational institutions across the planet will be able to consume the courses developed by authors and made available by providers. Some consumers may even integrate the whole cycle, being authors and providers as well.**
 

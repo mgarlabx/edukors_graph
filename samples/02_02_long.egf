@@ -1,0 +1,269 @@
+{
+  "$schema": "https://edukors.org/graph/schema/v1/",
+  "info": {
+    "course-id": "6d888bac-4149-4e0a-a990-8db9c0830202",
+    "source-language": "en",
+    "other-languages": [
+      "pt"
+    ],
+    "title": [
+      {
+        "lang": "en",
+        "text": "Cats of the World - long"
+      },
+      {
+        "lang": "pt",
+        "text": "Felinos do Mundo - long"
+      }
+    ],
+    "author": "edukors.org",
+    "version": "1.0.0",
+    "date": "2026-10-01",
+    "start": "sm1"
+  },
+  "nodes": [
+    {
+      "id": "sm1",
+      "type": "static-md",
+      "section": 1,
+      "position": {
+        "x": 12,
+        "y": 12
+      },
+      "title": [
+        {
+          "lang": "en",
+          "text": "Introduction"
+        },
+        {
+          "lang": "pt",
+          "text": "Introdução"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "There are about 40 species of cats in the world, and they occur naturally on every continent except Antarctica and Oceania, where cats arrived only with human settlers. All of them descend from a common ancestor that lived some 10 million years ago, and for this reason they share the same body plan, with retractable claws, teeth shaped to slice meat, sharp night vision and a build suited to the ambush. A lion of 190 kg and a house cat of 4 kg are, in this sense, variations on a single theme.\n\nThis course follows that group in sections organized by size and by the relationship each group has with people. The species and breeds listed below are examples, chosen to show the diversity within each group, and each group includes many others.\n\n- **Big cats**, such as the lion, tiger, jaguar, leopard, cougar and cheetah.\n- **Small wild cats**, such as the Eurasian lynx, serval, caracal and ocelot.\n- **Domestic cats**, with breeds such as the Siamese, Persian, Turkish Angora and Bengal."
+          },
+          {
+            "lang": "pt",
+            "text": "Existem cerca de 40 espécies de felinos no mundo, e elas ocorrem naturalmente em todos os continentes, exceto a Antártida e a Oceania, aonde os gatos só chegaram com os colonizadores humanos. Todas descendem de um ancestral comum que viveu há cerca de 10 milhões de anos e, por isso, compartilham o mesmo plano corporal, com garras retráteis, dentes feitos para cortar carne, visão noturna aguçada e um corpo adaptado à emboscada. Um leão de 190 kg e um gato doméstico de 4 kg são, nesse sentido, variações de um mesmo tema.\n\nEste curso acompanha esse grupo em seções organizadas pelo tamanho e pela relação que cada grupo tem com as pessoas. As espécies e raças listadas abaixo são exemplos, escolhidos para mostrar a diversidade dentro de cada grupo, e cada grupo inclui muitas outras.\n\n- **Grandes felinos**, como o leão, o tigre, a onça-pintada, o leopardo, a onça-parda e o guepardo.\n- **Pequenos felinos selvagens**, como o lince-euroasiático, o serval, o caracal e a jaguatirica.\n- **Gatos domésticos**, com raças como o Siamês, o Persa, o Angorá Turco e o Bengal."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sm2",
+      "type": "static-md",
+      "section": 1,
+      "position": {
+        "x": 12,
+        "y": 174
+      },
+      "title": [
+        {
+          "lang": "en",
+          "text": "Features"
+        },
+        {
+          "lang": "pt",
+          "text": "Características"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "All cats, from the tiger to the house cat, are built for the same task, which is to approach prey unseen and kill it in a short burst. Over some 10 million years, natural selection has adjusted each part of the body to this way of hunting, and for this reason the differences between species are mostly a matter of size and proportion. This body plan explains much of what cats do.\n\n### A body made for the ambush\n\nThe skeleton of a cat favours flexibility over endurance. The spine bends and stretches with great freedom, lengthening the stride in a sprint. The collarbone is small and loosely attached, so the shoulders move freely and the cat can pass through any opening wide enough for its head. Cats walk on their toes, a posture called \"digitigrade\", and place the hind paw almost exactly where the front paw stepped, which reduces noise in the vegetation.\n\nThe claws stay sheathed while the cat walks, held back by elastic ligaments, and come out only when muscles in the paw pull them forward. In this way they remain sharp for climbing, gripping prey and fighting. The cheetah is the main exception, since its claws are only partly retractable.\n\nThe skull is short and the jaw is moved by large muscles, which gives the bite great force. The long canines grip and kill, often with a bite to the neck, and the back teeth, called \"carnassials\", work like scissors that cut meat. Almost none of the teeth are suited to grinding plants. The tongue is covered with small backward-facing spines, which help scrape meat from bones and comb the fur during grooming.\n\n### Senses tuned to the dusk\n\nMost cats hunt at night or at dawn and dusk, and their senses reflect this schedule. Behind the retina lies a reflective layer, the \"tapetum lucidum\", which sends light back through the eye a second time. A cat needs only a fraction of the light a person needs to see, although it distinguishes fewer colours and less detail. Many small cats have vertical slit pupils, which close almost completely in bright light and open very wide at night, while the lion and the tiger have round pupils.\n\nThe ears turn independently and pick up frequencies well above the range of human hearing, including the high-pitched sounds of rodents. The whiskers, or \"vibrissae\", are thick hairs connected to nerves that detect touch and movement in the air, which helps the cat judge the position of prey at the moment of the bite. Smell is complemented by the \"vomeronasal organ\", in the roof of the mouth, which detects chemical signals left by other cats. To use it, the cat opens its mouth and draws back its lips in the \"flehmen response\".\n\n### Behaviour of a solitary hunter\n\nWith the exception of the lion, cats live and hunt alone. Each adult occupies a territory, which it marks with urine, with scratches on trees and with scent glands on the cheeks and paws, signals that allow neighbours to avoid one another. The hunt follows a sequence repeated across the family, in which the cat watches, approaches under cover, freezes and ends with a short pounce. Most attempts fail, and for this reason cats spend long hours resting between hunts.\n\nMothers teach their kittens by bringing them dead prey, then live prey, so that the young practise the final stages of the hunt, and play among kittens rehearses the same movements. In this way, the domestic cat that brings a mouse to the door repeats a pattern its wild relatives have followed for millions of years, the same pattern that shaped its body from the spine to the tip of the whiskers."
+          },
+          {
+            "lang": "pt",
+            "text": "Todos os felinos, do tigre ao gato doméstico, são feitos para a mesma tarefa, que é se aproximar da presa sem ser visto e matá-la num ataque curto. Ao longo de cerca de 10 milhões de anos, a seleção natural ajustou cada parte do corpo a esse modo de caçar e, por isso, as diferenças entre as espécies são sobretudo uma questão de tamanho e proporção. Esse plano corporal explica muito do que os felinos fazem.\n\n### Um corpo feito para a emboscada\n\nO esqueleto de um felino privilegia a flexibilidade em vez da resistência. A coluna se curva e se estica com grande liberdade, o que alonga a passada numa corrida rápida. A clavícula é pequena e presa de forma frouxa, de modo que os ombros se movem livremente e o felino consegue passar por qualquer abertura larga o bastante para a cabeça. Os felinos andam sobre os dedos, uma postura chamada \"digitígrada\", e pousam a pata traseira quase exatamente onde a pata dianteira pisou, o que reduz o ruído na vegetação.\n\nAs garras ficam recolhidas enquanto o felino anda, presas por ligamentos elásticos, e só saem quando músculos da pata as puxam para a frente. Assim, continuam afiadas para escalar, segurar a presa e lutar. O guepardo é a principal exceção, pois suas garras são apenas parcialmente retráteis.\n\nO crânio é curto e a mandíbula é movida por músculos grandes, o que dá grande força à mordida. Os caninos longos agarram e matam, muitas vezes com uma mordida no pescoço, e os dentes de trás, chamados \"carniceiros\", funcionam como tesouras que cortam a carne. Quase nenhum dos dentes serve para triturar plantas. A língua é coberta de pequenas espinhas voltadas para trás, que ajudam a raspar a carne dos ossos e a pentear o pelo durante a higiene.\n\n### Sentidos ajustados ao crepúsculo\n\nA maioria dos felinos caça à noite ou ao amanhecer e ao entardecer, e seus sentidos refletem esse horário. Atrás da retina há uma camada refletora, o \"tapetum lucidum\", que faz a luz atravessar o olho uma segunda vez. Um gato precisa de apenas uma fração da luz de que uma pessoa precisa para enxergar, embora distinga menos cores e menos detalhes. Muitos felinos pequenos têm pupilas verticais em fenda, que se fecham quase por completo na luz forte e se abrem muito à noite, enquanto o leão e o tigre têm pupilas redondas.\n\nAs orelhas giram de forma independente e captam frequências bem acima do alcance da audição humana, incluindo os sons agudos dos roedores. Os bigodes, ou \"vibrissas\", são pelos grossos ligados a nervos que detectam o toque e o movimento do ar, o que ajuda o felino a avaliar a posição da presa no momento da mordida. O olfato é complementado pelo \"órgão vomeronasal\", no céu da boca, que detecta sinais químicos deixados por outros felinos. Para usá-lo, o felino abre a boca e repuxa os lábios, na chamada \"resposta de Flehmen\".\n\n### Comportamento de um caçador solitário\n\nCom exceção do leão, os felinos vivem e caçam sozinhos. Cada adulto ocupa um território, que marca com urina, com arranhões em árvores e com glândulas de cheiro nas bochechas e nas patas, sinais que permitem aos vizinhos evitar uns aos outros. A caçada segue uma sequência que se repete em toda a família: o felino observa, se aproxima escondido, fica imóvel e termina com um salto curto. A maioria das tentativas fracassa e, por isso, os felinos passam longas horas descansando entre as caçadas.\n\nAs mães ensinam os filhotes trazendo-lhes presas mortas, depois presas vivas, para que os jovens pratiquem as etapas finais da caçada, e as brincadeiras entre os filhotes ensaiam os mesmos movimentos. Desse modo, o gato doméstico que traz um rato até a porta repete um padrão que seus parentes selvagens seguem há milhões de anos, o mesmo padrão que moldou seu corpo, da coluna à ponta dos bigodes."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sm3",
+      "type": "static-md",
+      "section": 1,
+      "position": {
+        "x": 12,
+        "y": 336
+      },
+      "title": [
+        {
+          "lang": "en",
+          "text": "The Domestic Cat"
+        },
+        {
+          "lang": "pt",
+          "text": "O Gato Doméstico"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "The domestic cat (*Felis catus*) is the most numerous cat on the planet. Estimates vary widely and usually fall between 400 and 600 million animals, spread across every inhabited continent. Of all the species in the family, it is also the only one that came to live, in large part, inside people's homes, and this relationship has a long history that began well before the breeds we know today.\n\n### How the cat came indoors\n\nAll domestic cats descend from the African wildcat (*Felis lybica*), a small cat that lives in North Africa and the Middle East. The story begins about 10,000 years ago in the Fertile Crescent, when the first farmers started to store grain. The grain attracted rodents, and the rodents attracted the wildcats of the region. The less wary animals, those that tolerated human presence, stayed near the villages, ate better and left more offspring, so that the approach came, to a large extent, from the cat itself. For this reason, researchers often describe this domestication as a two-way process in which no one needed to capture the animal.\n\nThe oldest record of this relationship is a grave found in Cyprus, about 9,500 years old, in which a person was buried beside a cat. Since there were no wildcats on the island, someone must have brought it there by boat. Over time, the cats that lived near people changed very little in appearance, and for thousands of years it would have been hard to tell a village cat from a wildcat. The differences were mostly in behaviour, in a greater tolerance for people and for crowded places.\n\n### Egypt and the ships\n\nIn Egypt, from about 4,000 years ago, the cat became both a pet and an object of worship. The goddess Bastet was depicted with the head of a cat, and killing a cat could be punished by death. The Greek historian Herodotus (c. 484 - c. 425 BC) recorded that Egyptian households went into mourning when their cat died, and excavations in the nineteenth century uncovered cemeteries holding enormous numbers of mummified cats, many of them offered to the gods in temples.\n\nFrom Egypt, cats boarded the ships of the Phoenicians, the Romans and, centuries later, the Vikings, always with the same role, that of controlling the rats on board. This is how they reached almost every port in the world. Studies of ancient DNA published in 2017, based on remains from more than 300 cats spanning about 9,000 years, show two waves of expansion. The first came from the Near East, together with early farming, and the second came from Egypt, spreading across the Mediterranean and Europe along these trade routes. The same study found that the blotched tabby coat, with broad swirls on the flanks, appeared only in the Middle Ages, in Southwest Asia, and became common in Europe centuries later. For most of their history with people, cats kept the striped coat of their wild ancestor.\n\n### A long and uneven relationship\n\nThe relationship between cats and people did not follow a straight line. In parts of medieval Europe, cats came to be associated with superstition and were persecuted in some periods, while in the Islamic world and in much of Asia they kept a more stable place in homes, mosques and temples. From the sixteenth century onwards, European ships carried cats to the Americas and later to Australia, where they spread quickly and, in the case of Australia, became a serious threat to native wildlife.\n\nThroughout this long history, people valued the cat above all for its usefulness as a hunter of rodents, and few cared about its colour or the shape of its body. The idea of breeding cats to a fixed standard, which gave rise to the breeds, appeared only much later, and it is the subject of the next chapter."
+          },
+          {
+            "lang": "pt",
+            "text": "O gato doméstico (*Felis catus*) é o felino mais numeroso do planeta. As estimativas variam muito e costumam ficar entre 400 e 600 milhões de animais, espalhados por todos os continentes habitados. De todas as espécies da família, é também a única que passou a viver, em grande parte, dentro da casa das pessoas, e essa relação tem uma longa história, que começou bem antes das raças que conhecemos hoje.\n\n### Como o gato entrou em casa\n\nTodos os gatos domésticos descendem do gato-selvagem-africano (*Felis lybica*), um pequeno felino que vive no norte da África e no Oriente Médio. A história começa há cerca de 10.000 anos, no Crescente Fértil, quando os primeiros agricultores passaram a armazenar grãos. Os grãos atraíam roedores, e os roedores atraíam os gatos selvagens da região. Os animais menos ariscos, os que toleravam a presença humana, ficavam perto das aldeias, comiam melhor e deixavam mais filhotes, de modo que a aproximação partiu, em grande medida, do próprio gato. Por isso, os pesquisadores costumam descrever essa domesticação como um processo de mão dupla, em que ninguém precisou capturar o animal.\n\nO registro mais antigo dessa relação é uma sepultura encontrada em Chipre, com cerca de 9.500 anos, na qual uma pessoa foi enterrada ao lado de um gato. Como não havia gatos selvagens na ilha, alguém deve tê-lo levado até lá de barco. Com o tempo, os gatos que viviam perto das pessoas mudaram muito pouco de aparência e, durante milhares de anos, teria sido difícil distinguir um gato de aldeia de um gato selvagem. As diferenças estavam sobretudo no comportamento, numa tolerância maior às pessoas e aos lugares movimentados.\n\n### O Egito e os navios\n\nNo Egito, a partir de cerca de 4.000 anos atrás, o gato tornou-se ao mesmo tempo animal de estimação e objeto de culto. A deusa Bastet era representada com cabeça de gato, e matar um gato podia ser punido com a morte. O historiador grego Heródoto (c. 484 - c. 425 a.C.) registrou que as famílias egípcias entravam em luto quando o gato da casa morria, e escavações no século XIX revelaram cemitérios com enormes quantidades de gatos mumificados, muitos deles oferecidos aos deuses nos templos.\n\nDo Egito, os gatos embarcaram nos navios dos fenícios, dos romanos e, séculos depois, dos vikings, sempre com a mesma função, a de controlar os ratos a bordo. Foi assim que chegaram a quase todos os portos do mundo. Estudos de DNA antigo publicados em 2017, baseados em restos de mais de 300 gatos ao longo de cerca de 9.000 anos, mostram duas ondas de expansão. A primeira veio do Oriente Próximo, junto com a agricultura inicial, e a segunda veio do Egito, espalhando-se pelo Mediterrâneo e pela Europa ao longo dessas rotas comerciais. O mesmo estudo descobriu que a pelagem tigrada manchada, com largos redemoinhos nos flancos, surgiu apenas na Idade Média, no sudoeste da Ásia, e tornou-se comum na Europa séculos depois. Durante a maior parte de sua história com as pessoas, os gatos mantiveram a pelagem listrada de seu ancestral selvagem.\n\n### Uma relação longa e irregular\n\nA relação entre gatos e pessoas não seguiu uma linha reta. Em partes da Europa medieval, os gatos passaram a ser associados à superstição e foram perseguidos em alguns períodos, enquanto no mundo islâmico e em grande parte da Ásia mantiveram um lugar mais estável nas casas, mesquitas e templos. A partir do século XVI, navios europeus levaram gatos para as Américas e, mais tarde, para a Austrália, onde se espalharam rapidamente e, no caso da Austrália, tornaram-se uma séria ameaça à fauna nativa.\n\nAo longo dessa longa história, as pessoas valorizaram o gato sobretudo por sua utilidade como caçador de roedores, e poucas se importavam com sua cor ou com a forma de seu corpo. A ideia de criar gatos segundo um padrão fixo, que deu origem às raças, só apareceu muito mais tarde, e é o tema do próximo capítulo."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sm4",
+      "type": "static-md",
+      "section": 1,
+      "position": {
+        "x": 12,
+        "y": 498
+      },
+      "title": [
+        {
+          "lang": "en",
+          "text": "Domestic Cat Breeds"
+        },
+        {
+          "lang": "pt",
+          "text": "Raças de Gato Doméstico"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "Most of the world's cats still have no defined breed, the result of free mating over thousands of years. The idea of a breed, with fixed standards of colour, coat and body shape, gained strength in the nineteenth century with cat shows, and the first one in the modern format was organized by the English artist Harrison Weir (1824 - 1906) at the Crystal Palace, in London, in 1871. Today, breeders' associations recognize several dozen breeds. The breeds below are examples, chosen because each one tells a different part of this history.\n\n### Siamese\n\nIt comes from Thailand, the former Siam, and appears in the \"Tamra Maew\", illustrated manuscripts of poems about cats produced in the kingdom of Ayutthaya (1351 - 1767). The mark of the breed is the contrast between a pale body and dark points on the ears, face, paws and tail. This pattern results from a mutation that makes the pigment enzyme sensitive to heat, so that it works only in the cooler parts of the body. For this reason, kittens are born almost white and the points darken in the first weeks of life. Siamese cats reached England in the second half of the nineteenth century, and some were among the cats shown in 1871. It is also one of the most vocal breeds.\n\n### Persian\n\nIt descends from long-haired cats taken from Iran, the former Persia, to Europe in the seventeenth century, and the Italian traveller Pietro della Valle (1586 - 1652) is remembered as one of the first to describe them. The breed took its current form in nineteenth-century England, where breeders fixed the long, dense coat, the compact body and the round head. What is curious is that genetic studies place the modern Persian closer to Western European cats than to those of the Middle East. In the twentieth century, selection favoured an ever flatter face, a trait that brought breathing and eye problems to many animals. The breed also has a high rate of polycystic kidney disease, a hereditary condition that can now be detected by genetic testing, and its coat requires daily brushing.\n\n### Turkish Angora\n\nIt originated in the region of Ankara, in Turkey, a city Europeans called Angora, and is one of the oldest long-haired breeds on record. The first specimens reached France in the seventeenth century, brought by the scholar Nicolas-Claude Fabri de Peiresc (1580 - 1637). Unlike the Persian, it has a long, light body and a silky coat with little undercoat. In the nineteenth century, it was crossed so often with the Persian that it almost disappeared outside Turkey. The Ankara Zoo later kept a breeding programme for white Angoras, and cats from this programme, taken to the United States in the 1960s, restored the breed.\n\n### Bengal\n\nIt is the most recent breed in this chapter, born from a deliberate cross between the domestic cat and the Asian leopard cat (*Prionailurus bengalensis*), a small wild cat whose scientific name gave the breed its name. The American breeder Jean Mill (1926 - 2011) made the first crosses in the 1960s and resumed the work in the 1980s. The aim was a cat with the look of a wild cat and the temperament of a pet. The result has a short, glossy coat with rosettes like those of the leopard and the ocelot, and a very active temperament. The International Cat Association (TICA) accepted the breed in 1983.\n\n### The cat is still wild\n\nCompared with the dog, which moved far from the wolf, the cat has changed little since its wild ancestor. It still hunts alone, sleeps 12 to 16 hours a day and marks its territory with scent and scratches. When a cat leaves prey at the door, it repeats the behaviour with which wildcats teach their kittens to hunt. The breeds changed mainly the animal's appearance and altered this behaviour very little. In this way, we return to the beginning of this chapter, since the cat asleep on the sofa remains, to a large extent, the same small hunter that approached the first villages in pursuit of rats."
+          },
+          {
+            "lang": "pt",
+            "text": "A maioria dos gatos do mundo ainda não tem raça definida, resultado de cruzamentos livres ao longo de milhares de anos. A ideia de raça, com padrões fixos de cor, pelagem e forma do corpo, ganhou força no século XIX com as exposições de gatos, e a primeira no formato moderno foi organizada pelo artista inglês Harrison Weir (1824 - 1906) no Crystal Palace, em Londres, em 1871. Hoje, as associações de criadores reconhecem algumas dezenas de raças. As raças abaixo são exemplos, escolhidos porque cada uma conta uma parte diferente dessa história.\n\n### Siamês\n\nVem da Tailândia, o antigo Sião, e aparece nos \"Tamra Maew\", manuscritos ilustrados de poemas sobre gatos produzidos no reino de Ayutthaya (1351 - 1767). A marca da raça é o contraste entre um corpo claro e extremidades escuras nas orelhas, no rosto, nas patas e na cauda. Esse padrão resulta de uma mutação que torna a enzima do pigmento sensível ao calor, de modo que ela só funciona nas partes mais frias do corpo. Por isso, os filhotes nascem quase brancos e as extremidades escurecem nas primeiras semanas de vida. Os siameses chegaram à Inglaterra na segunda metade do século XIX, e alguns estavam entre os gatos expostos em 1871. É também uma das raças mais vocais.\n\n### Persa\n\nDescende de gatos de pelo longo levados do Irã, a antiga Pérsia, para a Europa no século XVII, e o viajante italiano Pietro della Valle (1586 - 1652) é lembrado como um dos primeiros a descrevê-los. A raça ganhou sua forma atual na Inglaterra do século XIX, onde os criadores fixaram a pelagem longa e densa, o corpo compacto e a cabeça redonda. O curioso é que estudos genéticos situam o persa moderno mais perto dos gatos da Europa Ocidental do que dos do Oriente Médio. No século XX, a seleção favoreceu um focinho cada vez mais achatado, traço que trouxe problemas respiratórios e oculares a muitos animais. A raça tem também uma alta incidência de doença renal policística, uma condição hereditária que hoje pode ser detectada por teste genético, e sua pelagem exige escovação diária.\n\n### Angorá Turco\n\nSurgiu na região de Ancara, na Turquia, cidade que os europeus chamavam de Angorá, e é uma das raças de pelo longo mais antigas de que se tem registro. Os primeiros exemplares chegaram à França no século XVII, levados pelo erudito Nicolas-Claude Fabri de Peiresc (1580 - 1637). Ao contrário do persa, tem o corpo longo e leve e uma pelagem sedosa, com pouco subpelo. No século XIX, foi cruzado tantas vezes com o persa que quase desapareceu fora da Turquia. Mais tarde, o Zoológico de Ancara manteve um programa de criação de angorás brancos, e gatos desse programa, levados para os Estados Unidos na década de 1960, recuperaram a raça.\n\n### Bengal\n\nÉ a raça mais recente deste capítulo, nascida de um cruzamento deliberado entre o gato doméstico e o gato-leopardo-asiático (*Prionailurus bengalensis*), um pequeno felino selvagem cujo nome científico deu nome à raça. A criadora americana Jean Mill (1926 - 2011) fez os primeiros cruzamentos na década de 1960 e retomou o trabalho na década de 1980. O objetivo era um gato com a aparência de um felino selvagem e o temperamento de um animal de estimação. O resultado tem pelagem curta e brilhante, com rosetas como as do leopardo e da jaguatirica, e um temperamento muito ativo. A International Cat Association (TICA) aceitou a raça em 1983.\n\n### O gato continua selvagem\n\nComparado ao cão, que se afastou muito do lobo, o gato mudou pouco desde seu ancestral selvagem. Ainda caça sozinho, dorme de 12 a 16 horas por dia e marca seu território com cheiro e arranhões. Quando um gato deixa uma presa na porta, repete o comportamento com que os gatos selvagens ensinam os filhotes a caçar. As raças mudaram sobretudo a aparência do animal e alteraram muito pouco esse comportamento. Assim, voltamos ao início deste capítulo, pois o gato que dorme no sofá continua sendo, em grande parte, o mesmo pequeno caçador que se aproximou das primeiras aldeias atrás dos ratos."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sm5",
+      "type": "static-md",
+      "section": 1,
+      "position": {
+        "x": 12,
+        "y": 660
+      },
+      "title": [
+        {
+          "lang": "en",
+          "text": "Big Cats"
+        },
+        {
+          "lang": "pt",
+          "text": "Grandes Felinos"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "\"Big cat\" is an informal term with no strict scientific definition. It usually covers four members of the genus *Panthera* (lion, tiger, jaguar and leopard), which have an elongated and partly flexible hyoid apparatus, the set of small bones that supports the larynx, and for this reason are able to **roar**. The label also tends to include the cougar and the cheetah, which are large in size and yet belong to the lineage of the small cats. They do not roar. Instead, they **purr** like a house cat.\n\nThe six species below are examples, chosen to show the range of the group. Other large cats, such as the snow leopard (*Panthera uncia*), which belongs to the genus *Panthera* and still does not roar, and the clouded leopards of Southeast Asia, are often counted among the big cats as well.\n\n| Species | Where it lives | Typical weight | Distinctive trait |\n|---|---|---|---|\n| **Lion** (*Panthera leo*) | African savannas, with a small population in the Gir Forest, India | 120 to 190 kg | The only social cat, living in prides in which the females hunt together |\n| **Tiger** (*Panthera tigris*) | Forests and swamps of Asia, from India to the Russian Far East | 100 to 260 kg | The largest living cat, with a stripe pattern unique to each animal, like a fingerprint |\n| **Jaguar** (*Panthera onca*) | From Mexico to Argentina, especially the Amazon and the Pantanal | 55 to 100 kg | The strongest bite relative to size among the big cats, a good swimmer that hunts caimans |\n| **Leopard** (*Panthera pardus*) | Africa and much of Asia | 30 to 70 kg | The most adaptable, found from deserts to the edges of cities, and stores its prey up in trees |\n| **Cougar** (*Puma concolor*) | From Canada to Patagonia, the widest range of any land mammal in the Americas | 35 to 80 kg | Can leap more than 5 m upward, and purrs |\n| **Cheetah** (*Acinonyx jubatus*) | Open savannas of Africa, with a small remnant population in Iran | 35 to 65 kg | The fastest land animal, close to 100 km/h in short sprints, with semi-retractable claws that grip the ground like running spikes |\n\n### Hunters at the top of the chain\n\nDespite the differences in size and habitat, these species share a way of life. With the exception of the lion, they hunt alone and depend on stealth, approaching the prey under cover and ending the chase in a short burst. The cheetah stands at one end of this range, since it relies on open ground and speed, while the jaguar and the leopard stand at the other, ambushing prey in dense vegetation and killing it with a bite to the skull or the neck. Each of them needs a large territory, which in the case of a male tiger or cougar can cover several hundred square kilometres, and this need for space makes them vulnerable when forests and savannas are broken into fragments.\n\n### Why they matter\n\nBig cats occupy the top of the food chain, and their presence shapes the whole community below them. Where they disappear, herbivores multiply, grazing increases and the vegetation changes. In Zion National Park, in the United States, researchers linked the decline of cougars to the erosion of riverbanks, once deer began to feed freely along the water. For this reason, these animals are called **umbrella species**, since protecting a tiger means protecting the entire forest in which it hunts, along with the many smaller species that live there.\n\nMost of these species are in decline. The tiger now occupies less than 7% of the range it held a century ago, although its numbers have begun to recover in countries such as India and Nepal, where reserves and patrols against poaching have been maintained for decades. The lion has lost most of its historical range in Africa, and the cheetah survives in Asia only in Iran. The threats are similar across the group, including habitat loss, the decline of wild prey, conflict with livestock farmers and poaching for skins and body parts. Over time, the fate of these animals has come to depend on the decisions people make about the land they share with them."
+          },
+          {
+            "lang": "pt",
+            "text": "\"Grande felino\" é um termo informal, sem definição científica rigorosa. Costuma abranger quatro membros do gênero *Panthera* (leão, tigre, onça-pintada e leopardo), que têm um aparelho hioide alongado e parcialmente flexível, o conjunto de pequenos ossos que sustenta a laringe, e por isso são capazes de **rugir**. O rótulo também costuma incluir a onça-parda e o guepardo, que são grandes e, no entanto, pertencem à linhagem dos pequenos felinos. Eles não rugem. Em vez disso, **ronronam** como um gato doméstico.\n\nAs seis espécies abaixo são exemplos, escolhidos para mostrar a variedade do grupo. Outros felinos grandes, como o leopardo-das-neves (*Panthera uncia*), que pertence ao gênero *Panthera* e mesmo assim não ruge, e os leopardos-nebulosos do Sudeste Asiático, também costumam ser contados entre os grandes felinos.\n\n| Espécie | Onde vive | Peso típico | Traço marcante |\n|---|---|---|---|\n| **Leão** (*Panthera leo*) | Savanas africanas, com uma pequena população na Floresta de Gir, na Índia | 120 a 190 kg | O único felino social, vive em bandos nos quais as fêmeas caçam juntas |\n| **Tigre** (*Panthera tigris*) | Florestas e pântanos da Ásia, da Índia ao Extremo Oriente russo | 100 a 260 kg | O maior felino vivo, com um padrão de listras único em cada animal, como uma impressão digital |\n| **Onça-pintada** (*Panthera onca*) | Do México à Argentina, sobretudo na Amazônia e no Pantanal | 55 a 100 kg | A mordida mais forte em relação ao tamanho entre os grandes felinos, boa nadadora que caça jacarés |\n| **Leopardo** (*Panthera pardus*) | África e grande parte da Ásia | 30 a 70 kg | O mais adaptável, encontrado de desertos às margens das cidades, e guarda suas presas no alto das árvores |\n| **Onça-parda** (*Puma concolor*) | Do Canadá à Patagônia, a maior distribuição de qualquer mamífero terrestre das Américas | 35 a 80 kg | Salta mais de 5 m para cima, e ronrona |\n| **Guepardo** (*Acinonyx jubatus*) | Savanas abertas da África, com uma pequena população remanescente no Irã | 35 a 65 kg | O animal terrestre mais rápido, perto de 100 km/h em arrancadas curtas, com garras semirretráteis que agarram o chão como sapatilhas de corrida |\n\n### Caçadores no topo da cadeia\n\nApesar das diferenças de tamanho e de hábitat, essas espécies compartilham um modo de vida. Com exceção do leão, caçam sozinhas e dependem da furtividade, aproximando-se da presa escondidas e terminando a perseguição com um ataque curto. O guepardo está num extremo dessa variedade, pois depende de terreno aberto e de velocidade, enquanto a onça-pintada e o leopardo estão no outro, emboscando a presa na vegetação densa e matando-a com uma mordida no crânio ou no pescoço. Cada um deles precisa de um território grande, que no caso de um tigre ou de uma onça-parda macho pode cobrir várias centenas de quilômetros quadrados, e essa necessidade de espaço os torna vulneráveis quando florestas e savanas são fragmentadas.\n\n### Por que eles importam\n\nOs grandes felinos ocupam o topo da cadeia alimentar, e sua presença molda toda a comunidade abaixo deles. Onde desaparecem, os herbívoros se multiplicam, o pastejo aumenta e a vegetação muda. No Parque Nacional de Zion, nos Estados Unidos, pesquisadores relacionaram o declínio das onças-pardas à erosão das margens dos rios, depois que os cervos passaram a se alimentar livremente junto à água. Por isso, esses animais são chamados de **espécies guarda-chuva**, pois proteger um tigre significa proteger toda a floresta em que ele caça, junto com as muitas espécies menores que vivem ali.\n\nA maioria dessas espécies está em declínio. O tigre ocupa hoje menos de 7% da área que ocupava há um século, embora seus números tenham começado a se recuperar em países como a Índia e o Nepal, onde reservas e patrulhas contra a caça ilegal são mantidas há décadas. O leão perdeu a maior parte de sua área histórica na África, e o guepardo sobrevive na Ásia apenas no Irã. As ameaças são parecidas em todo o grupo, incluindo a perda de hábitat, o declínio das presas selvagens, o conflito com criadores de gado e a caça ilegal para obter peles e partes do corpo. Com o tempo, o destino desses animais passou a depender das decisões que as pessoas tomam sobre a terra que dividem com eles."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sm6",
+      "type": "static-md",
+      "section": 1,
+      "position": {
+        "x": 12,
+        "y": 822
+      },
+      "title": [
+        {
+          "lang": "en",
+          "text": "Small Wild Cats"
+        },
+        {
+          "lang": "pt",
+          "text": "Pequenos Felinos Selvagens"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "Of the roughly 40 cat species in the world, fewer than 10 are usually called \"big\". The rest are small wild cats, species whose names few people know. Some fit in the palm of a hand as kittens, while the largest, such as the Eurasian lynx, can reach 30 kg as adults. This chapter brings together a few examples, chosen because they live in very different environments and have developed, in each of them, their own way of hunting. Many other small cats, from the fishing cat of South Asia to the margay of the Americas, would fit here as well.\n\n### Eurasian lynx (*Lynx lynx*)\n\nIt lives in the cold forests of Europe and Asia, from Scandinavia to the Tibetan plateau, and is the largest of the lynxes. Its broad, fur-covered paws work like snowshoes and let it move without sinking, while the black tufts on the tips of its ears, whose function researchers still debate, have become the best-known mark of the genus. It hunts mainly roe deer, chamois and hares, almost always by ambush. During the nineteenth and twentieth centuries, hunting and forest loss wiped it out from much of Western Europe. Since the 1970s, it has been reintroduced in countries such as Switzerland, France and Germany.\n\n### Serval (*Leptailurus serval*)\n\nIt has the longest legs of any cat in relation to body size, and its ears are among the largest in the family, also in proportion to the body. It lives in the wet savannas and floodplains of sub-Saharan Africa, where it hunts rodents hidden in tall grass. The serval locates its prey by sound, often without seeing it, leaps up to 2 metres high and lands with its front paws on the animal. This method has one of the highest success rates among cats, close to half of all attempts.\n\n### Caracal (*Caracal caracal*)\n\nIt lives in the dry regions of Africa, the Middle East, Central Asia and India, in open savannas, semi-deserts and mountain slopes. Its name comes from the Turkish \"karakulak\", meaning \"black ear\", a reference to the long dark tufts on its ears, and for the same reason it was once called the \"desert lynx\". Genetic studies, however, place it closer to the serval and the African golden cat, with which it forms a lineage of its own. Adults usually weigh between 8 and 18 kg, and the species is known for leaping to strike birds in mid-flight with its front paws, a skill that led people in India and Persia to use it for bird hunting. It can go long periods without drinking, taking most of the water it needs from its prey.\n\n### Ocelot (*Leopardus pardalis*)\n\nIt is the largest cat of the genus *Leopardus* and ranges from the southern United States to northern Argentina, in rainforests, mangroves and savannas, almost always near water and dense vegetation. It is mostly nocturnal, climbs easily, swims well and feeds on rodents, opossums, birds, reptiles and fish. Its rosettes and chain-like spots form a pattern unique to each animal, which researchers use to identify individuals in camera-trap images. In the 1960s and 1970s, it was one of the species most hunted for the international fur trade. After that trade was banned, populations recovered across much of its range, although they remain threatened by forest loss and road traffic.\n\n### What the small cats teach\n\nSeen side by side, these cats show how a single body plan adjusts to very different environments, from the snow of northern forests to the grass of African savannas, from the dry lands of Asia to the tropical forests of the Americas. The broad paws of the lynx, the long legs of the serval, the leap of the caracal and the discreet life of the ocelot are variations on one theme, the ambush, shaped over millions of years to each territory. Small cats are also the least studied and the least protected, because they draw less attention than a tiger or a lion. The lynx and the ocelot show, however, that this can change when hunting is controlled and habitat is preserved. In this way, we return to the starting point of this chapter, since the protection of these species depends, in large part, on more people knowing that they exist."
+          },
+          {
+            "lang": "pt",
+            "text": "Das cerca de 40 espécies de felinos do mundo, menos de 10 costumam ser chamadas de \"grandes\". As demais são pequenos felinos selvagens, espécies cujos nomes poucas pessoas conhecem. Algumas cabem na palma da mão quando filhotes, enquanto as maiores, como o lince-euro-asiático, podem chegar a 30 kg na idade adulta. Este capítulo reúne alguns exemplos, escolhidos porque vivem em ambientes muito diferentes e desenvolveram, em cada um deles, seu próprio modo de caçar. Muitos outros pequenos felinos, do gato-pescador do Sul da Ásia ao gato-maracajá das Américas, também caberiam aqui.\n\n### Lince-euro-asiático (*Lynx lynx*)\n\nVive nas florestas frias da Europa e da Ásia, da Escandinávia ao planalto tibetano, e é o maior dos linces. Suas patas largas e cobertas de pelo funcionam como raquetes de neve e permitem que ele se desloque sem afundar, enquanto os tufos pretos nas pontas das orelhas, cuja função os pesquisadores ainda discutem, tornaram-se a marca mais conhecida do gênero. Caça principalmente corsas, camurças e lebres, quase sempre por emboscada. Durante os séculos XIX e XX, a caça e a perda de florestas o eliminaram de grande parte da Europa Ocidental. Desde a década de 1970, vem sendo reintroduzido em países como a Suíça, a França e a Alemanha.\n\n### Serval (*Leptailurus serval*)\n\nTem as pernas mais longas de todos os felinos em relação ao tamanho do corpo, e suas orelhas estão entre as maiores da família, também em proporção ao corpo. Vive nas savanas úmidas e planícies alagadas da África subsaariana, onde caça roedores escondidos no capim alto. O serval localiza a presa pelo som, muitas vezes sem vê-la, salta até 2 metros de altura e cai com as patas dianteiras sobre o animal. Esse método tem uma das maiores taxas de sucesso entre os felinos, perto de metade das tentativas.\n\n### Caracal (*Caracal caracal*)\n\nVive nas regiões secas da África, do Oriente Médio, da Ásia Central e da Índia, em savanas abertas, semidesertos e encostas de montanhas. Seu nome vem do turco \"karakulak\", que significa \"orelha preta\", uma referência aos longos tufos escuros nas orelhas, e pelo mesmo motivo já foi chamado de \"lince-do-deserto\". Estudos genéticos, no entanto, o situam mais perto do serval e do gato-dourado-africano, com os quais forma uma linhagem própria. Os adultos costumam pesar entre 8 e 18 kg, e a espécie é conhecida por saltar para golpear aves em pleno voo com as patas dianteiras, habilidade que levou pessoas na Índia e na Pérsia a usá-lo na caça de aves. Pode passar longos períodos sem beber, obtendo das presas a maior parte da água de que precisa.\n\n### Jaguatirica (*Leopardus pardalis*)\n\nÉ o maior felino do gênero *Leopardus* e se distribui do sul dos Estados Unidos ao norte da Argentina, em florestas tropicais, manguezais e savanas, quase sempre perto da água e de vegetação densa. É sobretudo noturna, escala com facilidade, nada bem e se alimenta de roedores, gambás, aves, répteis e peixes. Suas rosetas e manchas em forma de corrente formam um padrão único em cada animal, que os pesquisadores usam para identificar indivíduos em imagens de armadilhas fotográficas. Nas décadas de 1960 e 1970, foi uma das espécies mais caçadas para o comércio internacional de peles. Depois que esse comércio foi proibido, as populações se recuperaram em grande parte de sua área de distribuição, embora continuem ameaçadas pela perda de florestas e pelo tráfego nas estradas.\n\n### O que os pequenos felinos ensinam\n\nVistos lado a lado, esses felinos mostram como um mesmo plano corporal se ajusta a ambientes muito diferentes, da neve das florestas do norte ao capim das savanas africanas, das terras secas da Ásia às florestas tropicais das Américas. As patas largas do lince, as pernas longas do serval, o salto do caracal e a vida discreta da jaguatirica são variações de um mesmo tema, a emboscada, moldado ao longo de milhões de anos a cada território. Os pequenos felinos são também os menos estudados e os menos protegidos, porque chamam menos atenção do que um tigre ou um leão. O lince e a jaguatirica mostram, no entanto, que isso pode mudar quando a caça é controlada e o hábitat é preservado. Assim, voltamos ao ponto de partida deste capítulo, pois a proteção dessas espécies depende, em grande parte, de que mais pessoas saibam que elas existem."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sm7",
+      "type": "static-md",
+      "section": 1,
+      "position": {
+        "x": 12,
+        "y": 984
+      },
+      "title": [
+        {
+          "lang": "en",
+          "text": "Conclusion"
+        },
+        {
+          "lang": "pt",
+          "text": "Conclusão"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "This course has followed the roughly 40 species of cats in the world, from the house cat on the sofa to the tiger in the forest. Looking back, one idea connects every chapter: all cats are variations on a single body plan, shaped over some 10 million years for the ambush.\n\n### One body, one way of hunting\n\nA flexible spine, retractable claws, carnassial teeth that slice meat, eyes that see in the dusk, ears that hear rodents and whiskers that feel the air make cats specialists in approaching unseen and finishing the hunt in a short burst. Most of them live and hunt alone, mark a territory and teach their kittens by bringing them prey.\n\n### The cat that came indoors\n\nThe domestic cat descends from the African wildcat, which approached the first farming villages about 10,000 years ago in pursuit of the rodents drawn to stored grain. Worshipped in Egypt and carried on ships to almost every port in the world, it was valued for thousands of years as a hunter of rats. Breeds such as the Siamese, the Persian, the Turkish Angora and the Bengal appeared much later, mostly from the nineteenth century onwards, and changed its appearance far more than its behaviour.\n\n### Big and small wild cats\n\nThe big cats, such as the lion, the tiger, the jaguar and the leopard, which can roar, and the cougar and the cheetah, which purr, sit at the top of the food chain and act as umbrella species: protecting them protects whole ecosystems. The small wild cats, such as the Eurasian lynx, the serval, the caracal and the ocelot, show how the same plan adapts to snow, savanna, desert and tropical forest, each with its own hunting technique.\n\n### What remains\n\nMany of these species are in decline because of habitat loss, the decline of their prey, conflict with farmers and poaching. Yet the recovery of the tiger in India and Nepal, of the lynx in Europe and of the ocelot in the Americas shows that protection works when people decide to share the land. Knowing these animals, from the largest to the smallest, is the first step toward that decision."
+          },
+          {
+            "lang": "pt",
+            "text": "Este curso acompanhou as cerca de 40 espécies de felinos do mundo, do gato doméstico no sofá ao tigre na floresta. Olhando para trás, uma ideia liga todos os capítulos: todos os felinos são variações de um mesmo plano corporal, moldado ao longo de cerca de 10 milhões de anos para a emboscada.\n\n### Um corpo, um modo de caçar\n\nUma coluna flexível, garras retráteis, dentes carniceiros que cortam a carne, olhos que enxergam no crepúsculo, orelhas que ouvem os roedores e bigodes que sentem o ar fazem dos felinos especialistas em se aproximar sem ser vistos e terminar a caçada num ataque curto. A maioria vive e caça sozinha, marca um território e ensina os filhotes trazendo-lhes presas.\n\n### O gato que entrou em casa\n\nO gato doméstico descende do gato-selvagem-africano, que se aproximou das primeiras aldeias agrícolas há cerca de 10.000 anos, atrás dos roedores atraídos pelos grãos armazenados. Cultuado no Egito e levado em navios a quase todos os portos do mundo, foi valorizado durante milhares de anos como caçador de ratos. Raças como o Siamês, o Persa, o Angorá Turco e o Bengal surgiram muito depois, sobretudo a partir do século XIX, e mudaram muito mais a sua aparência do que o seu comportamento.\n\n### Grandes e pequenos felinos selvagens\n\nOs grandes felinos, como o leão, o tigre, a onça-pintada e o leopardo, que rugem, e a onça-parda e o guepardo, que ronronam, ocupam o topo da cadeia alimentar e funcionam como espécies guarda-chuva: protegê-los protege ecossistemas inteiros. Os pequenos felinos selvagens, como o lince-euro-asiático, o serval, o caracal e a jaguatirica, mostram como o mesmo plano se adapta à neve, à savana, ao deserto e à floresta tropical, cada um com sua própria técnica de caça.\n\n### O que fica\n\nMuitas dessas espécies estão em declínio por causa da perda de hábitat, da diminuição das presas, do conflito com criadores e da caça ilegal. Ainda assim, a recuperação do tigre na Índia e no Nepal, do lince na Europa e da jaguatirica nas Américas mostra que a proteção funciona quando as pessoas decidem dividir a terra. Conhecer esses animais, do maior ao menor, é o primeiro passo para essa decisão."
+          }
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "sm1",
+      "to": "sm2"
+    },
+    {
+      "from": "sm2",
+      "to": "sm3"
+    },
+    {
+      "from": "sm3",
+      "to": "sm4"
+    },
+    {
+      "from": "sm5",
+      "to": "sm6"
+    },
+    {
+      "from": "sm4",
+      "to": "sm5"
+    },
+    {
+      "from": "sm6",
+      "to": "sm7"
+    }
+  ]
+}

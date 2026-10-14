@@ -4,7 +4,7 @@
 
 The **player** is the server that delivers Edukors Graph courses to students.
 
-The project already has a standalone player — one HTML file, [assets/course_player.html](assets/course_player.html), that runs a course with no server at all. On its own it is a preview for the author, the one the builder shows a course in. It keeps progress in one browser, and it asks whatever host it runs inside to write the dynamic steps, which only works where a host answers, such as the builder's preview.
+The project already has a standalone player — one HTML file, [assets/course_player.html](assets/course_player.html), that runs a course with no server at all. On its own it is a preview for the author, the one the builder ([Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor)) shows a course in. It keeps progress in one browser, and it asks whatever host it runs inside to write the dynamic steps, which only works where a host answers, such as the builder's preview.
 
 This server is the other half. It takes the same player, unchanged, and gives it the four things a real deployment needs:
 

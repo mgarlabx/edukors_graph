@@ -797,14 +797,32 @@ const KATEX = {
 };
 // $$…$$ and \[…\] are blocks; \(…\) and $…$ are inline. A single $ does not open after a
 // letter or digit, nor before a space, and does not close before a digit: "R$ 10" stays text.
-const MATH = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|(?<![\\$\p{L}\p{N}])\$(?![\s$])((?:\\.|[^$\\\n])+?)(?<![\s\\])\$(?!\p{N})/gu;
+// There is no lookbehind, which Safari before 16.4 cannot even parse: the formula's last
+// character says whether a $ may close it, and replaceMath says whether one may open.
+const MATH = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|\$(?![\s$])((?:\\.|[^$\\\n])*?(?:\\[^\s\\]|[^$\\\s]))\$(?!\p{N})/gu;
 let katexLoading = null;
+
+// text.replace(MATH, fn), except that a single $ right after a backslash, a $, a letter or a
+// digit opens nothing, and the search goes on from the character after it.
+function replaceMath(text, fn){
+  let out = "", from = 0, m;
+  MATH.lastIndex = 0;
+  while((m = MATH.exec(text))){
+    if(m[4] !== undefined && /[\\$\p{L}\p{N}]$/u.test(text.slice(Math.max(0, m.index - 2), m.index))){
+      MATH.lastIndex = m.index + 1;
+      continue;
+    }
+    out += text.slice(from, m.index) + fn(...m);
+    from = MATH.lastIndex;
+  }
+  return out + text.slice(from);
+}
 
 // Swaps each formula for a placeholder, leaving fenced and inline code untouched.
 function protectMath(src, formulas){
   return src.split(/(```[\w-]*\n[\s\S]*?```)/).map((part, i) => i % 2 ? part :
     part.split(/(`[^`]+`)/).map((piece, j) => j % 2 ? piece :
-      piece.replace(MATH, (source, block, bracket, paren, dollar) => {
+      replaceMath(piece, (source, block, bracket, paren, dollar) => {
         formulas.push({source, tex: block ?? bracket ?? paren ?? dollar, isDisplay: block !== undefined || bracket !== undefined});
         return "\u0000M" + (formulas.length-1) + "\u0000";
       })).join("")).join("");

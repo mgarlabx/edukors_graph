@@ -1,0 +1,94 @@
+{
+  "$schema": "https://edukors.org/graph/schema/v1/",
+  "info": {
+    "course-id": "6d888bac-4149-4e0a-a990-8db9c0830201",
+    "source-language": "en",
+    "other-languages": [
+      "pt"
+    ],
+    "title": [
+      {
+        "lang": "en",
+        "text": "Cats of the World - simple"
+      },
+      {
+        "lang": "pt",
+        "text": "Felinos do Mundo - simple"
+      }
+    ],
+    "author": "edukors.org",
+    "version": "1.0.0",
+    "date": "2026-10-01",
+    "start": "sm1"
+  },
+  "nodes": [
+    {
+      "id": "sm1",
+      "type": "static-md",
+      "section": 1,
+      "position": {
+        "x": 12,
+        "y": 12
+      },
+      "title": [
+        {
+          "lang": "en",
+          "text": "Introduction"
+        },
+        {
+          "lang": "pt",
+          "text": "Introdução"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "There are about 40 species of cats in the world, and they occur naturally on every continent except Antarctica and Oceania, where cats arrived only with human settlers. All of them descend from a common ancestor that lived some 10 million years ago, and for this reason they share the same body plan, with retractable claws, teeth shaped to slice meat, sharp night vision and a build suited to the ambush. A lion of 190 kg and a house cat of 4 kg are, in this sense, variations on a single theme.\n\nThis course follows that group in sections organized by size and by the relationship each group has with people. The species and breeds listed below are examples, chosen to show the diversity within each group, and each group includes many others.\n\n- **Big cats**, such as the lion, tiger, jaguar, leopard, cougar and cheetah.\n- **Small wild cats**, such as the Eurasian lynx, serval, caracal and ocelot.\n- **Domestic cats**, with breeds such as the Siamese, Persian, Turkish Angora and Bengal."
+          },
+          {
+            "lang": "pt",
+            "text": "Existem cerca de 40 espécies de felinos no mundo, e elas ocorrem naturalmente em todos os continentes, exceto a Antártida e a Oceania, aonde os gatos só chegaram com os colonizadores humanos. Todas descendem de um ancestral comum que viveu há cerca de 10 milhões de anos e, por isso, compartilham o mesmo plano corporal, com garras retráteis, dentes feitos para cortar carne, visão noturna aguçada e um corpo adaptado à emboscada. Um leão de 190 kg e um gato doméstico de 4 kg são, nesse sentido, variações de um mesmo tema.\n\nEste curso acompanha esse grupo em seções organizadas pelo tamanho e pela relação que cada grupo tem com as pessoas. As espécies e raças listadas abaixo são exemplos, escolhidos para mostrar a diversidade dentro de cada grupo, e cada grupo inclui muitas outras.\n\n- **Grandes felinos**, como o leão, o tigre, a onça-pintada, o leopardo, a onça-parda e o guepardo.\n- **Pequenos felinos selvagens**, como o lince-euroasiático, o serval, o caracal e a jaguatirica.\n- **Gatos domésticos**, com raças como o Siamês, o Persa, o Angorá Turco e o Bengal."
+          }
+        ]
+      }
+    },
+    {
+      "id": "sm2",
+      "type": "static-md",
+      "section": 1,
+      "position": {
+        "x": 12,
+        "y": 174
+      },
+      "title": [
+        {
+          "lang": "en",
+          "text": "Features"
+        },
+        {
+          "lang": "pt",
+          "text": "Características"
+        }
+      ],
+      "content": {
+        "item": [
+          {
+            "lang": "en",
+            "text": "All cats, from the tiger to the house cat, are built for the same task, which is to approach prey unseen and kill it in a short burst. Over some 10 million years, natural selection has adjusted each part of the body to this way of hunting, and for this reason the differences between species are mostly a matter of size and proportion. This body plan explains much of what cats do.\n\n### A body made for the ambush\n\nThe skeleton of a cat favours flexibility over endurance. The spine bends and stretches with great freedom, lengthening the stride in a sprint. The collarbone is small and loosely attached, so the shoulders move freely and the cat can pass through any opening wide enough for its head. Cats walk on their toes, a posture called \"digitigrade\", and place the hind paw almost exactly where the front paw stepped, which reduces noise in the vegetation.\n\nThe claws stay sheathed while the cat walks, held back by elastic ligaments, and come out only when muscles in the paw pull them forward. In this way they remain sharp for climbing, gripping prey and fighting. The cheetah is the main exception, since its claws are only partly retractable.\n\nThe skull is short and the jaw is moved by large muscles, which gives the bite great force. The long canines grip and kill, often with a bite to the neck, and the back teeth, called \"carnassials\", work like scissors that cut meat. Almost none of the teeth are suited to grinding plants. The tongue is covered with small backward-facing spines, which help scrape meat from bones and comb the fur during grooming.\n\n### Senses tuned to the dusk\n\nMost cats hunt at night or at dawn and dusk, and their senses reflect this schedule. Behind the retina lies a reflective layer, the \"tapetum lucidum\", which sends light back through the eye a second time. A cat needs only a fraction of the light a person needs to see, although it distinguishes fewer colours and less detail. Many small cats have vertical slit pupils, which close almost completely in bright light and open very wide at night, while the lion and the tiger have round pupils.\n\nThe ears turn independently and pick up frequencies well above the range of human hearing, including the high-pitched sounds of rodents. The whiskers, or \"vibrissae\", are thick hairs connected to nerves that detect touch and movement in the air, which helps the cat judge the position of prey at the moment of the bite. Smell is complemented by the \"vomeronasal organ\", in the roof of the mouth, which detects chemical signals left by other cats. To use it, the cat opens its mouth and draws back its lips in the \"flehmen response\".\n\n### Behaviour of a solitary hunter\n\nWith the exception of the lion, cats live and hunt alone. Each adult occupies a territory, which it marks with urine, with scratches on trees and with scent glands on the cheeks and paws, signals that allow neighbours to avoid one another. The hunt follows a sequence repeated across the family, in which the cat watches, approaches under cover, freezes and ends with a short pounce. Most attempts fail, and for this reason cats spend long hours resting between hunts.\n\nMothers teach their kittens by bringing them dead prey, then live prey, so that the young practise the final stages of the hunt, and play among kittens rehearses the same movements. In this way, the domestic cat that brings a mouse to the door repeats a pattern its wild relatives have followed for millions of years, the same pattern that shaped its body from the spine to the tip of the whiskers."
+          },
+          {
+            "lang": "pt",
+            "text": "Todos os felinos, do tigre ao gato doméstico, são feitos para a mesma tarefa, que é se aproximar da presa sem ser visto e matá-la num ataque curto. Ao longo de cerca de 10 milhões de anos, a seleção natural ajustou cada parte do corpo a esse modo de caçar e, por isso, as diferenças entre as espécies são sobretudo uma questão de tamanho e proporção. Esse plano corporal explica muito do que os felinos fazem.\n\n### Um corpo feito para a emboscada\n\nO esqueleto de um felino privilegia a flexibilidade em vez da resistência. A coluna se curva e se estica com grande liberdade, o que alonga a passada numa corrida rápida. A clavícula é pequena e presa de forma frouxa, de modo que os ombros se movem livremente e o felino consegue passar por qualquer abertura larga o bastante para a cabeça. Os felinos andam sobre os dedos, uma postura chamada \"digitígrada\", e pousam a pata traseira quase exatamente onde a pata dianteira pisou, o que reduz o ruído na vegetação.\n\nAs garras ficam recolhidas enquanto o felino anda, presas por ligamentos elásticos, e só saem quando músculos da pata as puxam para a frente. Assim, continuam afiadas para escalar, segurar a presa e lutar. O guepardo é a principal exceção, pois suas garras são apenas parcialmente retráteis.\n\nO crânio é curto e a mandíbula é movida por músculos grandes, o que dá grande força à mordida. Os caninos longos agarram e matam, muitas vezes com uma mordida no pescoço, e os dentes de trás, chamados \"carniceiros\", funcionam como tesouras que cortam a carne. Quase nenhum dos dentes serve para triturar plantas. A língua é coberta de pequenas espinhas voltadas para trás, que ajudam a raspar a carne dos ossos e a pentear o pelo durante a higiene.\n\n### Sentidos ajustados ao crepúsculo\n\nA maioria dos felinos caça à noite ou ao amanhecer e ao entardecer, e seus sentidos refletem esse horário. Atrás da retina há uma camada refletora, o \"tapetum lucidum\", que faz a luz atravessar o olho uma segunda vez. Um gato precisa de apenas uma fração da luz de que uma pessoa precisa para enxergar, embora distinga menos cores e menos detalhes. Muitos felinos pequenos têm pupilas verticais em fenda, que se fecham quase por completo na luz forte e se abrem muito à noite, enquanto o leão e o tigre têm pupilas redondas.\n\nAs orelhas giram de forma independente e captam frequências bem acima do alcance da audição humana, incluindo os sons agudos dos roedores. Os bigodes, ou \"vibrissas\", são pelos grossos ligados a nervos que detectam o toque e o movimento do ar, o que ajuda o felino a avaliar a posição da presa no momento da mordida. O olfato é complementado pelo \"órgão vomeronasal\", no céu da boca, que detecta sinais químicos deixados por outros felinos. Para usá-lo, o felino abre a boca e repuxa os lábios, na chamada \"resposta de Flehmen\".\n\n### Comportamento de um caçador solitário\n\nCom exceção do leão, os felinos vivem e caçam sozinhos. Cada adulto ocupa um território, que marca com urina, com arranhões em árvores e com glândulas de cheiro nas bochechas e nas patas, sinais que permitem aos vizinhos evitar uns aos outros. A caçada segue uma sequência que se repete em toda a família: o felino observa, se aproxima escondido, fica imóvel e termina com um salto curto. A maioria das tentativas fracassa e, por isso, os felinos passam longas horas descansando entre as caçadas.\n\nAs mães ensinam os filhotes trazendo-lhes presas mortas, depois presas vivas, para que os jovens pratiquem as etapas finais da caçada, e as brincadeiras entre os filhotes ensaiam os mesmos movimentos. Desse modo, o gato doméstico que traz um rato até a porta repete um padrão que seus parentes selvagens seguem há milhões de anos, o mesmo padrão que moldou seu corpo, da coluna à ponta dos bigodes."
+          }
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "sm1",
+      "to": "sm2"
+    }
+  ]
+}
