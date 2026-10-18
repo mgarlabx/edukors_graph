@@ -326,7 +326,7 @@ final class CourseValidator
                 // A prompt is an instruction to the AI, normally written in
                 // English whatever the course language is: neither the declared
                 // languages nor the translations are required.
-                $this->checkLocalized($content['prompt'], "$where.prompt", null, 'prompt', []);
+                $this->checkLocalized($content['prompt'], "$where.prompt", null, 'prompt', [], true);
                 $texts = $this->textsOf($content['prompt']);
                 foreach ($texts as $text) {
                     $this->prompts[$id][] = $text;
@@ -1211,7 +1211,8 @@ final class CourseValidator
         string $where,
         ?array $required,
         string $label,
-        ?array $declared = null
+        ?array $declared = null,
+        bool $oneIsEnough = false
     ): void {
         // $declared defaults to the languages of the course; a dynamic prompt
         // passes [] because it is an instruction to the AI, normally written in
@@ -1246,8 +1247,16 @@ final class CourseValidator
             $text = $entry['text'] ?? null;
             if (!is_string($text)) {
                 $this->error($spot, "'text' must be a string");
-            } elseif (trim($text) === '') {
+            } elseif (trim($text) === '' && !$oneIsEnough) {
                 $this->warn($spot, "empty $label");
+            }
+        }
+        // A prompt is written once, usually in English, and runs in every
+        // language: the other entries may be left blank, as long as one is not.
+        if ($oneIsEnough) {
+            $written = array_filter($value, fn($e) => is_array($e) && is_string($e['text'] ?? null) && trim($e['text']) !== '');
+            if ($written === []) {
+                $this->warn($where, "empty $label");
             }
         }
         foreach (array_values($required ?? []) as $index => $lang) {

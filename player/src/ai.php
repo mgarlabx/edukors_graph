@@ -92,7 +92,12 @@ function ai_write_step(
         throw new AiError("node $nodeId is not a node the AI writes", 400);
     }
 
-    $prompt = Course::localize($node['content']['prompt'] ?? [], $lang);
+    // A language whose prompt was left blank runs the prompt of another one.
+    $written = array_values(array_filter(
+        (array) ($node['content']['prompt'] ?? []),
+        fn($e) => is_array($e) && trim((string) ($e['text'] ?? '')) !== ''
+    ));
+    $prompt = Course::localize($written, $lang);
     if (trim($prompt) === '') {
         throw new AiError("node $nodeId has no prompt", 400);
     }

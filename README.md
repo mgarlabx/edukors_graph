@@ -34,10 +34,10 @@ flowchart LR
 
 1. **This repository is still being tested. Changes are expected, with no guarantee of backward compatibility. Use it for experimental purposes only.**
 2. **Edukors Graph is part of a larger project, [Edukors.org](https://edukors.org), a global and free teacher-training school for the use of artificial intelligence in education.**
-3. **Courses are built in [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor), a free desktop app for Mac and Windows. Its [README](https://github.com/mgarlabx/edukors_graph_editor#readme) is the place to start: download, installation and a tour of the app.**
+3. **Courses are built in [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor), a free desktop app for Windows, macOS and Linux. Its [README](https://github.com/mgarlabx/edukors_graph_editor#readme) is the place to start: download, installation and a tour of the app.**
 4. **Example courses are in the [samples](samples/samples.README.md) folder, and more information is available at [edukors.org/graph](https://edukors.org/graph/).**
 
-> **📥 Download Edukors Graph Editor** — [Mac (Apple Silicon and Intel, macOS 11+)](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-mac.dmg) · [Windows (10 or 11, x64)](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-windows.exe) · [README](https://github.com/mgarlabx/edukors_graph_editor#readme)
+> **📥 Download Edukors Graph Editor** — [Windows (10 or 11, x64, Microsoft Store)](https://apps.microsoft.com/detail/9N0N0P3GVRCK) · [macOS (Apple Silicon and Intel, macOS 11+)](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-mac.dmg) · [Linux (x64, AppImage)](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-linux.AppImage) · [README](https://github.com/mgarlabx/edukors_graph_editor#readme)
 
 # ****About****
 
@@ -173,11 +173,17 @@ flowchart LR
 
 ## ****Builder****
 
-**The **builder** is [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor), a free desktop app for macOS (11 or later, Apple Silicon and Intel) and Windows (10 or 11, x64) in which authors create and edit courses. It has a repository of its own, and its [README](https://github.com/mgarlabx/edukors_graph_editor#readme) is the entry point for anyone who wants to build a course.**
+**The **builder** is [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor), a free desktop app for Windows (10 or 11, x64), macOS (11 or later, Apple Silicon and Intel) and Linux (x64) in which authors create and edit courses. It has a repository of its own, and its [README](https://github.com/mgarlabx/edukors_graph_editor#readme) is the entry point for anyone who wants to build a course.**
 
-> **📥 [Download for Mac](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-mac.dmg) · [Download for Windows](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-windows.exe) · [Read the README](https://github.com/mgarlabx/edukors_graph_editor#readme)**
+> **📥 [Download for Windows](https://apps.microsoft.com/detail/9N0N0P3GVRCK) · [Download for macOS](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-mac.dmg) · [Download for Linux](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-linux.AppImage) · [Read the README](https://github.com/mgarlabx/edukors_graph_editor#readme)**
 >
-> **The Mac app is signed and notarized by Apple. The Windows installer is not signed yet: when SmartScreen warns, choose *More info → Run anyway*. Once installed, the app updates itself.**
+> **The apps are notarized and approved: the macOS version is notarized by Apple, and the Windows version is approved by Microsoft and distributed through the Microsoft Store.**
+>
+> - **Windows:** open the editor's page in the Microsoft Store and click *Install*. Does your school block the Microsoft Store? Download the [`.exe` installer](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-windows.exe). Outside the store, Windows may still show security warnings, even though the app is approved: in the browser, keep the file; on the “Windows protected your PC” warning, click *More info* and then *Run anyway*.
+> - **macOS:** a `.dmg` file, notarized by Apple. Open the file and drag the app into the Applications folder.
+> - **Linux:** an `.AppImage` file. Make the file executable (`chmod +x`) and open it, no installation needed.
+>
+> **Once installed, the app updates itself.**
 
 **The author sees the course as a map, in the style of n8n, and builds or adjusts it with their own hands:**
 
@@ -211,7 +217,7 @@ flowchart LR
 
 ****Explore a course.** Eight example courses, with explanations, are in the [samples](samples/samples.README.md) folder. Open one in the builder to see its map and walk it as a student in the preview, or open it at [edukors.org/graph](https://edukors.org/graph/), where each example also runs in the player and has a short video. Read a course's `.egf` file next to the [schema.README](schema/schema.README.md) to learn the standard.**
 
-****Build a course.** Download [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor) for [Mac](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-mac.dmg) or [Windows](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-windows.exe), create a course or open an `.egf` file, and work on its map. The app's [README](https://github.com/mgarlabx/edukors_graph_editor#readme) walks through the installation, and its teacher's guide through everything else.**
+****Build a course.** Download [Edukors Graph Editor](https://github.com/mgarlabx/edukors_graph_editor) for [Windows](https://apps.microsoft.com/detail/9N0N0P3GVRCK), [macOS](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-mac.dmg) or [Linux](https://github.com/mgarlabx/edukors_graph_editor/releases/latest/download/Edukors-Graph-Editor-linux.AppImage), create a course or open an `.egf` file, and work on its map. The app's [README](https://github.com/mgarlabx/edukors_graph_editor#readme) walks through the installation, and its teacher's guide through everything else.**
 
 ****Deliver a course to students.** Deploy the [player](player) server (PHP 8.1+ with `pdo_mysql`, `curl`, `openssl` and `json`, a MySQL database, an OpenRouter key and HTTPS), import the course `.egf` file and register the server as an LTI 1.3 tool in the LMS. The [player.README](player/player.README.md) walks through every step, including Moodle.**
 
