@@ -100,7 +100,7 @@ Every node carries the same fields; only `content` changes shape with the type:
 - `title` — the name of the node in each language, as plain text. It appears on the course map.
 - `content` — what the node shows or does.
 - `section` — optional, 1 by default. It sets the group the node is displayed in (see `info.sections`).
-- `position` — optional, such as `{ "x": 34, "y": -12 }`. It records where the node sits on the canvas of a builder that lets the author arrange the nodes by hand, in that builder's own units. Purely visual: players ignore it, and it does not affect the order.
+- `position` — optional, such as `{ "x": 34, "y": -12 }`. It records where the node sits on the canvas of a builder that lets the author arrange the nodes by hand, in that builder's own units. Purely visual: players ignore it, and it does not affect the order. A course map may use it to draw the nodes where the author placed them.
 - `extras` — optional, such as `{ "acme-lms": { "competency": "fractions-1" } }`. Data that a particular tool keeps with the node and that the format does not define. See [Extras](#extras).
 
 #### static-md

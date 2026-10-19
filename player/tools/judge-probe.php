@@ -25,6 +25,13 @@
 
 declare(strict_types=1);
 
+// A command line tool, and every call it makes is paid for: never a page, even
+// if tools/.htaccess were ever lost on the way to a server.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
 require_once __DIR__ . '/../src/ai.php';
 
 // -- what was asked for ----------------------------------------------------

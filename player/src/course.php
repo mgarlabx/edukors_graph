@@ -74,6 +74,28 @@ final class Course
         return array_values(array_unique(array_filter($all)));
     }
 
+    /**
+     * The language to open this course in, given the one that was asked for:
+     * that language when the course has it, another variant of it when it has
+     * one -- pt for pt-BR -- and the source language when it has neither.
+     */
+    public function language(?string $wanted): string
+    {
+        if (is_string($wanted) && $wanted !== '') {
+            $languages = $this->languages();
+            if (in_array($wanted, $languages, true)) {
+                return $wanted;
+            }
+            $base = explode('-', str_replace('_', '-', $wanted))[0];
+            foreach ($languages as $language) {
+                if (explode('-', $language)[0] === $base) {
+                    return $language;
+                }
+            }
+        }
+        return $this->sourceLanguage();
+    }
+
     public function title(?string $lang = null): string
     {
         return self::localize($this->info['title'] ?? [], $lang ?? $this->sourceLanguage());

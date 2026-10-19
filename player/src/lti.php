@@ -273,17 +273,5 @@ function lti_student(array $platform, array $claims): array
 function lti_language(array $claims, Course $course): string
 {
     $locale = $claims[LTI_CLAIM . 'launch_presentation']['locale'] ?? null;
-    if (is_string($locale)) {
-        $languages = $course->languages();
-        if (in_array($locale, $languages, true)) {
-            return $locale;
-        }
-        $base = explode('-', str_replace('_', '-', $locale))[0];
-        foreach ($languages as $language) {
-            if (explode('-', $language)[0] === $base) {
-                return $language;
-            }
-        }
-    }
-    return $course->sourceLanguage();
+    return $course->language(is_string($locale) ? $locale : null);
 }

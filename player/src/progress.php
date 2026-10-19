@@ -233,6 +233,11 @@ function progress_verdict_vars(int $progressId, array $nodeIds): array
     if ($nodeIds === []) {
         return [];
     }
+    // Read on every save of a course with a judge, which is before any judgement
+    // has had the chance to add the column: without this, a database built
+    // before judgements fails every save, the student never reaches the judge,
+    // and so the column is never added.
+    node_state_ensure_verdict_column();
     $holes = implode(', ', array_fill(0, count($nodeIds), '?'));
     $rows  = db_all(
         "SELECT verdict FROM node_state
@@ -327,6 +332,29 @@ function node_state_write(int $progressId, string $nodeId, string $type, array $
          ON DUPLICATE KEY UPDATE " . implode(', ', $update),
         array_values($columns)
     );
+}
+
+/**
+ * `node_state.verdict` came with judgements, after the first installations. It
+ * is added the first time it is missed, as ai_call's late columns are (see
+ * ai.php), so an installation updates itself instead of failing until somebody
+ * runs an ALTER by hand. Once per request.
+ */
+function node_state_ensure_verdict_column(): void
+{
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+    $checked = true;
+
+    $has = (int) db_value(
+        "SELECT COUNT(*) FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'node_state' AND COLUMN_NAME = 'verdict'"
+    );
+    if ($has === 0) {
+        db_run('ALTER TABLE node_state ADD COLUMN verdict MEDIUMTEXT NULL AFTER answer');
+    }
 }
 
 /** One node_state row, or null. */

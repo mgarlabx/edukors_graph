@@ -847,6 +847,16 @@ function ai_http(string $url, array $body, int $timeout): array
     // No curl_close(): it has done nothing since PHP 8.0 and is deprecated from
     // 8.5, where calling it would print a notice into the JSON this answers with.
 
+    ai_trace([
+        'url'      => $url,
+        'payload'  => $body,
+        'status'   => $status,
+        'response' => $raw === false
+            ? null
+            : (json_decode((string) $raw, true) ?? (string) $raw),
+        'error'    => $raw === false ? ($curlError !== '' ? $curlError : 'the call did not finish') : null,
+    ]);
+
     if ($raw === false) {
         return [
             'status' => 0,
@@ -868,6 +878,24 @@ function ai_http(string $url, array $body, int $timeout): array
     }
 
     return ['status' => $status, 'json' => $json, 'error' => null];
+}
+
+/**
+ * The last exchange with OpenRouter in this request, exactly as it went: the
+ * body sent and what came back. Called with an exchange, it keeps it; called
+ * without, it hands back the one kept, or null when no call was made.
+ *
+ * Kept for the admin's run of a course, which shows it in the browser console
+ * so an author can see what a judgement was asked and what it answered. No
+ * student or visitor endpoint sends it -- the payload carries the rubric.
+ */
+function ai_trace(?array $exchange = null): ?array
+{
+    static $last = null;
+    if ($exchange !== null) {
+        $last = $exchange;
+    }
+    return $last;
 }
 
 /**
@@ -1125,13 +1153,7 @@ function ai_ensure_judge_columns(): void
     }
     $checked = true;
 
-    $hasVerdict = (int) db_value(
-        "SELECT COUNT(*) FROM information_schema.COLUMNS
-         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'node_state' AND COLUMN_NAME = 'verdict'"
-    );
-    if ($hasVerdict === 0) {
-        db_run('ALTER TABLE node_state ADD COLUMN verdict MEDIUMTEXT NULL AFTER answer');
-    }
+    node_state_ensure_verdict_column();   // progress.php: node_state is its table
 
     $kind = (string) db_value(
         "SELECT COLUMN_TYPE FROM information_schema.COLUMNS

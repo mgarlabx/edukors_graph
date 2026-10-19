@@ -29,8 +29,10 @@ $vars  = is_array($state['vars']) ? $state['vars'] : [];
 // of them -- holding up every other page of the admin opened meanwhile.
 session_write_close();
 
+$judges = in_array((string) $course->nodeType($nodeId), Course::JUDGE_TYPES, true);
+
 try {
-    if (in_array((string) $course->nodeType($nodeId), Course::JUDGE_TYPES, true)) {
+    if ($judges) {
         // Judged for real, with nothing kept. An author trying a course wants
         // to see which way their own rubric actually sends a student, which is
         // the one thing the preview player's panel cannot tell them.
@@ -51,4 +53,11 @@ try {
 }
 
 // The envelope of the Anthropic Messages API, which is what the player parses.
-edukors_json(['content' => [['type' => 'text', 'text' => $answer]]]);
+// A judgement also carries the OpenRouter exchange behind it, which the player
+// ignores and public/assets/bridge.js prints to the console -- null when the
+// judgement stopped before any call was made.
+$envelope = ['content' => [['type' => 'text', 'text' => $answer]]];
+if ($judges) {
+    $envelope['openrouter'] = ai_trace();
+}
+edukors_json($envelope);

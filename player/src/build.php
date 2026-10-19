@@ -227,10 +227,14 @@ function edukors_offline_script(string $notice, Course $course, ?array $state): 
  * it.
  *
  * The template carries a placeholder course between `const DEMO = {` and
- * `render(DEMO);`, and that is what is replaced here. Nothing is stripped: a map is for whoever is looking at how the course
- * is built, and that includes the prompts.
+ * `render(DEMO);`, and that is what is replaced here. Nothing is stripped: a
+ * map is for whoever is looking at how the course is built, and that includes
+ * the prompts.
+ *
+ * With $links false, a node's panel leaves out where it goes to and where it
+ * comes from, and only says what the node is: the drawing already shows both.
  */
-function edukors_build_map(Course $course, ?string $lang = null): string
+function edukors_build_map(Course $course, ?string $lang = null, bool $links = true): string
 {
     $path = __DIR__ . '/../assets/course_viewer.html';
     $html = @file_get_contents($path);
@@ -244,7 +248,8 @@ function edukors_build_map(Course $course, ?string $lang = null): string
         throw new RuntimeException('the template does not look like the course viewer');
     }
 
-    $block = 'const COURSE = ' . edukors_js_literal($course->doc()) . ";\nrender(COURSE);";
+    $options = $links ? '' : ', {links: false}';
+    $block   = 'const COURSE = ' . edukors_js_literal($course->doc()) . ";\nrender(COURSE$options);";
     $html  = substr($html, 0, $start) . $block . substr($html, $end + strlen('render(DEMO);'));
 
     $title = htmlspecialchars($course->title($lang), ENT_QUOTES, 'UTF-8');

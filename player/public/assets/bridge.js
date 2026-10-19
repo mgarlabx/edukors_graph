@@ -33,6 +33,19 @@
 
   var nativeFetch = window.fetch.bind(window);
 
+  // When the model call fails, the player falls back to window.claude.complete
+  // if there is one, and otherwise answers with a notice ("this step is written
+  // by AI, which this copy of the course cannot reach") -- as if the notice were
+  // the step's text. That fallback is for the player running with no server.
+  // Here it would be saved as the step's answer, and the step would never ask
+  // again. So a failure is made to stay a failure: the player then shows its
+  // error with a "try again" button, and nothing is saved. This also hands the
+  // server's own reason to the console, where it can be read.
+  window.claude = window.claude || {};
+  window.claude.complete = function () {
+    return Promise.reject(new Error('the server could not prepare this step'));
+  };
+
   window.fetch = function (input, init) {
     var url = typeof input === 'string' ? input : (input && input.url) || '';
     if (url.indexOf('api.anthropic.com') === -1) {
@@ -60,14 +73,45 @@
     // than the save below would have gone out. api/ai.php only writes the step
     // the student is actually on, so the server has to be told where that is
     // before we ask -- otherwise the first AI step of every course is refused.
-    return flush().then(function () {
+    return flush().catch(function () {
+      // Asked anyway: if the server did not take the new position it will say
+      // so, and that answer is the one worth showing.
+    }).then(function () {
       return nativeFetch(config.aiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),
         credentials: 'same-origin'
       });
+    }).then(function (response) {
+      logExchange(request.node, response.clone());
+      if (!response.ok) {
+        response.clone().json().then(function (data) {
+          console.warn('[edukors] ' + request.node + ': ' + ((data && data.error && data.error.message) || response.status));
+        }).catch(function () { /* not JSON */ });
+      }
+      return response;
     });
+  }
+
+  // Only the admin's endpoint sends `openrouter`, and only for a choice, score
+  // or noul node: what the judgement was asked, and what it answered.
+  function logExchange(node, response) {
+    response.json().then(function (data) {
+      if (!data || !('openrouter' in data)) { return; }
+      var exchange = data.openrouter;
+      console.group('[edukors] OpenRouter · ' + node);
+      if (!exchange) {
+        console.log('no call was made');
+      } else {
+        console.log('url', exchange.url);
+        console.log('payload', exchange.payload);
+        console.log('status', exchange.status);
+        console.log('response', exchange.response);
+        if (exchange.error) { console.log('error', exchange.error); }
+      }
+      console.groupEnd();
+    }).catch(function () { /* not JSON: nothing to show */ });
   }
 
   function jsonResponse(data, status) {
@@ -118,18 +162,43 @@
     flush().catch(function () { /* the next step will try again */ });
   }
 
-  /** Sends whatever is waiting, and resolves once the server has it. */
+  // Saves go out one at a time, in order. Two at once could reach the server in
+  // the wrong order and leave it a step behind; and a model call made while a
+  // save is still on its way would find the server a step behind as well, and
+  // be refused as "not the current step". So every save waits for the one
+  // before it, and flush() always resolves after the last one.
+  var inFlight = Promise.resolve();
+
+  /** Sends whatever is waiting, and resolves once the server has all of it. */
   function flush() {
     clearTimeout(timer);
-    if (pending === null) { return Promise.resolve(); }
-    var body = pending;
-    pending = null;
+    if (pending !== null) {
+      var body = pending;
+      pending = null;
+      inFlight = inFlight.catch(function () {}).then(function () {
+        return send(body);
+      });
+    }
+    return inFlight;
+  }
+
+  // No `keepalive` here: browsers refuse a keepalive request whose body is over
+  // 64 KB, and the state carries every answer and every generated text of the
+  // course, so a long course would stop being saved without a word. Closing the
+  // tab is covered by sendBeacon below.
+  function send(body) {
     return nativeFetch(config.progressUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: body,
-      credentials: 'same-origin',
-      keepalive: true
+      credentials: 'same-origin'
+    }).then(function (response) {
+      if (response.ok) { return response; }
+      return response.json().catch(function () { return null; }).then(function (data) {
+        var reason = (data && data.error && data.error.message) || ('HTTP ' + response.status);
+        console.warn('[edukors] progress not saved: ' + reason);
+        throw new Error(reason);
+      });
     });
   }
 

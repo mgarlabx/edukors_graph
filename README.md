@@ -195,7 +195,7 @@ flowchart LR
 - ****The AI agent**: a panel with an agent (Claude Code, which comes with the app, or Antigravity or Codex) that reads the open course and changes it on request. Each change waits, by default, for the author's approval, and everything can be undone.**
 - ****Export**: a single HTML file that runs the course on its own, with no server.**
 
-**Each course is saved as a single `.egf` file, the file the player imports, with no conversion. The position of each box on the map goes in the node's `position` field, which players ignore.**
+**Each course is saved as a single `.egf` file, the file the player imports, with no conversion. The position of each box on the map goes in the node's `position` field, which players ignore; the course map draws the boxes where the author left them when every node has one.**
 
 **The app's [README](https://github.com/mgarlabx/edukors_graph_editor#readme) covers the download and installation, and its teacher's guide, in [Portuguese](https://github.com/mgarlabx/edukors_graph_editor/blob/main/docs/guia-do-professor.md), [English](https://github.com/mgarlabx/edukors_graph_editor/blob/main/docs/guia-do-professor.en.md) and [Spanish](https://github.com/mgarlabx/edukors_graph_editor/blob/main/docs/guia-do-professor.es.md), explains how to use it step by step.**
 

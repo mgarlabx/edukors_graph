@@ -143,6 +143,13 @@
   .prose th,.prose td{border:1px solid var(--hair);padding:5px 8px;text-align:left}
   .code{font-family:var(--mono);font-size:12px;line-height:1.55;background:#F4F7F9;border:1px solid #E4EAEF;
     border-radius:8px;padding:11px 12px;white-space:pre-wrap;word-break:break-word;color:#25323D}
+  .copyable{position:relative}
+  .copyable > .code{padding-right:40px}
+  .copy{position:absolute;top:6px;right:6px;display:flex;align-items:center;justify-content:center;
+    width:28px;height:28px;border:1px solid #E4EAEF;border-radius:6px;background:var(--surface);color:var(--muted);cursor:pointer}
+  .copy:hover{color:var(--ink);border-color:#B4C2CD}
+  .copy.done{color:#2E7D5B}
+  .copy svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .math{font-family:var(--serif);font-style:italic}
   .tok{background:#E7DEF6;color:#5B3D8C;border-radius:4px;padding:1px 3px}
   .keys{display:flex;flex-wrap:wrap;gap:6px}
@@ -283,6 +290,7 @@ let course = null;     // JSON carregado
 let lang = null;       // idioma escolhido
 let model = null;      // { nodes, edges, byId, layout, issues }
 let selected = null;
+let showLinks = true;  // the "Goes to" and "Comes from" of the panel (render's options)
 
 /* ---- localized text ---- */
 function t(list){
@@ -453,12 +461,39 @@ function buildModel(data){
     });
   });
 
+  const placed = placeByPositions(nodes);
+  if(placed) return {nodes, edges, byId, issues, bands:[], width:placed.width, height:placed.height, start, positioned:true};
+
   const bands = [];
   if(orphans.length) bands.push({y: (maxDepth + 2) * (NH + VGAP) - VGAP/2, label:"not reachable from the start node"});
 
   return {nodes, edges, byId, issues, bands,
           width: totalW, height: (Math.max.apply(null,[...depth.values()]) + 1) * (NH + VGAP),
           start};
+}
+
+// The positions the author arranged in a builder, when every node has one;
+// otherwise null and the layered layout stays. The builder's units are its own,
+// so the drawing is moved to the origin and spread out until no two boxes overlap.
+function placeByPositions(nodes){
+  const valid = p => p && typeof p.x === "number" && typeof p.y === "number" && isFinite(p.x) && isFinite(p.y);
+  if(!nodes.length || !nodes.every(n => valid(n.position))) return null;
+
+  const minX = Math.min.apply(null, nodes.map(n => n.position.x));
+  const minY = Math.min.apply(null, nodes.map(n => n.position.y));
+  let k = 1;
+  nodes.forEach((a, i) => nodes.slice(i + 1).forEach(b => {
+    const dx = Math.abs(a.position.x - b.position.x), dy = Math.abs(a.position.y - b.position.y);
+    const need = Math.min(dx ? (NW + HGAP/2) / dx : Infinity, dy ? (NH + HGAP/2) / dy : Infinity);
+    if(isFinite(need)) k = Math.max(k, need);
+  }));
+
+  nodes.forEach(n => {
+    n._x = (n.position.x - minX) * k;
+    n._y = (n.position.y - minY) * k;
+  });
+  return {width: Math.max.apply(null, nodes.map(n => n._x)) + NW,
+          height: Math.max.apply(null, nodes.map(n => n._y)) + NH};
 }
 
 /* ============================================================
@@ -512,7 +547,9 @@ function draw(){
     const bx = b._x + NW/2, by = b._y;
     let d, lx, ly;
 
-    if(!back){
+    if(model.positioned){
+      ({d, lx, ly} = routeByPosition(a, b));
+    } else if(!back){
       const dy = Math.max(30, (by - ay) * .5);
       const span = b._depth - a._depth;
       if(span > 1){
@@ -603,6 +640,28 @@ function draw(){
     g.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); select(n.id); } });
     gN.appendChild(g);
   });
+}
+
+// An edge between nodes the author placed: it leaves from the side that faces
+// the target -- down, across, or sideways and up when the target sits above.
+function routeByPosition(a, b){
+  if(b._y >= a._y + NH + 20){
+    const ax = a._x + NW/2, ay = a._y + NH, bx = b._x + NW/2, by = b._y;
+    const dy = Math.max(30, (by - ay) * .5);
+    return {d:`M${ax},${ay} C${ax},${ay+dy} ${bx},${by-dy} ${bx},${by-5}`, lx:(ax+bx)/2, ly:(ay+by)/2 + 4};
+  }
+  if(b._x >= a._x + NW + 20 || b._x + NW + 20 <= a._x){
+    const side = b._x > a._x ? 1 : -1;
+    const ax = a._x + (side > 0 ? NW : 0), ay = a._y + NH/2;
+    const bx = b._x + (side > 0 ? 0 : NW), by = b._y + NH/2;
+    const dx = side * Math.max(30, Math.abs(bx - ax) * .5);
+    return {d:`M${ax},${ay} C${ax+dx},${ay} ${bx-dx},${by} ${bx-side*5},${by}`, lx:(ax+bx)/2, ly:(ay+by)/2 - 6};
+  }
+  const side = b._x + NW/2 <= a._x + NW/2 ? -1 : 1;
+  const offX = side * (NW/2 + 46);
+  const sx = a._x + (side<0 ? 0 : NW), ex = b._x + (side<0 ? 0 : NW);
+  const sy = a._y + NH/2, ty = b._y + NH/2;
+  return {d:`M${sx},${sy} C${sx+offX},${sy} ${ex+offX},${ty} ${ex+side*5},${ty}`, lx:(sx+ex)/2 + offX*.78, ly:(sy+ty)/2};
 }
 
 /* ---- highlight ---- */
@@ -890,7 +949,7 @@ function select(id){
   if(n._orphan) bits.push("unreachable");
   document.getElementById("pWhere").textContent = bits.join(" · ");
 
-  pBody.innerHTML = contentHtml(n) + keysHtml(n) + linksHtml(n);
+  pBody.innerHTML = contentHtml(n) + keysHtml(n) + (showLinks ? linksHtml(n) : "");
   typesetMath(pBody);
   pBody.scrollTop = 0;
   panel.classList.add("open");
@@ -905,6 +964,36 @@ function select(id){
     select(b.dataset.go); centerOn(b.dataset.go);
   }));
   pBody.querySelectorAll("iframe[data-src]").forEach(f => { f.srcdoc = f.dataset.src; });
+  pBody.querySelectorAll(".copy").forEach(b => b.addEventListener("click", () => copy(b)));
+}
+
+const ICON_COPY  = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
+const ICON_DONE  = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
+
+// A code box with a button that copies its raw text.
+function codeBox(raw){
+  return '<div class="copyable"><div class="code">' + promptHtml(raw) + '</div>' +
+    '<button class="copy" type="button" title="Copy" aria-label="Copy" data-copy="' + esc(raw) + '">' + ICON_COPY + '</button></div>';
+}
+
+// The map may run in a sandboxed frame where the Clipboard API is refused:
+// the old copy command is the way left there.
+async function copy(button){
+  const text = button.dataset.copy;
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(err){
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.style.cssText = "position:fixed;opacity:0";
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand("copy");
+    area.remove();
+  }
+  button.classList.add("done");
+  button.innerHTML = ICON_DONE;
+  setTimeout(() => { button.classList.remove("done"); button.innerHTML = ICON_COPY; }, 1500);
 }
 
 function section(title, inner){
@@ -930,8 +1019,7 @@ function contentHtml(n){
     case "dynamic-html": {
       const p = t(c.prompt);
       const what = n.type === "dynamic-md" ? "markdown" : "HTML";
-      return section("Prompt the AI runs to generate the " + what,
-        '<div class="code">' + promptHtml(p) + '</div>');
+      return section("Prompt the AI runs to generate the " + what, codeBox(p));
     }
     case "essay": {
       return section("Instructions for the student", '<div class="prose">' + md(t(c.instructions)) + '</div>') +
@@ -1065,8 +1153,9 @@ document.addEventListener("keydown", e => {
    7. Rendering the course
    ============================================================ */
 
-function render(data){
+function render(data, options = {}){
   course = data;
+  showLinks = options.links !== false;
   const info = data.info || {};
   const langs = [info["source-language"]].concat(info["other-languages"] || []).filter(Boolean);
   if(!langs.length) langs.push("--");
